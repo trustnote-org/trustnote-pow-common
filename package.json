@@ -1,0 +1,34 @@
+{
+  "name": "trustnote-common",
+  "description": "Trustnote Common",
+  "author": "Trustnote",
+  "version": "0.1.0",
+  "keywords": [
+    "trustnote",
+    "multisignature"
+  ],
+  "homepage": "https://gitee.com/trustnote/trustnote-common",
+  "license": "MIT",
+  "repository": {
+    "url": "https://gitee.com/trustnote/trustnote-common.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://gitee.com/trustnote/trustnote-common/issues"
+  },
+  "browser": {
+    "request": "browser-request",
+    "secp256k1": "secp256k1/js"
+  },
+  "dependencies": {
+    "ws": "^1.0.1",
+    "socks": "1.1.10",
+    "thirty-two": "^1.0.1",
+    "longjohn": "^0.2.11",
+    "lodash": "^4.6.1",
+    "mysql": "^2.10.2",
+    "sqlite3": "^3.1.4",
+    "async": "^1.5.2",
+    "secp256k1": "^3.1.0"
+  }
+}
