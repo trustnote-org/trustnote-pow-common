@@ -3,7 +3,10 @@ CREATE TABLE units (
 	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	version VARCHAR(3) NOT NULL DEFAULT '1.0',
 	alt VARCHAR(3) NOT NULL DEFAULT '1',
-	witness_list_unit CHAR(44) NULL,
+	round_index BIGINT NULL,
+    seed  CHAR(44) NULL, --- row data is 32 bytes and covrt to base 64
+	difficulty VARCHAR(64) NULL,
+	solution text  NULL,
 	last_ball_unit CHAR(44) NULL,
 	content_hash CHAR(44) NULL,
 	headers_commission INT NOT NULL,
@@ -19,7 +22,9 @@ CREATE TABLE units (
 	best_parent_unit CHAR(44) NULL,
 	CONSTRAINT unitsByLastBallUnit FOREIGN KEY (last_ball_unit) REFERENCES units(unit),
 	FOREIGN KEY (best_parent_unit) REFERENCES units(unit),
-	CONSTRAINT unitsByWitnessListUnit FOREIGN KEY (witness_list_unit) REFERENCES units(unit)
+	-- POW modi
+	FOREIGN KEY (round_index) REFERENCES round(round_index)
+	-- CONSTRAINT unitsByWitnessListUnit FOREIGN KEY (witness_list_unit) REFERENCES units(unit)
 );
 CREATE INDEX byLB ON units(last_ball_unit);
 CREATE INDEX byBestParent ON units(best_parent_unit);
@@ -104,6 +109,14 @@ CREATE TABLE authentifiers (
 	CONSTRAINT authentifiersByAddress FOREIGN KEY (address) REFERENCES addresses(address)
 );
 CREATE INDEX authentifiersIndexByAddress ON authentifiers(address);
+
+--  new table to store round 
+CREATE TABLE round(
+	round_index BIGINT NOT NULL,
+	min_wl INT NULL,
+	max_wl INT NULL,
+	PRIMARY KEY (round_index)
+) 
 
 -- must be sorted by address
 CREATE TABLE unit_witnesses (
