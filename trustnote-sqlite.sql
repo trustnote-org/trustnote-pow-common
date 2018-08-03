@@ -4,9 +4,6 @@ CREATE TABLE units (
 	version VARCHAR(3) NOT NULL DEFAULT '1.0',
 	alt VARCHAR(3) NOT NULL DEFAULT '1',
 	round_index BIGINT NULL,
-    seed  CHAR(44) NULL, --- row data is 32 bytes and covrt to base 64
-	difficulty VARCHAR(64) NULL,
-	solution text  NULL,
 	last_ball_unit CHAR(44) NULL,
 	content_hash CHAR(44) NULL,
 	headers_commission INT NOT NULL,
@@ -116,6 +113,15 @@ CREATE TABLE round(
 	min_wl INT NULL,
 	max_wl INT NULL,
 	PRIMARY KEY (round_index)
+) 
+
+--  new table to store pow units 
+CREATE TABLE pow(
+	unit CHAR(44) NOT NULL,
+    seed  CHAR(44) NULL, --- row data is 32 bytes and covrt to base 64
+	difficulty VARCHAR(64) NULL,
+	solution text  NULL,
+	PRIMARY KEY (unit)
 ) 
 
 -- must be sorted by address
