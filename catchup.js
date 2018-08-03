@@ -60,11 +60,16 @@ function prepareCatchupChain(catchupRequest, callbacks){
 				return cb();
 			goUp(last_ball_unit);
 			
-			function goUp(unit){
-				storage.readJointWithBall(db, unit, function(objJoint){
-					objCatchupChain.stable_last_ball_joints.push(objJoint);
-					storage.readUnitProps(db, unit, function(objUnitProps){
-						(objUnitProps.main_chain_index <= last_stable_mci) ? cb() : goUp(objJoint.unit.last_ball_unit);
+			function goUp( unit )
+			{
+				storage.readJointWithBall( db, unit, function( objJoint )
+				{
+					objCatchupChain.stable_last_ball_joints.push( objJoint );
+					storage.readUnitProps( db, unit, function( objUnitProps )
+					{
+						( objUnitProps.main_chain_index <= last_stable_mci )
+							? cb()
+							: goUp( objJoint.unit.last_ball_unit );
 					});
 				});
 			}
@@ -269,137 +274,176 @@ function readHashTree(hashTreeRequest, callbacks){
 	);
 }
 
-function processHashTree(arrBalls, callbacks){
+function processHashTree(arrBalls, callbacks)
+{
 	if (!Array.isArray(arrBalls))
 		return callbacks.ifError("no balls array");
-	mutex.lock(["hash_tree"], function(unlock){
-		
-		db.query("SELECT 1 FROM hash_tree_balls LIMIT 1", function(ht_rows){
-			//if (ht_rows.length > 0) // duplicate
-			//    return unlock();
-			
-			db.takeConnectionFromPool(function(conn){
-				
-				conn.query("BEGIN", function(){
-					
-					var max_mci = null;
-					async.eachSeries(
-						arrBalls,
-						function(objBall, cb){
-							if (typeof objBall.ball !== "string")
-								return cb("no ball");
-							if (typeof objBall.unit !== "string")
-								return cb("no unit");
-							if (!storage.isGenesisUnit(objBall.unit)){
-								if (!Array.isArray(objBall.parent_balls))
-									return cb("no parents");
-							}
-							else if (objBall.parent_balls)
-								return cb("genesis with parents?");
-							if (objBall.ball !== objectHash.getBallHash(objBall.unit, objBall.parent_balls, objBall.skiplist_balls, objBall.is_nonserial))
-								return cb("wrong ball hash, ball "+objBall.ball+", unit "+objBall.unit);
 
-							function addBall(){
-								// insert even if it already exists in balls, because we need to define max_mci by looking outside this hash tree
-								conn.query("INSERT "+conn.getIgnore()+" INTO hash_tree_balls (ball, unit) VALUES(?,?)", [objBall.ball, objBall.unit], function(){
-									cb();
-									//console.log("inserted unit "+objBall.unit, objBall.ball);
-								});
-							}
-							
-							function checkSkiplistBallsExist(){
-								if (!objBall.skiplist_balls)
-									return addBall();
-								conn.query(
-									"SELECT ball FROM hash_tree_balls WHERE ball IN(?) UNION SELECT ball FROM balls WHERE ball IN(?)",
-									[objBall.skiplist_balls, objBall.skiplist_balls],
-									function(rows){
-										if (rows.length !== objBall.skiplist_balls.length)
-											return cb("some skiplist balls not found");
-										addBall();
-									}
-								);
-							}
+	mutex.lock( ["hash_tree"], function( unlock )
+	{
+		db.takeConnectionFromPool( function( conn )
+		{
+			conn.query( "BEGIN", function()
+			{
+				var max_mci = null;
+				async.eachSeries
+				(
+					arrBalls,
+					function( objBall, cb )
+					{
+						if (typeof objBall.ball !== "string" )
+							return cb("no ball");
+						if (typeof objBall.unit !== "string")
+							return cb("no unit");
+						if ( ! storage.isGenesisUnit( objBall.unit ) )
+						{
+							if ( ! Array.isArray( objBall.parent_balls ) )
+								return cb( "no parents" );
+						}
+						else if ( objBall.parent_balls )
+						{
+							return cb( "genesis with parents?" );
+						}
 
-							if (!objBall.parent_balls)
-								return checkSkiplistBallsExist();
-							conn.query("SELECT ball FROM hash_tree_balls WHERE ball IN(?)", [objBall.parent_balls], function(rows){
-								//console.log(rows.length+" rows", objBall.parent_balls);
-								if (rows.length === objBall.parent_balls.length)
-									return checkSkiplistBallsExist();
-								var arrFoundBalls = rows.map(function(row) { return row.ball; });
-								var arrMissingBalls = _.difference(objBall.parent_balls, arrFoundBalls);
-								conn.query(
-									"SELECT ball, main_chain_index, is_on_main_chain FROM balls JOIN units USING(unit) WHERE ball IN(?)", 
-									[arrMissingBalls], 
-									function(rows2){
-										if (rows2.length !== arrMissingBalls.length)
-											return cb("some parents not found, unit "+objBall.unit);
-										for (var i=0; i<rows2.length; i++){
-											var props = rows2[i];
-											if (props.is_on_main_chain === 1 && (props.main_chain_index > max_mci || max_mci === null))
-												max_mci = props.main_chain_index;
-										}
-										checkSkiplistBallsExist();
-									}
-								);
+						if ( objBall.ball !== objectHash.getBallHash( objBall.unit, objBall.parent_balls, objBall.skiplist_balls, objBall.is_nonserial ) )
+							return cb( "wrong ball hash, ball "+objBall.ball+", unit "+objBall.unit );
+
+						function addBall()
+						{
+							// insert even if it already exists in balls, because we need to define max_mci by looking outside this hash tree
+							conn.query("INSERT "+conn.getIgnore()+" INTO hash_tree_balls (ball, unit) VALUES(?,?)", [objBall.ball, objBall.unit], function()
+							{
+								cb();
+								//console.log("inserted unit "+objBall.unit, objBall.ball);
 							});
-						},
-						function(error){
-							
-							function finish(err){
-								conn.query(err ? "ROLLBACK" : "COMMIT", function(){
-									conn.release();
-									unlock();
-									err ? callbacks.ifError(err) : callbacks.ifOk();
-								});
-							}
+						}
 
-							if (error)
-								return finish(error);
-							
-							// it is ok that max_mci === null as the 2nd tree does not touch finished balls
-							//if (max_mci === null && !storage.isGenesisUnit(arrBalls[0].unit))
-							//    return finish("max_mci not defined");
-							
-							// check that the received tree matches the first pair of chain elements
+						function checkSkiplistBallsExist()
+						{
+							if ( ! objBall.skiplist_balls )
+								return addBall();
+
 							conn.query(
-								"SELECT ball, main_chain_index \n\
-								FROM catchup_chain_balls LEFT JOIN balls USING(ball) LEFT JOIN units USING(unit) \n\
-								ORDER BY member_index LIMIT 2", 
+								"SELECT ball FROM hash_tree_balls WHERE ball IN(?) UNION SELECT ball FROM balls WHERE ball IN(?)",
+								[objBall.skiplist_balls, objBall.skiplist_balls],
 								function(rows){
-									
-									if (rows.length !== 2)
-										return finish("expecting to have 2 elements in the chain");
-									// removed: the main chain might be rebuilt if we are sending new units while syncing
-								//	if (max_mci !== null && rows[0].main_chain_index !== null && rows[0].main_chain_index !== max_mci)
-								//		return finish("max mci doesn't match first chain element: max mci = "+max_mci+", first mci = "+rows[0].main_chain_index);
-									if (rows[1].ball !== arrBalls[arrBalls.length-1].ball)
-										return finish("tree root doesn't match second chain element");
-									// remove the last chain element, we now have hash tree instead
-									conn.query("DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function(){
-										
-										purgeHandledBallsFromHashTree(conn, finish);
-									});
+									if (rows.length !== objBall.skiplist_balls.length)
+										return cb("some skiplist balls not found");
+									addBall();
 								}
 							);
 						}
-					);
-				});
+
+
+						if ( ! objBall.parent_balls )
+							return checkSkiplistBallsExist();
+
+						conn.query( "SELECT ball FROM hash_tree_balls WHERE ball IN(?)", [ objBall.parent_balls ], function(rows)
+						{
+							//	console.log(rows.length+" rows", objBall.parent_balls);
+							if ( rows.length === objBall.parent_balls.length )
+								return checkSkiplistBallsExist();
+
+							var arrFoundBalls	= rows.map( function(row) { return row.ball; } );
+							var arrMissingBalls	= _.difference( objBall.parent_balls, arrFoundBalls );
+
+							/**
+							 *	POW COMMENT
+							 *	@author		XING
+							 *	@datetime	2018/8/3 5:55 PM
+							 *	@description	try to obtain pair of unit-ball from units and then save them to hash_tree_balls
+							 */
+							conn.query(
+								"SELECT ball, main_chain_index, is_on_main_chain FROM balls JOIN units USING(unit) WHERE ball IN(?)",
+								[arrMissingBalls],
+								function(rows2)
+								{
+									if ( rows2.length !== arrMissingBalls.length )
+										return cb( "some parents not found, unit "+objBall.unit );
+
+									for ( var i=0; i<rows2.length; i++ )
+									{
+										var props = rows2[i];
+										if (props.is_on_main_chain === 1 && (props.main_chain_index > max_mci || max_mci === null))
+											max_mci = props.main_chain_index;
+									}
+
+									checkSkiplistBallsExist();
+								}
+							);
+						});
+					},
+					function(error){
+
+						function finish( err )
+						{
+							conn.query( err ? "ROLLBACK" : "COMMIT", function()
+							{
+								conn.release();
+								unlock();
+								err ? callbacks.ifError(err) : callbacks.ifOk();
+							});
+						}
+
+						if ( error )
+							return finish( error );
+
+						// it is ok that max_mci === null as the 2nd tree does not touch finished balls
+						//if (max_mci === null && !storage.isGenesisUnit(arrBalls[0].unit))
+						//    return finish("max_mci not defined");
+
+						//	check that the received tree matches the first pair of chain elements
+						conn.query
+						(
+							"SELECT ball, main_chain_index \n\
+							FROM catchup_chain_balls LEFT JOIN balls USING(ball) LEFT JOIN units USING(unit) \n\
+							ORDER BY member_index LIMIT 2",
+							function( rows )
+							{
+								if ( rows.length !== 2 )
+									return finish( "expecting to have 2 elements in the chain" );
+
+								// removed: the main chain might be rebuilt if we are sending new units while syncing
+							//	if (max_mci !== null && rows[0].main_chain_index !== null && rows[0].main_chain_index !== max_mci)
+							//		return finish("max mci doesn't match first chain element: max mci = "+max_mci+", first mci = "+rows[0].main_chain_index);
+								if ( rows[ 1 ].ball !== arrBalls[ arrBalls.length - 1 ].ball )
+									return finish( "tree root doesn't match second chain element" );
+								// remove the last chain element, we now have hash tree instead
+								conn.query("DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function()
+								{
+									purgeHandledBallsFromHashTree( conn, finish );
+								});
+							}
+						);
+					}
+				);
 			});
 		});
 	});
 }
 
-function purgeHandledBallsFromHashTree(conn, onDone){
-	conn.query("SELECT ball FROM hash_tree_balls CROSS JOIN balls USING(ball)", function(rows){
-		if (rows.length === 0)
-			return onDone();
-		var arrHandledBalls = rows.map(function(row){ return row.ball; });
-		conn.query("DELETE FROM hash_tree_balls WHERE ball IN(?)", [arrHandledBalls], function(){
-			onDone();
-		});
-	});
+function purgeHandledBallsFromHashTree( conn, onDone )
+{
+	conn.query
+	(
+		"SELECT ball FROM hash_tree_balls CROSS JOIN balls USING(ball)",
+		function(rows)
+		{
+			if (rows.length === 0)
+				return onDone();
+
+			var arrHandledBalls = rows.map(function(row){ return row.ball; });
+			conn.query
+			(
+				"DELETE FROM hash_tree_balls WHERE ball IN(?)",
+				[arrHandledBalls],
+				function()
+				{
+					onDone();
+				}
+			);
+		}
+	);
 }
 
 exports.prepareCatchupChain = prepareCatchupChain;

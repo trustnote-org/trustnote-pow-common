@@ -679,9 +679,12 @@ function sendJointsSinceMci(ws, mci) {
 	);
 }
 
-function requestFreeJointsFromAllOutboundPeers(){
-	for (var i=0; i<arrOutboundPeers.length; i++)
-		sendJustsaying(arrOutboundPeers[i], 'refresh', null);
+function requestFreeJointsFromAllOutboundPeers()
+{
+	for ( var i=0; i<arrOutboundPeers.length; i++ )
+	{
+		sendJustsaying( arrOutboundPeers[i], 'refresh', null );
+	}
 }
 
 function requestNewJoints(ws){
@@ -705,35 +708,57 @@ function rerequestLostJoints(){
 	});
 }
 
-function requestNewMissingJoints(ws, arrUnits){
+function requestNewMissingJoints( ws, arrUnits )
+{
 	var arrNewUnits = [];
-	async.eachSeries(
+	async.eachSeries
+	(
 		arrUnits,
-		function(unit, cb){
-			if (assocUnitsInWork[unit])
+		function( unit, cb )
+		{
+			if ( assocUnitsInWork[unit] )
 				return cb();
-			if (havePendingJointRequest(unit)){
+
+			if ( havePendingJointRequest(unit) )
+			{
 				console.log("unit "+unit+" was already requested");
 				return cb();
 			}
-			joint_storage.checkIfNewUnit(unit, {
-				ifNew: function(){
+
+			/**
+			 *	POW COMMENT
+			 *	@author		XING
+			 *	@datetime	2018/8/3 5:55 PM
+			 *	@description
+			 *	SELECT FROM
+			 *		units,
+			 *		unhandled_joints,
+			 *		known_bad_joints.
+			 */
+			joint_storage.checkIfNewUnit( unit,
+			{
+				ifNew: function()
+				{
 					arrNewUnits.push(unit);
 					cb();
 				},
 				ifKnown: function(){console.log("known"); cb();}, // it has just been handled
 				ifKnownUnverified: function(){console.log("known unverified"); cb();}, // I was already waiting for it
-				ifKnownBad: function(error){
+				ifKnownBad: function(error)
+				{
 					throw Error("known bad "+unit+": "+error);
 				}
 			});
 		},
-		function(){
+		function()
+		{
 			//console.log(arrNewUnits.length+" of "+arrUnits.length+" left", assocUnitsInWork);
 			// filter again as something could have changed each time we were paused in checkIfNewUnit
-			arrNewUnits = arrNewUnits.filter(function(unit){ return (!assocUnitsInWork[unit] && !havePendingJointRequest(unit)); });
-			if (arrNewUnits.length > 0)
-				requestJoints(ws, arrNewUnits);
+			arrNewUnits = arrNewUnits.filter( function( unit ){ return ( ! assocUnitsInWork[ unit ] && ! havePendingJointRequest( unit ) ); });
+			if ( arrNewUnits.length > 0 )
+			{
+				requestJoints( ws, arrNewUnits );
+			}
 		}
 	);
 }
@@ -793,7 +818,7 @@ function handleResponseToJointRequest(ws, request, response){
 		delete objJoint.ball;
 		delete objJoint.skiplist_units;
 	}
-	conf.bLight ? handleLightOnlineJoint(ws, objJoint) : handleOnlineJoint(ws, objJoint);
+	conf.bLight ? handleLightOnlineJoint(ws, objJoint) : handleOnlineJoint( ws, objJoint );
 }
 
 function havePendingRequest(command){
@@ -921,14 +946,21 @@ function handleJoint(ws, objJoint, bSaved, callbacks){
 			ifOk: function(objValidationState, validation_unlock){
 				if (objJoint.unsigned)
 					throw Error("ifOk() unsigned");
-				writer.saveJoint(objJoint, objValidationState, null, function(){
+
+				writer.saveJoint(objJoint, objValidationState, null, function()
+				{
 					validation_unlock();
 					callbacks.ifOk();
 					if (ws)
+					{
 						writeEvent((objValidationState.sequence !== 'good') ? 'nonserial' : 'new_good', ws.host);
+					}
+
 					notifyWatchers(objJoint, ws);
-					if (!bCatchingUp)
+					if ( ! bCatchingUp )
+					{
 						eventBus.emit('new_joint', objJoint);
+					}
 				});
 			},
 			ifOkUnsigned: function(bSerial){
@@ -1013,30 +1045,41 @@ function handlePostedJoint(ws, objJoint, onDone){
 	});
 }
 
-function handleOnlineJoint(ws, objJoint, onDone){
+function handleOnlineJoint( ws, objJoint, onDone )
+{
 	if (!onDone)
 		onDone = function(){};
+
 	var unit = objJoint.unit.unit;
 	delete objJoint.unit.main_chain_index;
-	
-	handleJoint(ws, objJoint, false, {
+
+	//	...
+	handleJoint(ws, objJoint, false,
+	{
 		ifUnitInWork: onDone,
-		ifUnitError: function(error){
+		ifUnitError: function(error)
+		{
 			sendErrorResult(ws, unit, error);
 			onDone();
 		},
-		ifJointError: function(error){
+		ifJointError: function(error)
+		{
 			sendErrorResult(ws, unit, error);
 			onDone();
 		},
-		ifNeedHashTree: function(){
-			if (!bCatchingUp && !bWaitingForCatchupChain)
+		ifNeedHashTree: function()
+		{
+			if ( ! bCatchingUp && ! bWaitingForCatchupChain )
+			{
 				requestCatchup(ws);
+			}
+
 			// we are not saving the joint so that in case requestCatchup() fails, the joint will be requested again via findLostJoints, 
 			// which will trigger another attempt to request catchup
 			onDone();
 		},
-		ifNeedParentUnits: function(arrMissingUnits){
+		ifNeedParentUnits: function(arrMissingUnits)
+		{
 			sendInfo(ws, {unit: unit, info: "unresolved dependencies: "+arrMissingUnits.join(", ")});
 			joint_storage.saveUnhandledJointAndDependencies(objJoint, arrMissingUnits, ws.peer, function(){
 				delete assocUnitsInWork[unit];
@@ -1044,7 +1087,8 @@ function handleOnlineJoint(ws, objJoint, onDone){
 			requestNewMissingJoints(ws, arrMissingUnits);
 			onDone();
 		},
-		ifOk: function(){
+		ifOk: function()
+		{
 			sendResult(ws, {unit: unit, result: 'accepted'});
 			
 			// forward to other peers
@@ -1084,14 +1128,15 @@ function handleOnlineJoint(ws, objJoint, onDone){
 }
 
 
-function handleSavedJoint(objJoint, creation_ts, peer){
-	
+function handleSavedJoint(objJoint, creation_ts, peer)
+{
 	var unit = objJoint.unit.unit;
 	var ws = getPeerWebSocket(peer);
 	if (ws && ws.readyState !== ws.OPEN)
 		ws = null;
 
-	handleJoint(ws, objJoint, true, {
+	handleJoint(ws, objJoint, true,
+	{
 		ifUnitInWork: function(){},
 		ifUnitError: function(error){
 			if (ws)
@@ -1354,10 +1399,11 @@ function findAndHandleJointsThatAreReady(unit){
 	handleSavedPrivatePayments(unit);
 }
 
-function comeOnline(){
+function comeOnline()
+{
 	bCatchingUp = false;
 	coming_online_time = Date.now();
-	waitTillIdle(requestFreeJointsFromAllOutboundPeers);
+	waitTillIdle( requestFreeJointsFromAllOutboundPeers );
 	eventBus.emit('catching_up_done');
 }
 
@@ -1393,7 +1439,8 @@ function broadcastJoint(objJoint){
 
 // catchup
 
-function checkCatchupLeftovers(){
+function checkCatchupLeftovers()
+{
 	db.query(
 		"SELECT 1 FROM hash_tree_balls \n\
 		UNION \n\
@@ -1405,31 +1452,43 @@ function checkCatchupLeftovers(){
 			console.log('have catchup leftovers from the previous run');
 			findNextPeer(null, function(ws){
 				console.log('will request leftovers from '+ws.peer);
-				if (!bCatchingUp && !bWaitingForCatchupChain)
-					requestCatchup(ws);
+				if ( ! bCatchingUp && ! bWaitingForCatchupChain )
+				{
+					requestCatchup( ws );
+				}
 			});
 		}
 	);
 }
 
-function requestCatchup(ws){
+function requestCatchup( ws )
+{
 	console.log("will request catchup from "+ws.peer);
 	eventBus.emit('catching_up_started');
-	catchup.purgeHandledBallsFromHashTree(db, function(){
-		db.query(
+	catchup.purgeHandledBallsFromHashTree( db, function()
+	{
+		db.query
+		(
 			"SELECT hash_tree_balls.unit FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL ORDER BY ball_index", 
-			function(tree_rows){ // leftovers from previous run
-				if (tree_rows.length > 0){
+			function( tree_rows )
+			{
+				//	leftovers from previous run
+				if ( tree_rows.length > 0 )
+				{
 					bCatchingUp = true;
-					console.log("will request balls found in hash tree");
-					requestNewMissingJoints(ws, tree_rows.map(function(tree_row){ return tree_row.unit; }));
-					waitTillHashTreeFullyProcessedAndRequestNext(ws);
+					console.log( "will request balls found in hash tree" );
+					requestNewMissingJoints( ws, tree_rows.map( function( tree_row ){ return tree_row.unit; } ) );
+					waitTillHashTreeFullyProcessedAndRequestNext( ws );
 					return;
 				}
-				db.query("SELECT 1 FROM catchup_chain_balls LIMIT 1", function(chain_rows){ // leftovers from previous run
-					if (chain_rows.length > 0){
+
+				db.query( "SELECT 1 FROM catchup_chain_balls LIMIT 1", function( chain_rows )
+				{
+					//	leftovers from previous run
+					if ( chain_rows.length > 0 )
+					{
 						bCatchingUp = true;
-						requestNextHashTree(ws);
+						requestNextHashTree( ws );
 						return;
 					}
 					// we are not switching to catching up mode until we receive a catchup chain - don't allow peers to throw us into 
@@ -1439,12 +1498,20 @@ function requestCatchup(ws){
 					// (will also reset the flag only after the response is fully processed)
 					bWaitingForCatchupChain = true;
 					
-					storage.readLastStableMcIndex(db, function(last_stable_mci){
-						storage.readLastMainChainIndex(function(last_known_mci){
-							myWitnesses.readMyWitnesses(function(arrWitnesses){
-								var params = {witnesses: arrWitnesses, last_stable_mci: last_stable_mci, last_known_mci: last_known_mci};
-								sendRequest(ws, 'catchup', params, true, handleCatchupChain);
-							}, 'wait');
+					storage.readLastStableMcIndex( db, function( last_stable_mci )
+					{
+						storage.readLastMainChainIndex(function(last_known_mci)
+						{
+							myWitnesses.readMyWitnesses(function(arrWitnesses)
+							{
+								var params =
+									{
+										witnesses: arrWitnesses,
+										last_stable_mci: last_stable_mci,
+										last_known_mci: last_known_mci
+									};
+								sendRequest( ws, 'catchup', params, true, handleCatchupChain );
+							}, 'wait' );
 						});
 					});
 				});
@@ -1481,65 +1548,104 @@ function handleCatchupChain(ws, request, response){
 
 // hash tree
 
-function requestNextHashTree(ws){
-	db.query("SELECT COUNT(1) AS count_left FROM catchup_chain_balls", function(rows){
-		if (rows.length > 0) {
-			eventBus.emit('catchup_balls_left', rows[0].count_left);
+function requestNextHashTree( ws )
+{
+	db.query( "SELECT COUNT(1) AS count_left FROM catchup_chain_balls", function( rows )
+	{
+		if ( rows.length > 0 )
+		{
+			eventBus.emit( 'catchup_balls_left', rows[0].count_left );
 		}
 	});
-	db.query("SELECT ball FROM catchup_chain_balls ORDER BY member_index LIMIT 2", function(rows){
+
+	db.query( "SELECT ball FROM catchup_chain_balls ORDER BY member_index LIMIT 2", function( rows )
+	{
 		if (rows.length === 0)
 			return comeOnline();
-		if (rows.length === 1){
-			db.query("DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function(){
+
+		/**
+		 *	POW COMMENT
+		 *	@author		XING
+		 *	@datetime	2018/8/3 5:55 PM
+		 *	@description	we can not build hash tree( a pair of units from-to )
+		 */
+		if ( rows.length === 1 )
+		{
+			db.query( "DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function()
+			{
 				comeOnline();
 			});
 			return;
 		}
-		var from_ball = rows[0].ball;
-		var to_ball = rows[1].ball;
+
+		var from_ball	= rows[0].ball;
+		var to_ball	= rows[1].ball;
 		
-		// don't send duplicate requests
-		for (var tag in ws.assocPendingRequests)
-			if (ws.assocPendingRequests[tag].request.command === 'get_hash_tree'){
-				console.log("already requested hash tree from this peer");
+		//	don't send duplicate requests
+		for ( var tag in ws.assocPendingRequests )
+		{
+			if ( ws.assocPendingRequests[ tag ].request.command === 'get_hash_tree' )
+			{
+				console.log( "already requested hash tree from this peer" );
 				return;
 			}
-		sendRequest(ws, 'get_hash_tree', {from_ball: from_ball, to_ball: to_ball}, true, handleHashTree);
+		}
+
+		sendRequest( ws, 'get_hash_tree', { from_ball: from_ball, to_ball: to_ball }, true, handleHashTree );
 	});
 }
 
-function handleHashTree(ws, request, response){
-	if (response.error){
+function handleHashTree( ws, request, response )
+{
+	if ( response.error )
+	{
 		console.log('get_hash_tree got error response: '+response.error);
 		waitTillHashTreeFullyProcessedAndRequestNext(ws); // after 1 sec, it'll request the same hash tree, likely from another peer
 		return;
 	}
+
 	var hashTree = response;
-	catchup.processHashTree(hashTree.balls, {
-		ifError: function(error){
-			sendError(ws, error);
-			waitTillHashTreeFullyProcessedAndRequestNext(ws); // after 1 sec, it'll request the same hash tree, likely from another peer
+	catchup.processHashTree( hashTree.balls,
+	{
+		ifError: function( error )
+		{
+			sendError( ws, error );
+			waitTillHashTreeFullyProcessedAndRequestNext( ws );	//	after 1 sec, it'll request the same hash tree, likely from another peer
 		},
-		ifOk: function(){
-			requestNewMissingJoints(ws, hashTree.balls.map(function(objBall){ return objBall.unit; }));
-			waitTillHashTreeFullyProcessedAndRequestNext(ws);
+		ifOk: function()
+		{
+			requestNewMissingJoints( ws, hashTree.balls.map( function( objBall ){ return objBall.unit; }) );
+			waitTillHashTreeFullyProcessedAndRequestNext( ws );
 		}
 	});
 }
 
-function waitTillHashTreeFullyProcessedAndRequestNext(ws){
-	setTimeout(function(){
-		db.query("SELECT 1 FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL LIMIT 1", function(rows){
-			if (rows.length === 0){
-				findNextPeer(ws, function(next_ws){
-					requestNextHashTree(next_ws);
+function waitTillHashTreeFullyProcessedAndRequestNext( ws )
+{
+	setTimeout
+	(
+		function()
+		{
+			db.query
+			(
+				"SELECT 1 FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL LIMIT 1",
+				function( rows )
+				{
+					if ( rows.length === 0 )
+					{
+						findNextPeer( ws, function( next_ws )
+						{
+							requestNextHashTree( next_ws );
+						});
+					}
+					else
+					{
+						waitTillHashTreeFullyProcessedAndRequestNext( ws );
+					}
 				});
-			}
-			else
-				waitTillHashTreeFullyProcessedAndRequestNext(ws);
-		});
-	}, 1000);
+		},
+		1000
+	);
 }
 
 
@@ -2258,7 +2364,7 @@ function handleRequest(ws, tag, command, params){
 				}
 			);
 			break;
-			
+
 		case 'get_hash_tree':
 			var hashTreeRequest = params;
 
