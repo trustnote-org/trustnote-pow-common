@@ -32,3 +32,25 @@ exports.MAX_DATA_FEED_VALUE_LENGTH = 64;
 exports.MAX_AUTHENTIFIER_LENGTH = 4096;
 exports.MAX_CAP = 9e15;
 exports.MAX_COMPLEXITY = 100;
+
+exports.ROUND_COINBASE = [217.59,
+                        176.74,
+                        156.49,
+                        143.55,
+                        134.26,
+                        127.11,
+                        121.37,
+                        116.60,
+                        112.55,
+                        109.05,
+                        105.98,
+                        103.25,
+                        100.80,
+                        98.58,
+                        96.56,
+                        94.71,
+                        93.00,	
+                        91.42,	
+                        89.95,	
+                        88.58,	
+                        0];

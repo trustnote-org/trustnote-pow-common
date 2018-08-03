@@ -44,10 +44,15 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 		return;
 	}
 	//profiler.start();
+	// pow modi
+	// conn.query(
+	// 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, \n\
+	// 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
+	// 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 	conn.query(
-		"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, \n\
-			content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
-		FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
+		 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, round_index, pow_type, \n\
+		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
+		 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 		[unit], 
 		function(unit_rows){
 			if (unit_rows.length === 0){
@@ -256,6 +261,18 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 														objMessage.payload.choices = ch_rows.map(function(choice_row){ return choice_row.choice; });
 														addSpendProofs();
 													});
+												}
+											);
+											break;
+
+										case "pow_equihash":   // pow add
+											conn.query(
+												"SELECT seed, difficulty, solution FROM pow WHERE unit=?", [unit], 
+												function(pow_rows){
+													if (pow_rows.length !== 1)
+														throw Error("no pow_equihash or too many?");
+													objMessage.payload = {seed: pow_rows[0].seed, difficulty: pow_rows[0].difficulty, solution: pow_rows[0].solution};
+													addSpendProofs();
 												}
 											);
 											break;

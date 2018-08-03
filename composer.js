@@ -365,6 +365,51 @@ function composeAssetAttestorsJoint(from_address, asset, arrNewAttestors, signer
 	composeContentJoint(from_address, "asset_attestors", {asset: asset, attestors: arrNewAttestors}, signer, callbacks);
 }
 
+// pow add pow joint
+function composePowJoint(from_address, round_index, seed, difficulty, solution, signer, callbacks){
+	var payload = {seed: seed, difficulty: difficulty, solution: solution}
+	var objMessage = {
+		app: "pow_equihash",
+		payload_location: "inline",
+		payload_hash: objectHash.getBase64Hash(payload),
+		payload: payload
+	};
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		messages: [objMessage], 
+		round_index: round_index,
+		pow_type: 1,
+		signer: signer, 
+		callbacks: callbacks
+	});
+}
+
+// pow add trustme joint
+function composeTrustMEJoint(from_address, round_index, signer, callbacks){
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		round_index: round_index,
+		pow_type: 2,
+		signer: signer, 
+		callbacks: callbacks
+	});
+}
+
+// pow add Coinbase joint
+function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer, callbacks){
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		inputs = [{type: "coinbase", amount: coinbase_amount, address: from_address];
+		round_index: round_index,
+		pow_type: 3,
+		signer: signer, 
+		callbacks: callbacks
+	});
+}
+
 /*
 	params.signing_addresses must sign the message but they do not necessarily pay 
 	params.paying_addresses pay for byte outputs and commissions
@@ -475,6 +520,12 @@ function composeJoint(params){
 		messages: arrMessages,
 		authors: []
 	};
+	// pow add 
+	if(params.round_index){
+		objUnit.round_index = params.round_index;
+		objUnit.pow_type = params.pow_type;
+	}
+
 	var objJoint = {unit: objUnit};
 	if (params.earned_headers_commission_recipients) // it needn't be already sorted by address, we'll sort it now
 		objUnit.earned_headers_commission_recipients = params.earned_headers_commission_recipients.concat().sort(function(a,b){

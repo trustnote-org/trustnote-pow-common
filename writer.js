@@ -41,6 +41,11 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			values += ",?,"+conn.getFromUnixTime("?");
 			params.push(objUnit.main_chain_index, objUnit.timestamp);
 		}
+		if (objUnit.round_index){  // pow add
+			fields += ", round_index, pow_type";
+			values += ",?,?");
+			params.push(objUnit.round_index, objUnit.pow_type);
+		}
 		conn.addQuery(arrQueries, "INSERT INTO units ("+fields+") VALUES ("+values+")", params);
 		
 		if (objJoint.ball && !conf.bLight){
@@ -112,7 +117,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 				var text_payload = null;
 				if (message.app === "text")
 					text_payload = message.payload;
-				else if (message.app === "data" || message.app === "profile" || message.app === "attestation" || message.app === "definition_template")
+				else if (message.app === "data" || message.app === "profile" || message.app === "attestation" || message.app === "definition_template" ||
+						message.app === "pow_equihash" || message.app === "trustme" || message.app === "coinbase")
 					text_payload = JSON.stringify(message.payload);
 				
 				conn.addQuery(arrQueries, "INSERT INTO messages \n\
@@ -140,6 +146,11 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							var vote = message.payload;
 							conn.addQuery(arrQueries, "INSERT INTO votes (unit, message_index, poll_unit, choice) VALUES (?,?,?,?)", 
 								[objUnit.unit, i, vote.unit, vote.choice]);
+							break;
+						case "pow_equihash":  // pow add
+							var powEquihash = message.payload;
+							conn.addQuery(arrQueries, "INSERT INTO pow (unit, seed, difficulty, solution) VALUES (?,?,?,?)", 
+								[objUnit.unit, powEquihash.seed, powEquihash.difficulty, powEquihash.solution]);
 							break;
 						case "attestation":
 							var attestation = message.payload;
@@ -268,7 +279,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							var to_main_chain_index = (type === "witnessing" || type === "headers_commission") ? input.to_main_chain_index : null;
 							
 							var determineInputAddress = function(handleAddress){
-								if (type === "headers_commission" || type === "witnessing" || type === "issue")
+								//if (type === "headers_commission" || type === "witnessing" || type === "issue")  //pow modi
+								if (type === "headers_commission" || type === "witnessing" || type === "issue" || type === "coinbase")
 									return handleAddress((arrAuthorAddresses.length === 1) ? arrAuthorAddresses[0] : input.address);
 								// hereafter, transfer
 								if (arrAuthorAddresses.length === 1)
