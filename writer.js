@@ -328,24 +328,32 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		}
 				
 		function updateBestParent(cb){
+			// POW :modi remove compatible check
 			// choose best parent among compatible parents only
+			// conn.query(
+			// 	"SELECT unit \n\
+			// 	FROM units AS parent_units \n\
+			// 	WHERE unit IN(?) \n\
+			// 		AND (witness_list_unit=? OR ( \n\
+			// 			SELECT COUNT(*) \n\
+			// 			FROM unit_witnesses \n\
+			// 			JOIN unit_witnesses AS parent_witnesses USING(address) \n\
+			// 			WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) \n\
+			// 				AND unit_witnesses.unit IN(?, ?) \n\
+			// 		)>=?) \n\
+			// 	ORDER BY witnessed_level DESC, \n\
+			// 		level-witnessed_level ASC, \n\
+			// 		unit ASC \n\
+			// 	LIMIT 1", 
 			conn.query(
 				"SELECT unit \n\
-				FROM units AS parent_units \n\
+				FROM units  \n\
 				WHERE unit IN(?) \n\
-					AND (witness_list_unit=? OR ( \n\
-						SELECT COUNT(*) \n\
-						FROM unit_witnesses \n\
-						JOIN unit_witnesses AS parent_witnesses USING(address) \n\
-						WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) \n\
-							AND unit_witnesses.unit IN(?, ?) \n\
-					)>=?) \n\
 				ORDER BY witnessed_level DESC, \n\
 					level-witnessed_level ASC, \n\
 					unit ASC \n\
 				LIMIT 1", 
-				[objUnit.parent_units, objUnit.witness_list_unit, 
-				objUnit.unit, objUnit.witness_list_unit, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
+				[objUnit.parent_units], 
 				function(rows){
 					if (rows.length !== 1)
 						throw Error("zero or more than one best parent unit?");

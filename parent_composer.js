@@ -13,25 +13,33 @@ function pickParentUnits(conn, arrWitnesses, onDone){
 	// test creating bad units
 	//var cond = bDeep ? "is_on_main_chain=1" : "is_free=0 AND main_chain_index=1420";
 	//var order_and_limit = bDeep ? "ORDER BY main_chain_index DESC LIMIT 1" : "ORDER BY unit LIMIT 1";
-	
+	// POW modi:
+	// conn.query(
+	// 	"SELECT \n\
+	// 		unit, version, alt, ( \n\
+	// 			SELECT COUNT(*) \n\
+	// 			FROM unit_witnesses \n\
+	// 			WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
+	// 		) AS count_matching_witnesses \n\
+	// 	FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
+	// 	LEFT JOIN archived_joints USING(unit) \n\
+	// 	WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
+	//  [arrWitnesses, constants.MAX_PARENTS_PER_UNIT], 
 	conn.query(
 		"SELECT \n\
-			unit, version, alt, ( \n\
-				SELECT COUNT(*) \n\
-				FROM unit_witnesses \n\
-				WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-			) AS count_matching_witnesses \n\
+			unit, version, alt \n\
 		FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
 		LEFT JOIN archived_joints USING(unit) \n\
 		WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
 		// exclude potential parents that were archived and then received again
-		[arrWitnesses, constants.MAX_PARENTS_PER_UNIT], 
+		[ constants.MAX_PARENTS_PER_UNIT], 
 		function(rows){
 			if (rows.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
 				throw Error('wrong network');
-			var count_required_matches = constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS;
+			//var count_required_matches = constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS;
 			// we need at least one compatible parent, otherwise go deep
-			if (rows.filter(function(row){ return (row.count_matching_witnesses >= count_required_matches); }).length === 0)
+			//if (rows.filter(function(row){ return (row.count_matching_witnesses >= count_required_matches); }).length === 0)
+			if (rows.length === 0)
 				return pickDeepParentUnits(conn, arrWitnesses, onDone);
 			onDone(null, rows.map(function(row){ return row.unit; }));
 		}
@@ -44,17 +52,23 @@ function pickDeepParentUnits(conn, arrWitnesses, onDone){
 	// fixed: an attacker could cover all free compatible units with his own incompatible ones, then those that were not on MC will be never included
 	//var cond = bDeep ? "is_on_main_chain=1" : "is_free=1";
 	
+	// conn.query(
+	// 	"SELECT unit \n\
+	// 	FROM units \n\
+	// 	WHERE +sequence='good' \n\
+	// 		AND ( \n\
+	// 			SELECT COUNT(*) \n\
+	// 			FROM unit_witnesses \n\
+	// 			WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
+	// 		)>=? \n\
+	// 	ORDER BY main_chain_index DESC LIMIT 1", 
+	//  [arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT unit \n\
 		FROM units \n\
 		WHERE +sequence='good' \n\
-			AND ( \n\
-				SELECT COUNT(*) \n\
-				FROM unit_witnesses \n\
-				WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-			)>=? \n\
 		ORDER BY main_chain_index DESC LIMIT 1", 
-		[arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
+		[], 
 		function(rows){
 			if (rows.length === 0)
 				return onDone("failed to find compatible parents: no deep units");
@@ -64,15 +78,21 @@ function pickDeepParentUnits(conn, arrWitnesses, onDone){
 }
 
 function findLastStableMcBall(conn, arrWitnesses, onDone){
+	//POW modi
+	// conn.query(
+	// 	"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
+	// 	WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND ( \n\
+	// 		SELECT COUNT(*) \n\
+	// 		FROM unit_witnesses \n\
+	// 		WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
+	// 	)>=? \n\
+	// 	ORDER BY main_chain_index DESC LIMIT 1", 
+	//  [arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
 		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND ( \n\
-			SELECT COUNT(*) \n\
-			FROM unit_witnesses \n\
-			WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-		)>=? \n\
 		ORDER BY main_chain_index DESC LIMIT 1", 
-		[arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
+		[], 
 		function(rows){
 			if (rows.length === 0)
 				return onDone("failed to find last stable ball");

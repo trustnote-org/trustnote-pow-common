@@ -1223,22 +1223,32 @@ function filterNewOrUnstableUnits(arrUnits, handleFilteredUnits){
 
 // for unit that is not saved to the db yet
 function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
+	// POW modi remove witness compatitiblity
 	// choose best parent among compatible parents only
+	// conn.query(
+	// 	"SELECT unit \n\
+	// 	FROM units AS parent_units \n\
+	// 	WHERE unit IN(?) \n\
+	// 		AND (witness_list_unit=? OR ( \n\
+	// 			SELECT COUNT(*) \n\
+	// 			FROM unit_witnesses AS parent_witnesses \n\
+	// 			WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) AND address IN(?) \n\
+	// 		)>=?) \n\
+	// 	ORDER BY witnessed_level DESC, \n\
+	// 		level-witnessed_level ASC, \n\
+	// 		unit ASC \n\
+	// 	LIMIT 1", 
+	// 	[objUnit.parent_units, objUnit.witness_list_unit, 
+	// 	arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT unit \n\
-		FROM units AS parent_units \n\
+		FROM units  \n\
 		WHERE unit IN(?) \n\
-			AND (witness_list_unit=? OR ( \n\
-				SELECT COUNT(*) \n\
-				FROM unit_witnesses AS parent_witnesses \n\
-				WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) AND address IN(?) \n\
-			)>=?) \n\
 		ORDER BY witnessed_level DESC, \n\
 			level-witnessed_level ASC, \n\
 			unit ASC \n\
 		LIMIT 1", 
-		[objUnit.parent_units, objUnit.witness_list_unit, 
-		arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
+		[objUnit.parent_units], 
 		function(rows){
 			if (rows.length !== 1)
 				return handleBestParent(null);
@@ -1248,31 +1258,33 @@ function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
 	);
 }
 
-function determineIfHasWitnessListMutationsAlongMc(conn, objUnit, last_ball_unit, arrWitnesses, handleResult){
-	if (!objUnit.parent_units) // genesis
-		return handleResult();
-	buildListOfMcUnitsWithPotentiallyDifferentWitnesslists(conn, objUnit, last_ball_unit, arrWitnesses, function(bHasBestParent, arrMcUnits){
-		if (!bHasBestParent)
-			return handleResult("no compatible best parent");
-		console.log("###### MC units ", arrMcUnits);
-		if (arrMcUnits.length === 0)
-			return handleResult();
-		conn.query(
-			"SELECT units.unit, COUNT(*) AS count_matching_witnesses \n\
-			FROM units CROSS JOIN unit_witnesses ON (units.unit=unit_witnesses.unit OR units.witness_list_unit=unit_witnesses.unit) AND address IN(?) \n\
-			WHERE units.unit IN(?) \n\
-			GROUP BY units.unit \n\
-			HAVING count_matching_witnesses<?",
-			[arrWitnesses, arrMcUnits, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
-			function(rows){
-				console.log(rows);
-				if (rows.length > 0)
-					return handleResult("too many ("+(constants.COUNT_WITNESSES - rows[0].count_matching_witnesses)+") witness list mutations relative to MC unit "+rows[0].unit);
-				handleResult();
-			}
-		);
-	});
-}
+// POW modi : we donn't need to check witness mutation in pow mode
+// this method is obsolete
+// function determineIfHasWitnessListMutationsAlongMc(conn, objUnit, last_ball_unit, arrWitnesses, handleResult){
+// 	if (!objUnit.parent_units) // genesis
+// 		return handleResult();
+// 	buildListOfMcUnitsWithPotentiallyDifferentWitnesslists(conn, objUnit, last_ball_unit, arrWitnesses, function(bHasBestParent, arrMcUnits){
+// 		if (!bHasBestParent)
+// 			return handleResult("no compatible best parent");
+// 		console.log("###### MC units ", arrMcUnits);
+// 		if (arrMcUnits.length === 0)
+// 			return handleResult();
+// 		conn.query(
+// 			"SELECT units.unit, COUNT(*) AS count_matching_witnesses \n\
+// 			FROM units CROSS JOIN unit_witnesses ON (units.unit=unit_witnesses.unit OR units.witness_list_unit=unit_witnesses.unit) AND address IN(?) \n\
+// 			WHERE units.unit IN(?) \n\
+// 			GROUP BY units.unit \n\
+// 			HAVING count_matching_witnesses<?",
+// 			[arrWitnesses, arrMcUnits, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
+// 			function(rows){
+// 				console.log(rows);
+// 				if (rows.length > 0)
+// 					return handleResult("too many ("+(constants.COUNT_WITNESSES - rows[0].count_matching_witnesses)+") witness list mutations relative to MC unit "+rows[0].unit);
+// 				handleResult();
+// 			}
+// 		);
+// 	});
+// }
 
 // the MC for this function is the MC built from this unit, not our current MC
 function buildListOfMcUnitsWithPotentiallyDifferentWitnesslists(conn, objUnit, last_ball_unit, arrWitnesses, handleList){

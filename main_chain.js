@@ -332,17 +332,25 @@ function updateMainChain(conn, last_unit, onDone){
 									// Compose a set S of units that increase WL, that is their own WL is greater than that of every parent. 
 									// In this set, find max L. Alt WL will never reach it. If min_mc_wl > L, next MC unit is stable.
 									// Also filter the set S to include only those units that are conformant with the last stable MC unit.
+									// POW modi:
+									// conn.query(
+									// 	"SELECT MAX(units.level) AS max_alt_level \n\
+									// 	FROM units \n\
+									// 	LEFT JOIN parenthoods ON units.unit=child_unit \n\
+									// 	LEFT JOIN units AS punits ON parent_unit=punits.unit AND punits.witnessed_level >= units.witnessed_level \n\
+									// 	WHERE units.unit IN(?) AND punits.unit IS NULL AND ( \n\
+									// 		SELECT COUNT(*) \n\
+									// 		FROM unit_witnesses \n\
+									// 		WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND unit_witnesses.address IN(?) \n\
+									// 	)>=?",
+									// 	[arrAltBestChildren, arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
 									conn.query(
 										"SELECT MAX(units.level) AS max_alt_level \n\
 										FROM units \n\
 										LEFT JOIN parenthoods ON units.unit=child_unit \n\
 										LEFT JOIN units AS punits ON parent_unit=punits.unit AND punits.witnessed_level >= units.witnessed_level \n\
-										WHERE units.unit IN(?) AND punits.unit IS NULL AND ( \n\
-											SELECT COUNT(*) \n\
-											FROM unit_witnesses \n\
-											WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND unit_witnesses.address IN(?) \n\
-										)>=?",
-										[arrAltBestChildren, arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
+										WHERE units.unit IN(?) AND punits.unit IS NULL",
+										[arrAltBestChildren],
 										function(max_alt_rows){
 											if (max_alt_rows.length !== 1)
 												throw Error("not a single max alt level");
@@ -479,7 +487,7 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 								var row = rows[0];
 								if (row.count > 0 && row.witnessed_level < min_mc_wl)
 									min_mc_wl = row.witnessed_level;
-								count += row.count;
+								count += row.count;  // this is a bug, should count only unique witnesses
 								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(row.best_parent_unit) : handleMinMcWl(min_mc_wl);
 							}
 						);
@@ -623,17 +631,26 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 							// Compose a set S of units that increase WL, that is their own WL is greater than that of every parent. 
 							// In this set, find max L. Alt WL will never reach it. If min_mc_wl > L, next MC unit is stable.
 							// Also filter the set S to include only those units that are conformant with the last stable MC unit.
+							
+							// POW modi:
+							// conn.query(
+							// 	"SELECT MAX(units.level) AS max_alt_level \n\
+							// 	FROM units \n\
+							// 	LEFT JOIN parenthoods ON units.unit=child_unit \n\
+							// 	LEFT JOIN units AS punits ON parent_unit=punits.unit AND punits.witnessed_level >= units.witnessed_level \n\
+							// 	WHERE units.unit IN(?) AND punits.unit IS NULL AND ( \n\
+							// 		SELECT COUNT(*) \n\
+							// 		FROM unit_witnesses \n\
+							// 		WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND unit_witnesses.address IN(?) \n\
+							// 	)>=?",
+							// [arrAltBestChildren, arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
 							conn.query(
 								"SELECT MAX(units.level) AS max_alt_level \n\
 								FROM units \n\
 								LEFT JOIN parenthoods ON units.unit=child_unit \n\
 								LEFT JOIN units AS punits ON parent_unit=punits.unit AND punits.witnessed_level >= units.witnessed_level \n\
-								WHERE units.unit IN(?) AND punits.unit IS NULL AND ( \n\
-									SELECT COUNT(*) \n\
-									FROM unit_witnesses \n\
-									WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND unit_witnesses.address IN(?) \n\
-								)>=?",
-								[arrAltBestChildren, arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS],
+								WHERE units.unit IN(?) AND punits.unit IS NULL",
+								[arrAltBestChildren],
 								function(max_alt_rows){
 									if (max_alt_rows.length !== 1)
 										throw Error("not a single max alt level");

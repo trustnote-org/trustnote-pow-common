@@ -2,7 +2,6 @@
 "use strict";
 
 exports.COUNT_WITNESSES = 12;
-exports.MAX_WITNESS_LIST_MUTATIONS = 1;
 exports.TOTAL_WHITEBYTES = 5e14;
 exports.MAJORITY_OF_WITNESSES = (exports.COUNT_WITNESSES%2===0) ? (exports.COUNT_WITNESSES/2+1) : Math.ceil(exports.COUNT_WITNESSES/2);
 exports.COUNT_MC_BALLS_FOR_PAID_WITNESSING = 100;
