@@ -1940,6 +1940,7 @@ function updateLinkProofsOfPrivateChain(arrPrivateElements, unit, message_index,
 }
 
 function initWitnessesIfNecessary(ws, onDone){
+	/* pow wallet modified version
 	onDone = onDone || function(){};
 	myWitnesses.readMyWitnesses(function(arrWitnesses){
 		if (arrWitnesses.length > 0) // already have witnesses
@@ -1952,6 +1953,7 @@ function initWitnessesIfNecessary(ws, onDone){
 			myWitnesses.insertWitnesses(arrWitnesses, onDone);
 		});
 	}, 'ignore');
+	*/
 }
 
 
