@@ -705,35 +705,57 @@ function rerequestLostJoints(){
 	});
 }
 
-function requestNewMissingJoints(ws, arrUnits){
+function requestNewMissingJoints( ws, arrUnits )
+{
 	var arrNewUnits = [];
-	async.eachSeries(
+	async.eachSeries
+	(
 		arrUnits,
-		function(unit, cb){
-			if (assocUnitsInWork[unit])
+		function( unit, cb )
+		{
+			if ( assocUnitsInWork[unit] )
 				return cb();
-			if (havePendingJointRequest(unit)){
+
+			if ( havePendingJointRequest(unit) )
+			{
 				console.log("unit "+unit+" was already requested");
 				return cb();
 			}
-			joint_storage.checkIfNewUnit(unit, {
-				ifNew: function(){
-					arrNewUnits.push(unit);
-					cb();
-				},
-				ifKnown: function(){console.log("known"); cb();}, // it has just been handled
-				ifKnownUnverified: function(){console.log("known unverified"); cb();}, // I was already waiting for it
-				ifKnownBad: function(error){
-					throw Error("known bad "+unit+": "+error);
-				}
-			});
+
+			/**
+			 *	POW COMMENT
+			 *	@author		XING
+			 *	@datetime	2018/8/3 5:55 PM
+			 *	@description
+			 *	SELECT FROM
+			 *		units,
+			 *		unhandled_joints,
+			 *		known_bad_joints.
+			 */
+			joint_storage.checkIfNewUnit( unit,
+				{
+					ifNew: function()
+					{
+						arrNewUnits.push(unit);
+						cb();
+					},
+					ifKnown: function(){console.log("known"); cb();}, // it has just been handled
+					ifKnownUnverified: function(){console.log("known unverified"); cb();}, // I was already waiting for it
+					ifKnownBad: function(error)
+					{
+						throw Error("known bad "+unit+": "+error);
+					}
+				});
 		},
-		function(){
+		function()
+		{
 			//console.log(arrNewUnits.length+" of "+arrUnits.length+" left", assocUnitsInWork);
 			// filter again as something could have changed each time we were paused in checkIfNewUnit
-			arrNewUnits = arrNewUnits.filter(function(unit){ return (!assocUnitsInWork[unit] && !havePendingJointRequest(unit)); });
-			if (arrNewUnits.length > 0)
-				requestJoints(ws, arrNewUnits);
+			arrNewUnits = arrNewUnits.filter( function( unit ){ return ( ! assocUnitsInWork[ unit ] && ! havePendingJointRequest( unit ) ); });
+			if ( arrNewUnits.length > 0 )
+			{
+				requestJoints( ws, arrNewUnits );
+			}
 		}
 	);
 }
