@@ -218,7 +218,7 @@ function _loadEquihashLibrary()
 {
 	if ( null === _objEquihashLibrary )
 	{
-		_objEquihashLibrary = ffi.Library
+		_objEquihashLibrary = _ffi.Library
 		(
 			`${ __dirname }/libs/libequihash.so`,
 			{
