@@ -1,4 +1,7 @@
+package-lock.json
+
 *.log
+
 
 # Coverage directory used by tools like istanbul
 coverage
