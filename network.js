@@ -2218,32 +2218,88 @@ function handleRequest(ws, tag, command, params){
 				error ? sendErrorResponse(ws, tag, error) : sendResponse(ws, tag, 'accepted');
 			});
 			break;
-			
+
 		case 'catchup':
 			var catchupRequest = params;
-			catchup.prepareCatchupChain(catchupRequest, {
-				ifError: function(error){
-					sendErrorResponse(ws, tag, error);
-				},
-				ifOk: function(objCatchupChain){
-					sendResponse(ws, tag, objCatchupChain);
+
+			/**
+			 *	POW ADD
+			 *	@author		XING
+			 *	@datetime	2018/8/3 11:49 AM
+			 *	@description	Added mutex lock 'catchup_request' for request 'catchup'
+			 */
+			mutex.lock
+			(
+				[ 'catchup_request' ],
+				function( unlock )
+				{
+					if ( ! ws || ws.readyState !== ws.OPEN )
+					{
+						//	may be already gone when we receive the lock
+						return process.nextTick( unlock );
+					}
+
+					catchup.prepareCatchupChain
+					(
+						catchupRequest,
+						{
+							ifError : function( error )
+							{
+								sendErrorResponse( ws, tag, error );
+								unlock();
+							},
+							ifOk : function( objCatchupChain )
+							{
+								sendResponse( ws, tag, objCatchupChain );
+								unlock();
+							}
+						}
+					);
 				}
-			});
+			);
 			break;
-			
+
 		case 'get_hash_tree':
 			var hashTreeRequest = params;
-			catchup.readHashTree(hashTreeRequest, {
-				ifError: function(error){
-					sendErrorResponse(ws, tag, error);
-				},
-				ifOk: function(arrBalls){
-					// we have to wrap arrBalls into an object because the peer will check .error property first
-					sendResponse(ws, tag, {balls: arrBalls});
+
+			/**
+			 *	POW ADD
+			 *	@author		XING
+			 *	@datetime	2018/8/3 11:50 AM
+			 *	@description	Added mutex lock 'get_hash_tree_request' for request 'get_hash_tree'
+			 */
+			mutex.lock
+			(
+				[ 'get_hash_tree_request' ],
+				function( unlock )
+				{
+					if ( ! ws || ws.readyState !== ws.OPEN )
+					{
+						//	may be already gone when we receive the lock
+						return process.nextTick( unlock );
+					}
+
+					catchup.readHashTree
+					(
+						hashTreeRequest,
+						{
+							ifError : function( error )
+							{
+								sendErrorResponse( ws, tag, error );
+								unlock();
+							},
+							ifOk : function( arrBalls )
+							{
+								// we have to wrap arrBalls into an object because the peer will check .error property first
+								sendResponse( ws, tag, { balls : arrBalls } );
+								unlock();
+							}
+						}
+					);
 				}
-			});
+			);
 			break;
-			
+
 		case 'get_peers':
 			var arrPeerUrls = arrOutboundPeers.map(function(ws){ return ws.peer; });
 			// empty array is ok
