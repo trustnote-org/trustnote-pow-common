@@ -163,7 +163,8 @@ function addSharedAddressesOfWallet(arrAddressList, handleAddedSharedAddresses){
 
 function prepareHistory(historyRequest, callbacks){
 	var arrKnownStableUnits = historyRequest.known_stable_units;
-	var arrWitnesses = historyRequest.witnesses;
+	//pow wallet modified version
+	// var arrWitnesses = historyRequest.witnesses;
 	var arrAddresses = historyRequest.addresses;
 	var arrRequestedJoints = historyRequest.requested_joints;
 
@@ -177,8 +178,8 @@ function prepareHistory(historyRequest, callbacks){
 	}
 	if (arrRequestedJoints && !ValidationUtils.isNonemptyArray(arrRequestedJoints))
 		return callbacks.ifError("no requested joints");
-	if (!ValidationUtils.isArrayOfLength(arrWitnesses, constants.COUNT_WITNESSES))
-		return callbacks.ifError("wrong number of witnesses");
+	// if (!ValidationUtils.isArrayOfLength(arrWitnesses, constants.COUNT_WITNESSES))
+	// 	return callbacks.ifError("wrong number of witnesses");
 		
 	var assocKnownStableUnits = {};
 	if (arrKnownStableUnits)
