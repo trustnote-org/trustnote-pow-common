@@ -12,26 +12,34 @@ var breadcrumbs = require('./breadcrumbs.js');
 
 
 
-function checkIfNewUnit(unit, callbacks) {
-	if (storage.isKnownUnit(unit))
+function checkIfNewUnit( unit, callbacks )
+{
+	if ( storage.isKnownUnit(unit) )
 		return callbacks.ifKnown();
-	db.query("SELECT 1 FROM units WHERE unit=?", [unit], function(rows){
+
+	db.query( "SELECT 1 FROM units WHERE unit=?", [unit], function(rows)
+	{
 		if (rows.length > 0){
 			storage.setUnitIsKnown(unit);
 			return callbacks.ifKnown();
 		}
-		db.query("SELECT 1 FROM unhandled_joints WHERE unit=?", [unit], function(unhandled_rows){
+		db.query( "SELECT 1 FROM unhandled_joints WHERE unit=?", [unit], function( unhandled_rows )
+		{
 			if (unhandled_rows.length > 0)
 				return callbacks.ifKnownUnverified();
-			db.query("SELECT error FROM known_bad_joints WHERE unit=?", [unit], function(bad_rows){
-				(bad_rows.length === 0) ? callbacks.ifNew() : callbacks.ifKnownBad(bad_rows[0].error);
+			db.query( "SELECT error FROM known_bad_joints WHERE unit=?", [unit], function( bad_rows )
+			{
+				( bad_rows.length === 0 ) ?
+					callbacks.ifNew()
+					: callbacks.ifKnownBad( bad_rows[ 0 ].error );
 			});
 		});
 	});
 }
 
-function checkIfNewJoint(objJoint, callbacks) {
-	checkIfNewUnit(objJoint.unit.unit, {
+function checkIfNewJoint(objJoint, callbacks)
+{
+	checkIfNewUnit( objJoint.unit.unit, {
 		ifKnown: callbacks.ifKnown,
 		ifKnownUnverified: callbacks.ifKnownUnverified,
 		ifKnownBad: callbacks.ifKnownBad,
@@ -59,18 +67,22 @@ function removeUnhandledJointAndDependencies(unit, onDone){
 	});
 }
 
-function saveUnhandledJointAndDependencies(objJoint, arrMissingParentUnits, peer, onDone){
-	db.takeConnectionFromPool(function(conn){
+function saveUnhandledJointAndDependencies( objJoint, arrMissingParentUnits, peer, onDone )
+{
+	db.takeConnectionFromPool(function(conn)
+	{
 		var unit = objJoint.unit.unit;
 		var sql = "INSERT "+conn.getIgnore()+" INTO dependencies (unit, depends_on_unit) VALUES " + arrMissingParentUnits.map(function(missing_unit){
 			return "("+conn.escape(unit)+", "+conn.escape(missing_unit)+")";
 		}).join(", ");
 		var arrQueries = [];
+
 		conn.addQuery(arrQueries, "BEGIN");
 		conn.addQuery(arrQueries, "INSERT INTO unhandled_joints (unit, json, peer) VALUES (?, ?, ?)", [unit, JSON.stringify(objJoint), peer]);
 		conn.addQuery(arrQueries, sql);
 		conn.addQuery(arrQueries, "COMMIT");
-		async.series(arrQueries, function(){
+		async.series(arrQueries, function()
+		{
 			conn.release();
 			if (onDone)
 				onDone(); 
@@ -79,14 +91,20 @@ function saveUnhandledJointAndDependencies(objJoint, arrMissingParentUnits, peer
 }
 
 
-// handleDependentJoint called for each dependent unit
-function readDependentJointsThatAreReady(unit, handleDependentJoint){
-	//console.log("readDependentJointsThatAreReady "+unit);
-	var t=Date.now();
-	var from = unit ? "FROM dependencies AS src_deps JOIN dependencies USING(unit)" : "FROM dependencies";
-	var where = unit ? "WHERE src_deps.depends_on_unit="+db.escape(unit) : "";
-	mutex.lock(["dependencies"], function(unlock){
-		db.query(
+//
+//	handleDependentJoint called for each dependent unit
+//
+function readDependentJointsThatAreReady( unit, handleDependentJoint )
+{
+	//	console.log("readDependentJointsThatAreReady "+unit);
+	var t		= Date.now();
+	var from	= unit ? "FROM dependencies AS src_deps JOIN dependencies USING(unit)" : "FROM dependencies";
+	var where	= unit ? "WHERE src_deps.depends_on_unit=" + db.escape( unit ) : "";
+
+	mutex.lock( [ "dependencies" ], function( unlock )
+	{
+		db.query
+		(
 			"SELECT dependencies.unit, unhandled_joints.unit AS unit_for_json, \n\
 				SUM(CASE WHEN units.unit IS NULL THEN 1 ELSE 0 END) AS count_missing_parents \n\
 			"+from+" \n\
@@ -96,16 +114,32 @@ function readDependentJointsThatAreReady(unit, handleDependentJoint){
 			GROUP BY dependencies.unit \n\
 			HAVING count_missing_parents=0 \n\
 			ORDER BY NULL", 
-			function(rows){
+			function( rows )
+			{
 				//console.log(rows.length+" joints are ready");
 				//console.log("deps: "+(Date.now()-t));
-				rows.forEach(function(row) {
-					db.query("SELECT json, peer, "+db.getUnixTimestamp("creation_date")+" AS creation_ts FROM unhandled_joints WHERE unit=?", [row.unit_for_json], function(internal_rows){
-						internal_rows.forEach(function(internal_row) {
-							handleDependentJoint(JSON.parse(internal_row.json), parseInt(internal_row.creation_ts), internal_row.peer);
-						});
-					});
+				rows.forEach( function( row )
+				{
+					db.query
+					(
+						"SELECT json, peer, "+db.getUnixTimestamp("creation_date")+" AS creation_ts FROM unhandled_joints WHERE unit=?",
+						[ row.unit_for_json ],
+						function( internal_rows )
+						{
+							internal_rows.forEach( function( internal_row )
+							{
+								handleDependentJoint
+								(
+									JSON.parse( internal_row.json ),
+									parseInt( internal_row.creation_ts ),
+									internal_row.peer
+								);
+							});
+						}
+					);
 				});
+
+				//	...
 				unlock();
 			}
 		);
@@ -261,24 +295,32 @@ function purgeUncoveredNonserialJoints(bByExistenceOfChildren, onDone){
 }
 
 // handleJoint is called for every joint younger than mci
-function readJointsSinceMci(mci, handleJoint, onDone){
-	db.query(
-		"SELECT units.unit FROM units LEFT JOIN archived_joints USING(unit) \n\
-		WHERE (is_stable=0 AND main_chain_index>=? OR main_chain_index IS NULL OR is_free=1) AND archived_joints.unit IS NULL \n\
+function readJointsSinceMci( mci, handleJoint, onDone )
+{
+	db.query
+	(
+		"SELECT units.unit FROM units LEFT JOIN archived_joints USING(unit) \
+		WHERE ( is_stable = 0 AND main_chain_index >= ? OR main_chain_index IS NULL OR is_free = 1 ) AND archived_joints.unit IS NULL \
 		ORDER BY +level", 
 		[mci], 
-		function(rows){
-			async.eachSeries(
+		function( rows )
+		{
+			async.eachSeries
+			(
 				rows, 
-				function(row, cb){
-					storage.readJoint(db, row.unit, {
-						ifNotFound: function(){
+				function( row, cb )
+				{
+					storage.readJoint( db, row.unit,
+					{
+						ifNotFound : function()
+						{
 						//	throw Error("unit "+row.unit+" not found");
 							breadcrumbs.add("unit "+row.unit+" not found");
 							cb();
 						},
-						ifFound: function(objJoint){
-							handleJoint(objJoint);
+						ifFound : function( objJoint )
+						{
+							handleJoint( objJoint );
 							cb();
 						}
 					});
@@ -292,8 +334,9 @@ function readJointsSinceMci(mci, handleJoint, onDone){
 
 
 
-
-
+/**
+ *	@exports
+ */
 exports.checkIfNewUnit = checkIfNewUnit;
 exports.checkIfNewJoint = checkIfNewJoint;
 

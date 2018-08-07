@@ -11,19 +11,26 @@ var witnessProof = require('./witness_proof.js');
 
 
 
-function prepareCatchupChain(catchupRequest, callbacks){
-	var last_stable_mci = catchupRequest.last_stable_mci;
-	var last_known_mci = catchupRequest.last_known_mci;
-	var arrWitnesses = catchupRequest.witnesses;
+function prepareCatchupChain(catchupRequest, callbacks)
+{
+	var last_stable_mci	= catchupRequest.last_stable_mci;
+	var last_known_mci	= catchupRequest.last_known_mci;
+	var arrWitnesses	= catchupRequest.witnesses;
 	
 	if (typeof last_stable_mci !== "number")
 		return callbacks.ifError("no last_stable_mci");
+
 	if (typeof last_known_mci !== "number")
 		return callbacks.ifError("no last_known_mci");
+
 	if (last_stable_mci >= last_known_mci && (last_known_mci > 0 || last_stable_mci > 0))
 		return callbacks.ifError("last_stable_mci >= last_known_mci");
-	if (!Array.isArray(arrWitnesses))
-		return callbacks.ifError("no witnesses");
+
+	/**
+	 *	POW DEL
+	 */
+	// if (!Array.isArray(arrWitnesses))
+	// 	return callbacks.ifError("no witnesses");
 
 	var objCatchupChain = {
 		unstable_mc_joints: [], 
@@ -31,6 +38,7 @@ function prepareCatchupChain(catchupRequest, callbacks){
 		witness_change_and_definition_joints: []
 	};
 	var last_ball_unit = null;
+
 	async.series([
 		function(cb){ // check if the peer really needs hash trees
 			db.query("SELECT is_stable FROM units WHERE is_on_main_chain=1 AND main_chain_index=?", [last_known_mci], function(rows){
@@ -41,7 +49,8 @@ function prepareCatchupChain(catchupRequest, callbacks){
 				cb();
 			});
 		},
-		function(cb){
+		function(cb)
+		{
 			witnessProof.prepareWitnessProof(
 				arrWitnesses, last_stable_mci, 
 				function(err, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, _last_ball_unit, _last_ball_mci){
@@ -269,12 +278,14 @@ function readHashTree(hashTreeRequest, callbacks){
 	);
 }
 
-function processHashTree(arrBalls, callbacks)
+function processHashTree( arrBalls, callbacks )
 {
-	if (!Array.isArray(arrBalls))
-		return callbacks.ifError("no balls array");
+	if ( ! Array.isArray( arrBalls ) )
+	{
+		return callbacks.ifError( "no balls array" );
+	}
 
-	mutex.lock( ["hash_tree"], function( unlock )
+	mutex.lock( [ "hash_tree" ], function( unlock )
 	{
 		db.takeConnectionFromPool( function( conn )
 		{
@@ -306,11 +317,16 @@ function processHashTree(arrBalls, callbacks)
 						function addBall()
 						{
 							// insert even if it already exists in balls, because we need to define max_mci by looking outside this hash tree
-							conn.query("INSERT "+conn.getIgnore()+" INTO hash_tree_balls (ball, unit) VALUES(?,?)", [objBall.ball, objBall.unit], function()
-							{
-								cb();
-								//console.log("inserted unit "+objBall.unit, objBall.ball);
-							});
+							conn.query
+							(
+								"INSERT " + conn.getIgnore() + " INTO hash_tree_balls (ball, unit) VALUES(?,?)",
+								[ objBall.ball, objBall.unit ],
+								function()
+								{
+									cb();
+									//console.log("inserted unit "+objBall.unit, objBall.ball);
+								}
+							);
 						}
 
 						function checkSkiplistBallsExist()

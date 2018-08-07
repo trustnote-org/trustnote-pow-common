@@ -6,7 +6,22 @@ var constants = require('./constants.js');
 var storage = require('./storage.js');
 var ValidationUtils = require("./validation_utils.js");
 
-function readMyWitnesses(handleWitnesses, actionIfEmpty){
+
+/**
+ * 	POW ADD
+ *	@param	{function}	handleWitnesses		function( arrWitnesses ){}
+ *	@param	{string}	actionIfEmpty		[ 'ignore', 'wait' ]
+ *	@return	{void}
+ */
+function readCurrentWitnesses( handleWitnesses, actionIfEmpty )
+{
+	handleWitnesses( [] );
+}
+
+
+
+function readMyWitnesses( handleWitnesses, actionIfEmpty )
+{
 	db.query("SELECT address FROM my_witnesses ORDER BY address", function(rows){
 		var arrWitnesses = rows.map(function(row){ return row.address; });
 		// reset witness list if old witnesses found
@@ -78,6 +93,13 @@ function insertWitnesses(arrWitnesses, onDone){
 	});
 }
 
-exports.readMyWitnesses = readMyWitnesses;
-exports.replaceWitness = replaceWitness;
-exports.insertWitnesses = insertWitnesses;
+
+
+
+/**
+ * 	@exports
+ */
+exports.readCurrentWitnesses	= readCurrentWitnesses;
+exports.readMyWitnesses		= readMyWitnesses;
+exports.replaceWitness		= replaceWitness;
+exports.insertWitnesses		= insertWitnesses;

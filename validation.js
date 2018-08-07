@@ -41,8 +41,8 @@ function hasValidHashes(objJoint){
 	return true;
 }
 
-function validate(objJoint, callbacks) {
-	
+function validate( objJoint, callbacks )
+{
 	var objUnit = objJoint.unit;
 	if (typeof objUnit !== "object" || objUnit === null)
 		throw Error("no unit object");
@@ -51,23 +51,28 @@ function validate(objJoint, callbacks) {
 	
 	console.log("\nvalidating joint identified by unit "+objJoint.unit.unit);
 	
-	if (!isStringOfLength(objUnit.unit, constants.HASH_LENGTH))
+	if ( ! isStringOfLength( objUnit.unit, constants.HASH_LENGTH ) )
+	{
 		return callbacks.ifJointError("wrong unit length");
-	
+	}
+
 	try{
 		// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
-		if (objectHash.getUnitHash(objUnit) !== objUnit.unit)
-			return callbacks.ifJointError("wrong unit hash: "+objectHash.getUnitHash(objUnit)+" != "+objUnit.unit);
+		if ( objectHash.getUnitHash( objUnit ) !== objUnit.unit )
+			return callbacks.ifJointError( "wrong unit hash: " + objectHash.getUnitHash(objUnit)+" != "+objUnit.unit );
 	}
-	catch(e){
+	catch( e )
+	{
 		return callbacks.ifJointError("failed to calc unit hash: "+e);
 	}
-	
-	if (objJoint.unsigned){
-		if (hasFieldsExcept(objJoint, ["unit", "unsigned"]))
+
+	if ( objJoint.unsigned )
+	{
+		if ( hasFieldsExcept( objJoint, [ "unit", "unsigned" ] ) )
 			return callbacks.ifJointError("unknown fields in unsigned unit-joint");
 	}
-	else if ("ball" in objJoint){
+	else if ("ball" in objJoint)
+	{
 		if (!isStringOfLength(objJoint.ball, constants.HASH_LENGTH))
 			return callbacks.ifJointError("wrong ball length");
 		if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units", "arrShareDefinition"])) // Victor ShareAddress add arrShareDefinition field
@@ -160,33 +165,39 @@ function validate(objJoint, callbacks) {
 			return callbacks.ifJointError("bad timestamp");
 	}
 	
-	mutex.lock(arrAuthorAddresses, function(unlock){
-		
+	mutex.lock( arrAuthorAddresses, function( unlock )
+	{
 		var conn = null;
-
 		async.series(
 			[
-				function(cb){
-					db.takeConnectionFromPool(function(new_conn){
+				function( cb )
+				{
+					db.takeConnectionFromPool(function(new_conn)
+					{
 						conn = new_conn;
 						conn.query("BEGIN", function(){cb();});
 					});
 				},
-				function(cb){
+				function( cb )
+				{
 					profiler.start();
-					checkDuplicate(conn, objUnit.unit, cb);
+					checkDuplicate( conn, objUnit.unit, cb );
 				},
-				function(cb){
+				function( cb )
+				{
 					profiler.stop('validation-checkDuplicate');
 					profiler.start();
-					objUnit.content_hash ? cb() : validateHeadersCommissionRecipients(objUnit, cb);
+					objUnit.content_hash
+						? cb()
+						: validateHeadersCommissionRecipients( objUnit, cb );
 				},
-				function(cb){
+				function( cb )
+				{
 					profiler.stop('validation-hc-recipients');
 					profiler.start();
-					!objUnit.parent_units
+					! objUnit.parent_units
 						? cb()
-						: validateHashTree(conn, objJoint, objValidationState, cb);
+						: validateHashTree( conn, objJoint, objValidationState, cb );
 				},
 				function(cb){
 					profiler.stop('validation-hash-tree');
@@ -216,26 +227,45 @@ function validate(objJoint, callbacks) {
 					objUnit.content_hash ? cb() : validateMessages(conn, objUnit.messages, objUnit, objValidationState, cb);
 				}
 			], 
-			function(err){
+			function( err )
+			{
 				profiler.stop('validation-messages');
-				if(err){
-					conn.query("ROLLBACK", function(){
+				if ( err )
+				{
+					conn.query( "ROLLBACK", function()
+					{
 						conn.release();
 						unlock();
-						if (typeof err === "object"){
-							if (err.error_code === "unresolved_dependency")
+
+						if ( typeof err === "object" )
+						{
+							if ( err.error_code === "unresolved_dependency")
+							{
 								callbacks.ifNeedParentUnits(err.arrMissingUnits);
-							else if (err.error_code === "need_hash_tree") // need to download hash tree to catch up
+							}
+							else if ( err.error_code === "need_hash_tree" )
+							{
+								//	need to download hash tree to catch up
 								callbacks.ifNeedHashTree();
-							else if (err.error_code === "invalid_joint") // ball found in hash tree but with another unit
+							}
+							else if ( err.error_code === "invalid_joint" )
+							{
+								//	ball found in hash tree but with another unit
 								callbacks.ifJointError(err.message);
+							}
 							else if (err.error_code === "transient")
+							{
 								callbacks.ifTransientError(err.message);
+							}
 							else
+							{
 								throw Error("unknown error code");
+							}
 						}
 						else
+						{
 							callbacks.ifUnitError(err);
+						}
 					});
 				}
 				else{
@@ -271,16 +301,23 @@ function checkDuplicate(conn, unit, cb){
 	});
 }
 
-function validateHashTree(conn, objJoint, objValidationState, callback){
-	if (!objJoint.ball)
+function validateHashTree( conn, objJoint, objValidationState, callback )
+{
+	if ( ! objJoint.ball )
 		return callback();
+
 	var objUnit = objJoint.unit;
-	conn.query("SELECT unit FROM hash_tree_balls WHERE ball=?", [objJoint.ball], function(rows){
-		if (rows.length === 0) 
-			return callback({error_code: "need_hash_tree", message: "ball "+objJoint.ball+" is not known in hash tree"});
-		if (rows[0].unit !== objUnit.unit)
-			return callback(createJointError("ball "+objJoint.ball+" unit "+objUnit.unit+" contradicts hash tree"));
-		conn.query(
+
+	conn.query( "SELECT unit FROM hash_tree_balls WHERE ball=?", [ objJoint.ball ], function( rows )
+	{
+		if ( rows.length === 0 )
+			return callback( { error_code : "need_hash_tree", message : "ball " + objJoint.ball+" is not known in hash tree" } );
+		if ( rows[ 0 ].unit !== objUnit.unit )
+			return callback( createJointError( "ball " + objJoint.ball + " unit " + objUnit.unit + " contradicts hash tree" ) );
+
+		//	...
+		conn.query
+		(
 			"SELECT ball FROM hash_tree_balls WHERE unit IN(?) \n\
 			UNION \n\
 			SELECT ball FROM balls WHERE unit IN(?) \n\

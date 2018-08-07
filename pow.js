@@ -151,13 +151,13 @@ function isValidEquihash( objInput, sHash, nNonce )
 	let bRet;
 	let nInputLen;
 	let bufInput;
-	let bufTarget;
+	let bufHash;
 
 	//	...
 	bRet		= false;
 	nInputLen	= 140;
 	bufInput	= createInputBufferFromObject( objInput );
-	bufTarget	= Buffer.concat( [ Buffer.from( sHash, 'utf8' ) ], 32 );
+	bufHash		= Buffer.concat( [ Buffer.from( sHash, 'utf8' ) ], 32 );
 
 	// //	load library
 	// _loadEquihashLibrary();
@@ -167,7 +167,7 @@ function isValidEquihash( objInput, sHash, nNonce )
 	//
 
 	//
-	// let nCall       = _objEquihashLibrary.equihash( bufInput, nNonce, bufTarget, nInputLen );
+	// let nCall       = _objEquihashLibrary.equihash( bufInput, nNonce, bufHash, nInputLen );
 	//
 	// console.log( `call equihash = ${ nCall }` );
 

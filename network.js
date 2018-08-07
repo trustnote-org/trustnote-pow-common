@@ -645,10 +645,25 @@ function subscribe(ws){
 
 // joints
 
-// sent as justsaying or as response to a request
-function sendJoint(ws, objJoint, tag) {
-	console.log('sending joint identified by unit ' + objJoint.unit.unit + ' to', ws.peer);
-	tag ? sendResponse(ws, tag, {joint: objJoint}) : sendJustsaying(ws, 'joint', objJoint);
+//	sent as justsaying or as response to a request
+function sendJoint( ws, objJoint, tag )
+{
+	console.log( 'sending joint identified by unit ' + objJoint.unit.unit + ' to', ws.peer );
+
+	//
+	//	if tag
+	//		responding for request 'get_joint'
+	//	else
+	//		sendFreeJoints
+	//		sendJointsSinceMci
+	//		forwardJoint
+	//		notifyWatchers
+	//		broadcastJoint
+	//		handleJustsaying : // I'm light vendor
+	// 			case 'light/new_address_to_watch':
+	//
+	tag ? sendResponse( ws, tag, { joint : objJoint } )
+		: sendJustsaying( ws, 'joint', objJoint );
 }
 
 // sent by light clients to their vendors
@@ -690,17 +705,29 @@ function requestNewJoints(ws){
 	});
 }
 
-function rerequestLostJoints(){
+function rerequestLostJoints()
+{
 	//console.log("rerequestLostJoints");
-	if (bCatchingUp)
+	if ( bCatchingUp )
+	{
 		return;
-	joint_storage.findLostJoints(function(arrUnits){
+	}
+
+	//	...
+	joint_storage.findLostJoints( function( arrUnits )
+	{
 		console.log("lost units", arrUnits);
-		tryFindNextPeer(null, function(ws){
-			if (!ws)
+		tryFindNextPeer( null, function( ws )
+		{
+			if ( ! ws )
 				return;
+
 			console.log("found next peer "+ws.peer);
-			requestJoints(ws, arrUnits.filter(function(unit){ return (!assocUnitsInWork[unit] && !havePendingJointRequest(unit)); }));
+			requestJoints
+			(
+				ws,
+				arrUnits.filter( function( unit ){ return ( ! assocUnitsInWork[ unit ] && ! havePendingJointRequest( unit ) ); } )
+			);
 		});
 	});
 }
@@ -736,6 +763,9 @@ function requestNewMissingJoints( ws, arrUnits )
 				{
 					ifNew: function()
 					{
+						//
+						//	not exists in tables [units], [unhandled_joints], [known_bad_joints]
+						//
 						arrNewUnits.push(unit);
 						cb();
 					},
@@ -804,18 +834,23 @@ function handleResponseToJointRequest(ws, request, response){
 		// - when catching up and requesting old joints from random peers, in this case we are pretty sure it should exist
 		return;
 	}
+
 	var objJoint = response.joint;
-	if (!objJoint.unit || !objJoint.unit.unit)
+	if ( ! objJoint.unit || ! objJoint.unit.unit )
 		return sendError(ws, 'no unit');
 	var unit = objJoint.unit.unit;
-	if (request.params !== unit)
-		return sendError(ws, "I didn't request this unit from you: "+unit);
-	if (conf.bLight && objJoint.ball && !objJoint.unit.content_hash){
+	if ( request.params !== unit )
+		return sendError( ws, "I didn't request this unit from you: "+unit );
+	if ( conf.bLight && objJoint.ball && !objJoint.unit.content_hash )
+	{
 		// accept it as unfinished (otherwise we would have to require a proof)
 		delete objJoint.ball;
 		delete objJoint.skiplist_units;
 	}
-	conf.bLight ? handleLightOnlineJoint(ws, objJoint) : handleOnlineJoint(ws, objJoint);
+
+	conf.bLight ?
+		handleLightOnlineJoint( ws, objJoint )
+		: handleOnlineJoint( ws, objJoint );
 }
 
 function havePendingRequest(command){
@@ -890,15 +925,24 @@ function forwardJoint(ws, objJoint){
 	});
 }
 
-function handleJoint(ws, objJoint, bSaved, callbacks){
+function handleJoint( ws, objJoint, bSaved, callbacks )
+{
 	var unit = objJoint.unit.unit;
 
-	if (assocUnitsInWork[unit])
+	//
+	//	for caching
+	//
+	if ( assocUnitsInWork[ unit ] )
+	{
 		return callbacks.ifUnitInWork();
-	assocUnitsInWork[unit] = true;
-	
-	var validate = function(){
-		validation.validate(objJoint, {
+	}
+	assocUnitsInWork[ unit ] = true;
+
+
+	var validate = function()
+	{
+		validation.validate( objJoint,
+		{
 			ifUnitError: function(error){
 				console.log(objJoint.unit.unit+" validation failed: "+error);
 				callbacks.ifUnitError(error);
@@ -931,16 +975,19 @@ function handleJoint(ws, objJoint, bSaved, callbacks){
 				console.log("############################## transient error "+error);
 				delete assocUnitsInWork[unit];
 			},
-			ifNeedHashTree: function(){
-				console.log('need hash tree for unit '+unit);
-				if (objJoint.unsigned)
-					throw Error("ifNeedHashTree() unsigned");
+			ifNeedHashTree: function()
+			{
+				console.log( 'need hash tree for unit ' + unit );
+				if ( objJoint.unsigned )
+					throw Error( "ifNeedHashTree() unsigned" );
+
 				callbacks.ifNeedHashTree();
-				// we are not saving unhandled joint because we don't know dependencies
+				//	we are not saving unhandled joint because we don't know dependencies
 				delete assocUnitsInWork[unit];
 			},
 			ifNeedParentUnits: callbacks.ifNeedParentUnits,
-			ifOk: function(objValidationState, validation_unlock){
+			ifOk: function( objValidationState, validation_unlock )
+			{
 				if (objJoint.unsigned)
 					throw Error("ifOk() unsigned");
 				writer.saveJoint(objJoint, objValidationState, null, function(){
@@ -962,33 +1009,48 @@ function handleJoint(ws, objJoint, bSaved, callbacks){
 		});
 	};
 
-	joint_storage.checkIfNewJoint(objJoint, {
-		ifNew: function(){
+	joint_storage.checkIfNewJoint( objJoint,
+	{
+		ifNew : function()
+		{
+			//
+			//	not exists in tables units, unhandled_joints, known_bad_joints
+			//	call validate()
+			//
 			bSaved ? callbacks.ifNew() : validate();
 		},
-		ifKnown: function(){
+		ifKnown: function()
+		{
 			callbacks.ifKnown();
 			delete assocUnitsInWork[unit];
 		},
-		ifKnownBad: function(){
+		ifKnownBad: function()
+		{
 			callbacks.ifKnownBad();
 			delete assocUnitsInWork[unit];
 		},
-		ifKnownUnverified: function(){
+		ifKnownUnverified: function()
+		{
+			//
+			//	not exists in table units, but existed in unhandled_joints
+			//	call validate()
+			//
 			bSaved ? validate() : callbacks.ifKnownUnverified();
 		}
 	});
 }
 
-// handle joint posted to me by a light client
-function handlePostedJoint(ws, objJoint, onDone){
-	
-	if (!objJoint || !objJoint.unit || !objJoint.unit.unit)
+//
+//	handle joint posted to me by a light client
+//
+function handlePostedJoint(ws, objJoint, onDone)
+{
+	if ( ! objJoint || ! objJoint.unit || ! objJoint.unit.unit )
 		return onDone('no unit');
-	
+
 	var unit = objJoint.unit.unit;
 	delete objJoint.unit.main_chain_index;
-	
+
 	handleJoint(ws, objJoint, false, {
 		ifUnitInWork: function(){
 			onDone("already handling this unit");
@@ -999,8 +1061,12 @@ function handlePostedJoint(ws, objJoint, onDone){
 		ifJointError: function(error){
 			onDone(error);
 		},
-		ifNeedHashTree: function(){
-			onDone("need hash tree");
+		ifNeedHashTree: function()
+		{
+			//
+			//	objJoint has a ball, it's not a new composed joint
+			//
+			onDone( "need hash tree" );
 		},
 		ifNeedParentUnits: function(arrMissingUnits){
 			onDone("unknown parents");
@@ -1035,13 +1101,16 @@ function handlePostedJoint(ws, objJoint, onDone){
 	});
 }
 
-function handleOnlineJoint(ws, objJoint, onDone){
-	if (!onDone)
+function handleOnlineJoint( ws, objJoint, onDone )
+{
+	if ( ! onDone )
 		onDone = function(){};
+
 	var unit = objJoint.unit.unit;
 	delete objJoint.unit.main_chain_index;
 	
-	handleJoint(ws, objJoint, false, {
+	handleJoint( ws, objJoint, false,
+	{
 		ifUnitInWork: onDone,
 		ifUnitError: function(error){
 			sendErrorResult(ws, unit, error);
@@ -1051,9 +1120,12 @@ function handleOnlineJoint(ws, objJoint, onDone){
 			sendErrorResult(ws, unit, error);
 			onDone();
 		},
-		ifNeedHashTree: function(){
-			if (!bCatchingUp && !bWaitingForCatchupChain)
-				requestCatchup(ws);
+		ifNeedHashTree: function()
+		{
+			if ( ! bCatchingUp && ! bWaitingForCatchupChain )
+			{
+				requestCatchup( ws );
+			}
 			// we are not saving the joint so that in case requestCatchup() fails, the joint will be requested again via findLostJoints, 
 			// which will trigger another attempt to request catchup
 			onDone();
@@ -1066,7 +1138,8 @@ function handleOnlineJoint(ws, objJoint, onDone){
 			requestNewMissingJoints(ws, arrMissingUnits);
 			onDone();
 		},
-		ifOk: function(){
+		ifOk: function()
+		{
 			sendResult(ws, {unit: unit, result: 'accepted'});
 			
 			// forward to other peers
@@ -1106,30 +1179,52 @@ function handleOnlineJoint(ws, objJoint, onDone){
 }
 
 
-function handleSavedJoint(objJoint, creation_ts, peer){
-	
-	var unit = objJoint.unit.unit;
-	var ws = getPeerWebSocket(peer);
-	if (ws && ws.readyState !== ws.OPEN)
-		ws = null;
+/***
+ * 	working for unhandled joint in local database
+ *
+ *	@param objJoint
+ *	@param creation_ts
+ *	@param peer
+ */
+function handleSavedJoint( objJoint, creation_ts, peer )
+{
+	var unit	= objJoint.unit.unit;
+	var ws		= getPeerWebSocket( peer );
 
-	handleJoint(ws, objJoint, true, {
+	if ( ws && ws.readyState !== ws.OPEN )
+	{
+		ws = null;
+	}
+
+	//	...
+	handleJoint( ws, objJoint, true,
+	{
 		ifUnitInWork: function(){},
-		ifUnitError: function(error){
-			if (ws)
-				sendErrorResult(ws, unit, error);
+		ifUnitError: function( error )
+		{
+			if ( ws )
+			{
+				sendErrorResult( ws, unit, error );
+			}
 		},
-		ifJointError: function(error){
-			if (ws)
-				sendErrorResult(ws, unit, error);
+		ifJointError : function( error )
+		{
+			if ( ws )
+			{
+				sendErrorResult( ws, unit, error );
+			}
 		},
-		ifNeedHashTree: function(){
-			throw Error("handleSavedJoint: need hash tree");
+		ifNeedHashTree: function()
+		{
+			throw Error( "handleSavedJoint: need hash tree" );
 		},
-		ifNeedParentUnits: function(arrMissingUnits){
-			db.query("SELECT 1 FROM archived_joints WHERE unit IN(?) LIMIT 1", [arrMissingUnits], function(rows){
+		ifNeedParentUnits : function( arrMissingUnits )
+		{
+			db.query( "SELECT 1 FROM archived_joints WHERE unit IN(?) LIMIT 1", [arrMissingUnits], function( rows )
+			{
 				if (rows.length === 0)
 					throw Error("unit "+unit+" still has unresolved dependencies: "+arrMissingUnits.join(", "));
+
 				breadcrumbs.add("unit "+unit+" has unresolved dependencies that were archived: "+arrMissingUnits.join(", "))
 				if (ws)
 					requestNewMissingJoints(ws, arrMissingUnits);
@@ -1140,18 +1235,25 @@ function handleSavedJoint(objJoint, creation_ts, peer){
 				delete assocUnitsInWork[unit];
 			});
 		},
-		ifOk: function(){
-			if (ws)
+		ifOk: function()
+		{
+			if ( ws )
 				sendResult(ws, {unit: unit, result: 'accepted'});
 			
-			// forward to other peers
-			if (!bCatchingUp && !conf.bLight && creation_ts > Date.now() - FORWARDING_TIMEOUT)
-				forwardJoint(ws, objJoint);
+			//	forward to other peers
+			if ( ! bCatchingUp && ! conf.bLight && creation_ts > Date.now() - FORWARDING_TIMEOUT )
+			{
+				forwardJoint( ws, objJoint );
+			}
 
-			joint_storage.removeUnhandledJointAndDependencies(unit, function(){
-				delete assocUnitsInWork[unit];
-				// wake up other saved joints that depend on me
-				findAndHandleJointsThatAreReady(unit);
+			joint_storage.removeUnhandledJointAndDependencies( unit, function()
+			{
+				delete assocUnitsInWork[ unit ];
+
+				//
+				//	wake up other saved joints that depend on me
+				//
+				findAndHandleJointsThatAreReady( unit );
 			});
 		},
 		ifOkUnsigned: function(){
@@ -1162,11 +1264,13 @@ function handleSavedJoint(objJoint, creation_ts, peer){
 		// readDependentJointsThatAreReady can read the same joint twice before it's handled. If not new, just ignore (we've already responded to peer).
 		ifKnown: function(){},
 		ifKnownBad: function(){},
-		ifNew: function(){
-			// that's ok: may be simultaneously selected by readDependentJointsThatAreReady and deleted by purgeJunkUnhandledJoints when we wake up after sleep
-			delete assocUnitsInWork[unit];
-			console.log("new in handleSavedJoint: "+unit);
-		//	throw Error("new in handleSavedJoint: "+unit);
+		ifNew: function()
+		{
+			//	that's ok : may be simultaneously selected by readDependentJointsThatAreReady
+			// 	and deleted by purgeJunkUnhandledJoints when we wake up after sleep
+			delete assocUnitsInWork[ unit ];
+			console.log( "new in handleSavedJoint: " + unit );
+			//	throw Error( "new in handleSavedJoint: " + unit );
 		}
 	});
 }
@@ -1371,9 +1475,19 @@ function writeEvent(event, host){
 setInterval(function(){flushEvents(true)}, 1000 * 60);
 
 
-function findAndHandleJointsThatAreReady(unit){
-	joint_storage.readDependentJointsThatAreReady(unit, handleSavedJoint);
-	handleSavedPrivatePayments(unit);
+/**
+ *
+ *	@param unit
+ *	@description
+ *	called by
+ *		handleOnlineJoint,
+ *		handleSavedJoint
+ *		setInterval( findAndHandleJointsThatAreReady, 5 * 1000 );
+ */
+function findAndHandleJointsThatAreReady( unit )
+{
+	joint_storage.readDependentJointsThatAreReady( unit, handleSavedJoint );
+	handleSavedPrivatePayments( unit );
 }
 
 function comeOnline(){
@@ -1434,22 +1548,33 @@ function checkCatchupLeftovers(){
 	);
 }
 
-function requestCatchup(ws){
+function requestCatchup( ws )
+{
 	console.log("will request catchup from "+ws.peer);
 	eventBus.emit('catching_up_started');
-	catchup.purgeHandledBallsFromHashTree(db, function(){
-		db.query(
+
+	catchup.purgeHandledBallsFromHashTree( db, function()
+	{
+		db.query
+		(
 			"SELECT hash_tree_balls.unit FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL ORDER BY ball_index", 
-			function(tree_rows){ // leftovers from previous run
-				if (tree_rows.length > 0){
+			function( tree_rows )
+			{
+				// leftovers from previous run
+				if ( tree_rows.length > 0 )
+				{
 					bCatchingUp = true;
 					console.log("will request balls found in hash tree");
-					requestNewMissingJoints(ws, tree_rows.map(function(tree_row){ return tree_row.unit; }));
+					requestNewMissingJoints( ws, tree_rows.map( function( tree_row ){ return tree_row.unit; } ) );
 					waitTillHashTreeFullyProcessedAndRequestNext(ws);
 					return;
 				}
-				db.query("SELECT 1 FROM catchup_chain_balls LIMIT 1", function(chain_rows){ // leftovers from previous run
-					if (chain_rows.length > 0){
+
+				db.query( "SELECT 1 FROM catchup_chain_balls LIMIT 1", function( chain_rows )
+				{
+					//	leftovers from previous run
+					if (chain_rows.length > 0)
+					{
 						bCatchingUp = true;
 						requestNextHashTree(ws);
 						return;
@@ -1461,11 +1586,14 @@ function requestCatchup(ws){
 					// (will also reset the flag only after the response is fully processed)
 					bWaitingForCatchupChain = true;
 					
-					storage.readLastStableMcIndex(db, function(last_stable_mci){
-						storage.readLastMainChainIndex(function(last_known_mci){
-							myWitnesses.readMyWitnesses(function(arrWitnesses){
+					storage.readLastStableMcIndex( db, function( last_stable_mci )
+					{
+						storage.readLastMainChainIndex( function( last_known_mci )
+						{
+							myWitnesses.readMyWitnesses( function( arrWitnesses )
+							{
 								var params = {witnesses: arrWitnesses, last_stable_mci: last_stable_mci, last_known_mci: last_known_mci};
-								sendRequest(ws, 'catchup', params, true, handleCatchupChain);
+								sendRequest( ws, 'catchup', params, true, handleCatchupChain );
 							}, 'wait');
 						});
 					});
@@ -1944,13 +2072,17 @@ function handleJustsaying(ws, subject, body){
 				return sendError(ws, 'only requested joint can contain a ball');
 			if (conf.bLight && !ws.bLightVendor)
 				return sendError(ws, "I'm a light client and you are not my vendor");
-			db.query("SELECT 1 FROM archived_joints WHERE unit=? AND reason='uncovered'", [objJoint.unit.unit], function(rows){
+
+			db.query("SELECT 1 FROM archived_joints WHERE unit=? AND reason='uncovered'", [objJoint.unit.unit], function(rows)
+			{
 				if (rows.length > 0) // ignore it as long is it was unsolicited
 					return sendError(ws, "this unit is already known and archived");
 				// light clients accept the joint without proof, it'll be saved as unconfirmed (non-stable)
-				return conf.bLight ? handleLightOnlineJoint(ws, objJoint) : handleOnlineJoint(ws, objJoint);
+				return conf.bLight
+					? handleLightOnlineJoint( ws, objJoint )
+					: handleOnlineJoint(ws, objJoint);
 			});
-			
+
 		case 'free_joints_end':
 		case 'result':
 		case 'info':
@@ -2093,7 +2225,7 @@ function handleJustsaying(ws, subject, body){
 				return sendError(ws, "please log in first");
 			sendStoredDeviceMessages(ws, ws.device_address);
 			break;
-			
+
 		// I'm a hub, the peer wants to remove a message that he's just handled
 		case 'hub/delete':
 			if (!conf.bServeAsHub)
@@ -2125,38 +2257,49 @@ function handleJustsaying(ws, subject, body){
 				return sendError(ws, "You are not my light vendor");
 			eventBus.emit("message_for_light", ws, subject, body);
 			break;
-			
+
 		// I'm light vendor
 		case 'light/new_address_to_watch':
 			if (conf.bLight)
 				return sendError(ws, "I'm light myself, can't serve you");
 			if (ws.bOutbound)
 				return sendError(ws, "light clients have to be inbound");
+
 			var address = body;
 			if (!ValidationUtils.isValidAddress(address))
 				return sendError(ws, "address not valid");
-			db.query("INSERT "+db.getIgnore()+" INTO watched_light_addresses (peer, address) VALUES (?,?)", [ws.peer, address], function(){
+
+			db.query( "INSERT "+db.getIgnore()+" INTO watched_light_addresses (peer, address) VALUES (?,?)", [ ws.peer, address ], function()
+			{
 				sendInfo(ws, "now watching "+address);
 				// check if we already have something on this address
-				db.query(
+				db.query
+				(
 					"SELECT unit, is_stable FROM unit_authors JOIN units USING(unit) WHERE address=? \n\
 					UNION \n\
 					SELECT unit, is_stable FROM outputs JOIN units USING(unit) WHERE address=? \n\
 					ORDER BY is_stable LIMIT 10", 
-					[address, address], 
-					function(rows){
+					[ address, address ],
+					function( rows )
+					{
 						if (rows.length === 0)
 							return;
 						if (rows.length === 10 || rows.some(function(row){ return row.is_stable; }))
 							sendJustsaying(ws, 'light/have_updates');
-						rows.forEach(function(row){
+
+						rows.forEach( function( row )
+						{
 							if (row.is_stable)
 								return;
-							storage.readJoint(db, row.unit, {
-								ifFound: function(objJoint){
-									sendJoint(ws, objJoint);
+
+							storage.readJoint( db, row.unit,
+							{
+								ifFound : function( objJoint )
+								{
+									sendJoint( ws, objJoint );
 								},
-								ifNotFound: function(){
+								ifNotFound: function()
+								{
 									throw Error("watched unit "+row.unit+" not found");
 								}
 							});
