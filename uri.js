@@ -1,15 +1,21 @@
 /*jslint node: true */
 "use strict";
-var ValidationUtils = require("./validation_utils.js");
-var constants = require("./constants.js");
-var conf = require('./conf.js');
+
+/**
+ *	@boss	XING
+ */
+
+var ValidationUtils	= require( './validation_utils.js' );
+var constants		= require( './constants.js' );
+var conf		= require( './conf.js' );
 
 
-function parseUri(uri, callbacks){
+function parseUri( uri, callbacks )
+{
 	var objRequest = {};
 
-
-	if(uri.length == 32){
+	if ( uri.length === 32 )
+	{
 		var address = uri;
 		if (!ValidationUtils.isValidAddress(address))
 			return callbacks.ifError("address "+address+" is invalid");

@@ -1,5 +1,11 @@
 /*jslint node: true */
 "use strict";
+
+/**
+ *	@boss	XING
+ */
+
+
 require('./enforce_singleton.js');
 
 var EventEmitter = require('events').EventEmitter;

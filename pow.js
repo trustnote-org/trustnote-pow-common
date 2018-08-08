@@ -1,6 +1,11 @@
 /*jslint node: true */
 "use strict";
 
+/**
+ *	@boss	XING
+ */
+
+
 const _ref	= require( 'ref' );
 //const _ffi	= require( 'ffi' );
 const _fs	= require( 'fs' );
