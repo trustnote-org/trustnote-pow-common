@@ -1,47 +1,43 @@
 /*jslint node: true */
 "use strict";
-var async = require('async');
-var storage = require('./storage.js');
-var myWitnesses = require('./my_witnesses.js');
-var objectHash = require("./object_hash.js");
-var db = require('./db.js');
-var constants = require("./constants.js");
-var validation = require('./validation.js');
+var async		= require('async');
+var storage		= require('./storage.js');
+var myWitnesses		= require('./my_witnesses.js');
+var objectHash		= require("./object_hash.js");
+var db			= require('./db.js');
+var constants		= require("./constants.js");
+var validation		= require('./validation.js');
+
 
 
 /**
  *	POW ADD
  *
+ *	@param	{array}		arr_witnesses
  *	@param	{number}	last_stable_mci
  *	@param	{function}	handleResult
  */
-function prepareUnstableJointsProof( last_stable_mci, handleResult )
+function preparePowWitnessProof( arr_witnesses, last_stable_mci, handleResult )
 {
-	let arrWitnesses			= [];	//	witness list of current round
 	var arrWitnessChangeAndDefinitionJoints	= [];
 	var arrUnstableMcJoints			= [];
 
 	var arrLastBallUnits			= []; // last ball units referenced from MC-majority-witnessed unstable MC units
-	var last_ball_unit			= null;
-	var last_ball_mci			= null;
+	var sLastBallUnit			= null;
+	var nLastBallMci			= null;
 
 	async.series
 	([
 		function( cb )
 		{
-			myWitnesses.readCurrentWitnesses( function ( arrWitnesses_ )
+			if ( Array.isArray( arr_witnesses ) && constants.COUNT_WITNESSES === arr_witnesses.length )
 			{
-				if ( Array.isArray( arrWitnesses_ ) && constants.COUNT_WITNESSES === arrWitnesses_.length )
-				{
-					arrWitnesses	= arrWitnesses_;
-					cb();
-				}
-				else
-				{
-					cb( "not enough witnesses." );
-				}
-
-			}, 'ignore' );
+				cb();
+			}
+			else
+			{
+				cb( `not enough witnesses, arr_witnesses size : ${ Array.isArray( arr_witnesses ) ? arr_witnesses.length : null }.` );
+			}
 		},
 		function( cb )
 		{
@@ -57,19 +53,19 @@ function prepareUnstableJointsProof( last_stable_mci, handleResult )
 						storage.readJointWithBall( db, row.unit, function( objJoint )
 						{
 							delete objJoint.ball; // the unit might get stabilized while we were reading other units
-							arrUnstableMcJoints.push(objJoint);
+							arrUnstableMcJoints.push( objJoint );
 
 							for ( var i = 0; i < objJoint.unit.authors.length; i++ )
 							{
-								var address = objJoint.unit.authors[i].address;
-								if ( arrWitnesses.indexOf( address ) >= 0 && arrFoundWitnesses.indexOf( address ) === -1)
+								var address = objJoint.unit.authors[ i ].address;
+								if ( arr_witnesses.indexOf( address ) >= 0 && -1 === arrFoundWitnesses.indexOf( address ) )
 								{
 									arrFoundWitnesses.push( address );
 								}
 							}
 
-							// collect last balls of majority witnessed units
-							// (genesis lacks last_ball_unit)
+							//	collect last balls of majority witnessed units
+							//	( genesis lacks sLastBallUnit )
 							if ( objJoint.unit.last_ball_unit && arrFoundWitnesses.length >= constants.MAJORITY_OF_WITNESSES )
 							{
 								arrLastBallUnits.push( objJoint.unit.last_ball_unit );
@@ -86,7 +82,9 @@ function prepareUnstableJointsProof( last_stable_mci, handleResult )
 		{
 			//	select the newest last ball unit
 			if ( arrLastBallUnits.length === 0 )
+			{
 				return cb( "your witness list might be too much off, too few witness authored units" );
+			}
 
 			db.query
 			(
@@ -95,10 +93,10 @@ function prepareUnstableJointsProof( last_stable_mci, handleResult )
 				function( rows )
 				{
 					//	...
-					last_ball_unit	= rows[ 0 ].unit;
-					last_ball_mci	= rows[ 0 ].main_chain_index;
+					sLastBallUnit	= rows[ 0 ].unit;
+					nLastBallMci	= rows[ 0 ].main_chain_index;
 
-					( last_stable_mci >= last_ball_mci )
+					( last_stable_mci >= nLastBallMci )
 						? cb( "already_current" )
 						: cb();
 				}
@@ -120,7 +118,7 @@ function prepareUnstableJointsProof( last_stable_mci, handleResult )
 				CROSS JOIN units USING(unit) \n\
 				WHERE address_definition_changes.address IN(?) AND " + after_last_stable_mci_cond + " AND is_stable=1 AND sequence='good' \n\
 				ORDER BY `level`",
-				[ arrWitnesses, arrWitnesses ],
+				[ arr_witnesses, arr_witnesses ],
 				function( rows )
 				{
 					async.eachSeries( rows, function( row, cb2 )
@@ -149,7 +147,7 @@ function prepareUnstableJointsProof( last_stable_mci, handleResult )
 		}
 
 		//	...
-		handleResult( null, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, last_ball_unit, last_ball_mci );
+		handleResult( null, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, sLastBallUnit, nLastBallMci );
 	});
 }
 
@@ -432,7 +430,12 @@ function processWitnessProof(arrUnstableMcJoints, arrWitnessChangeAndDefinitionJ
 
 }
 
-exports.prepareWitnessProof = prepareWitnessProof;
-exports.processWitnessProof = processWitnessProof;
+
+/**
+ * 	@exports
+ */
+exports.preparePowWitnessProof	= preparePowWitnessProof;
+exports.prepareWitnessProof	= prepareWitnessProof;
+exports.processWitnessProof	= processWitnessProof;
 
 
