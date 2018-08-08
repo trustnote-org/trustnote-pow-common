@@ -53,3 +53,10 @@ exports.ROUND_COINBASE = [217.59,
 	89.95,
 	88.58,
 	0];
+
+/**
+ *	pow_type
+ */
+exports.POW_TYPE_POW_EQUHASH	= 1;
+exports.POW_TYPE_TRUSTME	= 2;
+exports.POW_TYPE_COIN_BASE	= 3;
