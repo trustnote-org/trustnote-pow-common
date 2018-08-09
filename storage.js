@@ -123,13 +123,14 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 						callback();
 					});
 				},
-				function(callback){ // witnesses
-					conn.query("SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", [unit], function(rows){
-						if (rows.length > 0)
-							objUnit.witnesses = rows.map(function(row){ return row.address; });
-						callback();
-					});
-				},
+				// pow del
+				// function(callback){ // witnesses
+				// 	conn.query("SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", [unit], function(rows){
+				// 		if (rows.length > 0)
+				// 			objUnit.witnesses = rows.map(function(row){ return row.address; });
+				// 		callback();
+				// 	});
+				// },
 				function(callback){ // earned_headers_commission_recipients
 					if (bVoided)
 						return callback();
