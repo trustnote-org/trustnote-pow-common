@@ -70,6 +70,8 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(roundIndex, address, ca
 }
 
 
+exports.getCurrentRoundIndex = getCurrentRoundIndex;
+exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
