@@ -8,12 +8,10 @@ var db = require('./db.js');
 var conf = require('./conf.js');
 
 
-
-
 function getCoinbaseByRoundIndex(roundIndex){
-    if(roundIndex < 1 || roundIndex > 4204800)
+    if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
         return 0;
-	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUNDYEAR_TOTAL)-1];
+	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
 }
 
 function getWitnessesByRoundIndex(roundIndex, callback){
