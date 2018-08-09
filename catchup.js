@@ -12,9 +12,7 @@ var objectHash		= require('./object_hash.js');
 var db			= require('./db.js');
 var mutex		= require('./mutex.js');
 var validation		= require('./validation.js');
-var witnessProof	= require('./witness_proof.js');
-var myWitnesses		= require('./my_witnesses.js');
-
+var witnessPowProof	= require('./witness_pow_proof.js');
 
 /**
  * 	POW MOD
@@ -50,7 +48,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	var objCatchupChain = {
 		unstable_mc_joints			: [],
 		stable_last_ball_joints			: [],
-		witness_change_and_definition_joints	: []
+		//witness_change_and_definition_joints	: []	//	POW DEL
 	};
 	var sLastBallUnit	= null;
 
@@ -81,10 +79,10 @@ function prepareCatchupChain( catchupRequest, callbacks )
 		},
 		function( cb )
 		{
-			witnessProof.preparePowWitnessProof
+			witnessPowProof.preparePowWitnessProof
 			(
 				last_stable_mci,
-				function( err, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, _last_ball_unit, _last_ball_mci )
+				function( err, arrUnstableMcJoints, _last_ball_unit, _last_ball_mci )
 				{
 					if ( err )
 					{
@@ -93,10 +91,14 @@ function prepareCatchupChain( catchupRequest, callbacks )
 
 					//	...
 					objCatchupChain.unstable_mc_joints = arrUnstableMcJoints;
-					if ( arrWitnessChangeAndDefinitionJoints.length > 0 )
-					{
-						objCatchupChain.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
-					}
+
+					/**
+					 *	POW DEL
+					 */
+					// if ( arrWitnessChangeAndDefinitionJoints.length > 0 )
+					// {
+					// 	objCatchupChain.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
+					// }
 
 					sLastBallUnit = _last_ball_unit;
 					cb();
@@ -156,18 +158,21 @@ function processCatchupChain( catchupChain, peer, callbacks )
 		return callbacks.ifError("no stable_last_ball_joints");
 	if (catchupChain.stable_last_ball_joints.length === 0)
 		return callbacks.ifError("stable_last_ball_joints is empty");
-	if (!catchupChain.witness_change_and_definition_joints)
-		catchupChain.witness_change_and_definition_joints = [];
-	if (!Array.isArray(catchupChain.witness_change_and_definition_joints))
-		return callbacks.ifError("witness_change_and_definition_joints must be array");
+
+	/**
+	 * 	POW DEL
+	 */
+	// if ( ! catchupChain.witness_change_and_definition_joints )
+	// 	catchupChain.witness_change_and_definition_joints = [];
+	// if (!Array.isArray(catchupChain.witness_change_and_definition_joints))
+	// 	return callbacks.ifError("witness_change_and_definition_joints must be array");
 
 	/**
 	 * 	POW MOD
 	 */
-	witnessProof.processPowWitnessProof
+	witnessPowProof.processPowWitnessProof
 	(
 		catchupChain.unstable_mc_joints,
-		catchupChain.witness_change_and_definition_joints,
 		true,
 		function( err, arrLastBallUnits, assocLastBallByLastBallUnit )
 		{
