@@ -120,19 +120,29 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	let arrFoundTrustMEAuthors	= [];
 	let arrLastBallUnits		= [];
 	let assocLastBallByLastBallUnit	= {};
-	let arrWitnessJoints		= [];
+	let arrTrustMEJoints		= [];
 
+	//
+	//	arrUnstableMcJoints were collected by SQL below:
+	//	SELECT unit, pow_type FROM units WHERE is_on_main_chain=1 AND is_stable=0 ORDER BY main_chain_index DESC
+	//
 	for ( let i = 0; i < arrUnstableMcJoints.length; i ++ )
 	{
-		let objJoint = arrUnstableMcJoints[i];
-		let objUnit = objJoint.unit;
+		let objJoint	= arrUnstableMcJoints[ i ];
+		let objUnit	= objJoint.unit;
 
 		if ( objJoint.ball )
-			return handleResult("unstable mc but has ball");
+		{
+			return handleResult( "unstable mc but has ball" );
+		}
 		if ( ! validation.hasValidHashes( objJoint ) )
-			return handleResult("invalid hash");
+		{
+			return handleResult( "invalid hash" );
+		}
 		if ( arrParentUnits && arrParentUnits.indexOf( objUnit.unit ) === -1 )
-			return handleResult("not in parents");
+		{
+			return handleResult( "not in parents" );
+		}
 
 		//	...
 		let bAddedJoint = false;
@@ -141,10 +151,16 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			for ( let j = 0; j < objUnit.authors.length; j++ )
 			{
 				let address = objUnit.authors[ j ].address;
-				if ( arrFoundTrustMEAuthors.indexOf( address ) === -1 )
+
+				if ( -1 === arrFoundTrustMEAuthors.indexOf( address ) )
+				{
 					arrFoundTrustMEAuthors.push( address );
+				}
+
 				if ( ! bAddedJoint )
-					arrWitnessJoints.push( objJoint );
+				{
+					arrTrustMEJoints.push( objJoint );
+				}
 				bAddedJoint = true;
 			}
 		}
@@ -156,19 +172,25 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			assocLastBallByLastBallUnit[ objUnit.last_ball_unit ] = objUnit.last_ball;
 		}
 	}
+	//	end of forEach arrUnstableMcJoints
+
 
 	if ( arrFoundTrustMEAuthors.length < constants.MAJORITY_OF_WITNESSES )
+	{
 		return handleResult( "not enough witnesses" );
-
-
-	if ( arrLastBallUnits.length === 0 )
-		throw Error("processWitnessProof: no last ball units");
+	}
+	if ( 0 === arrLastBallUnits.length )
+	{
+		throw Error( "processWitnessProof: no last ball units" );
+	}
 
 
 	let assocDefinitions		= {};	//	keyed by definition chash
 	let assocDefinitionChashes	= {};	//	keyed by address
 
+	//
 	//	checks signatures and updates definitions
+	//
 	function validateUnit( objUnit, bRequireDefinitionOrChange, cb2 )
 	{
 		let bFound = false;
@@ -178,41 +200,61 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			function( author, cb3 )
 			{
 				let address = author.address;
-				if ( arrFoundTrustMEAuthors.indexOf( address ) === -1 )	//	not a witness - skip it
+				if ( -1 === arrFoundTrustMEAuthors.indexOf( address ) )
+				{
+					//	not a witness - skip it
 					return cb3();
+				}
 
-				let definition_chash = assocDefinitionChashes[address];
+				//
+				//	the latest definition chash of the witness
+				//
+				let definition_chash = assocDefinitionChashes[ address ];
 				if ( ! definition_chash )
+				{
 					throw Error( "definition chash not known for address " + address );
-
+				}
 				if ( author.definition )
 				{
+					//
+					//	do transaction for the first time
+					//
 					if ( objectHash.getChash160( author.definition ) !== definition_chash )
+					{
 						return cb3( "definition doesn't hash to the expected value" );
+					}
+
 					assocDefinitions[ definition_chash ] = author.definition;
 					bFound = true;
 				}
 
+
 				function handleAuthor()
 				{
-					// FIX
+					//	FIX
 					validation.validateAuthorSignaturesWithoutReferences
 					(
 						author,
 						objUnit,
-						assocDefinitions[ definition_chash ],
+						assocDefinitions[ definition_chash ],	//	definition JSON
 						function( err )
 						{
 							if ( err )
-								return cb3(err);
+							{
+								return cb3( err );
+							}
 
+							//
+							//	okay, definition is valid
+							//
 							for ( let i = 0; i < objUnit.messages.length; i++ )
 							{
-								let message = objUnit.messages[i];
-								if ( message.app === 'address_definition_change'
-									&& (message.payload.address === address || objUnit.authors.length === 1 && objUnit.authors[0].address === address) )
+								let message = objUnit.messages[ i ];
+								if ( 'address_definition_change' === message.app
+									&& ( message.payload.address === address ||
+										1 === objUnit.authors.length && objUnit.authors[ 0 ].address === address ) )
 								{
-									assocDefinitionChashes[address] = message.payload.definition_chash;
+									assocDefinitionChashes[ address ] = message.payload.definition_chash;
 									bFound = true;
 								}
 							}
@@ -228,6 +270,10 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 					return handleAuthor();
 				}
 
+				//
+				//	only an address with money
+				//	there is no transaction any more
+				//
 				storage.readDefinition( db, definition_chash,
 				{
 					ifFound : function( arrDefinition )
@@ -235,7 +281,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 						assocDefinitions[ definition_chash ] = arrDefinition;
 						handleAuthor();
 					},
-					ifDefinitionNotFound : function(d)
+					ifDefinitionNotFound : function( sDefinitionCHash )
 					{
 						throw Error( "definition " + definition_chash + " not found, address " + address );
 					}
@@ -247,8 +293,13 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 				{
 					return cb2( err );
 				}
+
 				if ( bRequireDefinitionOrChange && ! bFound )
 				{
+					//
+					//	bRequireDefinitionOrChange always be false
+					//	so, you will never arrive here so far
+					//
 					return cb2( "neither definition nor change" );
 				}
 
@@ -271,23 +322,27 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			//	read latest known definitions of witness addresses
 			if ( ! bFromCurrent )
 			{
-				arrWitnesses.forEach( function( address )
+				for ( let i = 0; i < arrFoundTrustMEAuthors.length; i ++ )
 				{
+					let address = arrFoundTrustMEAuthors[ i ];
 					assocDefinitionChashes[ address ] = address;
-				});
+				}
 				return cb();
 			}
 
+			//
+			//	try to obtain definitions
+			//
 			async.eachSeries
 			(
-				arrWitnesses,
+				arrFoundTrustMEAuthors,
 				function( address, cb2 )
 				{
 					storage.readDefinitionByAddress( db, address, null,
 					{
 						ifFound : function( arrDefinition )
 						{
-							let definition_chash = objectHash.getChash160(arrDefinition);
+							let definition_chash = objectHash.getChash160( arrDefinition );
 							assocDefinitions[ definition_chash ]	= arrDefinition;
 							assocDefinitionChashes[ address ]	= definition_chash;
 							cb2();
@@ -304,10 +359,12 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		},
 		function( cb )
 		{
+			//
 			//	check signatures of unstable witness joints
+			//
 			async.eachSeries
 			(
-				arrWitnessJoints.reverse(),	//	they came in reverse chronological order, reverse() reverses in place
+				arrTrustMEJoints.reverse(),	//	they came in reverse chronological order, reverse() reverses in place
 				function( objJoint, cb2 )
 				{
 					validateUnit( objJoint.unit, false, cb2 );

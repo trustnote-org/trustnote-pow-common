@@ -2069,7 +2069,8 @@ function checkAttestorList(arrAttestors){
 
 
 
-function validateAuthorSignaturesWithoutReferences(objAuthor, objUnit, arrAddressDefinition, callback){
+function validateAuthorSignaturesWithoutReferences( objAuthor, objUnit, arrAddressDefinition, callback )
+{
 	var objValidationState = {
 		unit_hash_to_sign: objectHash.getUnitHashToSign(objUnit),
 		last_ball_mci: -1,
