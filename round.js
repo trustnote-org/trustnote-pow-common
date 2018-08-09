@@ -8,6 +8,31 @@ var db = require('./db.js');
 var conf = require('./conf.js');
 
 
+function getCurrentRoundIndex(callback){
+    db.query(
+		"SELECT MAX(round_index) AS ci FROM round", 
+        [],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round index");
+            callback(rows[0]["ci"]);
+		}
+	);
+}
+
+// the MinWl and MaxWl maybe null
+function getMinWlAndMaxWlByRoundIndex(roundIndex, callback){
+    db.query(
+		"SELECT min_wl, max_wl FROM round where round_index=?", 
+        [roundIndex],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find the right round index");
+            callback(rows[0]["min_wl"], rows[0]["max_wl"]);
+		}
+	);
+}
+
 function getCoinbaseByRoundIndex(roundIndex){
     if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
         return 0;
