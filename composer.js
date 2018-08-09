@@ -379,7 +379,7 @@ function composePowJoint(from_address, round_index, seed, difficulty, solution, 
 		outputs: [{address: from_address, amount: 0}], 
 		messages: [objMessage], 
 		round_index: round_index,
-		pow_type: 1,
+		pow_type: constants.POW_TYPE_POW_EQUHASH,
 		signer: signer, 
 		callbacks: callbacks
 	});
@@ -391,7 +391,7 @@ function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 		paying_addresses: [from_address], 
 		outputs: [{address: from_address, amount: 0}], 
 		round_index: round_index,
-		pow_type: 2,
+		pow_type: constants.POW_TYPE_TRUSTME,
 		signer: signer, 
 		callbacks: callbacks
 	});
@@ -404,7 +404,7 @@ function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer
 		outputs: [{address: from_address, amount: 0}], 
 		inputs = [{type: "coinbase", amount: coinbase_amount, address: from_address];
 		round_index: round_index,
-		pow_type: 3,
+		pow_type: constants.POW_TYPE_COIN_BASE,
 		signer: signer, 
 		callbacks: callbacks
 	});
@@ -416,20 +416,24 @@ function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer
 */
 function composeJoint(params){
 	
-	var arrWitnesses = params.witnesses;
-	if (!arrWitnesses){
-		myWitnesses.readMyWitnesses(function(_arrWitnesses){
-			params.witnesses = _arrWitnesses;
-			composeJoint(params);
-		});
-		return;
-	}
+	// pow del
+	// var arrWitnesses = params.witnesses;
+	// if (!arrWitnesses){
+	// 	myWitnesses.readMyWitnesses(function(_arrWitnesses){
+	// 		params.witnesses = _arrWitnesses;
+	// 		composeJoint(params);
+	// 	});
+	// 	return;
+	// }
 	
+	// pow modi
 	if (conf.bLight && !params.lightProps){
 		var network = require('./network.js');
 		network.requestFromLightVendor(
-			'light/get_parents_and_last_ball_and_witness_list_unit', 
-			{witnesses: arrWitnesses}, 
+			// 'light/get_parents_and_last_ball_and_witness_list_unit', 
+			'light/get_parents_and_last_ball', 
+			//{witnesses: arrWitnesses}, 
+			{}, 
 			function(ws, request, response){
 				if (response.error)
 					return params.callbacks.ifError(response.error);
@@ -595,9 +599,10 @@ function composeJoint(params){
 				last_ball_mci = lightProps.last_stable_mc_ball_mci;
 				return checkForUnstablePredecessors();
 			}
+			// pow modi
 			parentComposer.pickParentUnitsAndLastBall(
 				conn, 
-				arrWitnesses, 
+				// arrWitnesses, 
 				function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
 					if (err)
 						return cb("unable to find parents: "+err);
@@ -658,31 +663,32 @@ function composeJoint(params){
 				});
 			}, cb);
 		},
-		function(cb){ // witnesses
-			if (bGenesis){
-				objUnit.witnesses = arrWitnesses;
-				return cb();
-			}
-			if (conf.bLight){
-				if (lightProps.witness_list_unit)
-					objUnit.witness_list_unit = lightProps.witness_list_unit;
-				else
-					objUnit.witnesses = arrWitnesses;
-				return cb();
-			}
-			// witness addresses must not have references
-			storage.determineIfWitnessAddressDefinitionsHaveReferences(conn, arrWitnesses, function(bWithReferences){
-				if (bWithReferences)
-					return cb("some witnesses have references in their addresses");
-				storage.findWitnessListUnit(conn, arrWitnesses, last_ball_mci, function(witness_list_unit){
-					if (witness_list_unit)
-						objUnit.witness_list_unit = witness_list_unit;
-					else
-						objUnit.witnesses = arrWitnesses;
-					cb();
-				});
-			});
-		},
+		// pow del
+		// function(cb){ // witnesses
+		// 	if (bGenesis){
+		// 		objUnit.witnesses = arrWitnesses;
+		// 		return cb();
+		// 	}
+		// 	if (conf.bLight){
+		// 		if (lightProps.witness_list_unit)
+		// 			objUnit.witness_list_unit = lightProps.witness_list_unit;
+		// 		else
+		// 			objUnit.witnesses = arrWitnesses;
+		// 		return cb();
+		// 	}
+		// 	// witness addresses must not have references
+		// 	storage.determineIfWitnessAddressDefinitionsHaveReferences(conn, arrWitnesses, function(bWithReferences){
+		// 		if (bWithReferences)
+		// 			return cb("some witnesses have references in their addresses");
+		// 		storage.findWitnessListUnit(conn, arrWitnesses, last_ball_mci, function(witness_list_unit){
+		// 			if (witness_list_unit)
+		// 				objUnit.witness_list_unit = witness_list_unit;
+		// 			else
+		// 				objUnit.witnesses = arrWitnesses;
+		// 			cb();
+		// 		});
+		// 	});
+		// },
 		// messages retrieved via callback
 		function(cb){
 			if (!fnRetrieveMessages)
@@ -704,7 +710,9 @@ function composeJoint(params){
 			var naked_payload_commission = objectLength.getTotalPayloadSize(objUnit); // without input coins
 
 			if (bGenesis){
-				objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: arrWitnesses[0]}];
+				// pow modi 
+				//objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: arrWitnesses[0]}];
+				objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: constants.FOUNDATION_ADDRESS}];
 				objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
 				total_input = constants.TOTAL_WHITEBYTES;
 				return cb();

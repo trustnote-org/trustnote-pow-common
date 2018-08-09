@@ -273,7 +273,8 @@ function updateMainChain(conn, last_unit, onDone){
 		profiler.start();
 		readLastStableMcUnit(function(last_stable_mc_unit){
 			console.log("last stable mc unit "+last_stable_mc_unit);
-			storage.readWitnesses(conn, last_stable_mc_unit, function(arrWitnesses){
+			// pow del
+			// storage.readWitnesses(conn, last_stable_mc_unit, function(arrWitnesses){
 				conn.query("SELECT unit, is_on_main_chain, main_chain_index, level FROM units WHERE best_parent_unit=?", [last_stable_mc_unit], function(rows){
 					if (rows.length === 0){
 						//if (isGenesisUnit(last_stable_mc_unit))
@@ -301,9 +302,12 @@ function updateMainChain(conn, last_unit, onDone){
 						var mc_end_witnessed_level = wl_rows[0].witnessed_level;
 						conn.query(
 							// among these 7 witnesses, find min wl
-							"SELECT MIN(witnessed_level) AS min_mc_wl FROM units LEFT JOIN unit_authors USING(unit) \n\
-							WHERE is_on_main_chain=1 AND level>=? AND address IN(?)", // _left_ join enforces the best query plan in sqlite
-							[mc_end_witnessed_level, arrWitnesses],
+							// pow modi
+							//"SELECT MIN(witnessed_level) AS min_mc_wl FROM units LEFT JOIN unit_authors USING(unit) \n\
+							//WHERE is_on_main_chain=1 AND level>=? AND address IN(?)", // _left_ join enforces the best query plan in sqlite
+							"SELECT MIN(witnessed_level) AS min_mc_wl FROM units \n\
+							WHERE is_on_main_chain=1 AND level>=? AND pow_type=?", 
+							[mc_end_witnessed_level, constants.POW_TYPE_TRUSTME],
 							function(min_wl_rows){
 								if (min_wl_rows.length !== 1)
 									throw Error("not a single min mc wl");
@@ -363,7 +367,7 @@ function updateMainChain(conn, last_unit, onDone){
 						);
 					});
 				});
-			});
+			// });
 		});
 	}
 
@@ -454,7 +458,9 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 			return handleResult(false);
 		var max_later_limci = Math.max.apply(
 			null, arrLaterUnitProps.map(function(objLaterUnitProps){ return objLaterUnitProps.latest_included_mc_index; }));
-		readBestParentAndItsWitnesses(conn, earlier_unit, function(best_parent_unit, arrWitnesses){
+		// pow modi
+		//readBestParentAndItsWitnesses(conn, earlier_unit, function(best_parent_unit, arrWitnesses){
+		readBestParent(conn, earlier_unit, function(best_parent_unit){
 			conn.query("SELECT unit, is_on_main_chain, main_chain_index, level FROM units WHERE best_parent_unit=?", [best_parent_unit], function(rows){
 				if (rows.length === 0)
 					throw Error("no best children of "+best_parent_unit+"?");
@@ -477,37 +483,55 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 					var count = 0;
 
 					function goUp(start_unit){
+						// pow modi 
+						// conn.query(
+						// 	"SELECT best_parent_unit, witnessed_level, \n\
+						// 		(SELECT COUNT(*) FROM unit_authors WHERE unit_authors.unit=units.unit AND address IN(?)) AS count \n\
+						// 	FROM units WHERE unit=?", [arrWitnesses, start_unit],
 						conn.query(
-							"SELECT best_parent_unit, witnessed_level, \n\
-								(SELECT COUNT(*) FROM unit_authors WHERE unit_authors.unit=units.unit AND address IN(?)) AS count \n\
-							FROM units WHERE unit=?", [arrWitnesses, start_unit],
+							"SELECT best_parent_unit, witnessed_level, pow_type \n\
+							FROM units WHERE unit=?", [start_unit],
 							function(rows){
 								if (rows.length !== 1)
 									throw Error("findMinMcWitnessedLevel: not 1 row");
 								var row = rows[0];
-								if (row.count > 0 && row.witnessed_level < min_mc_wl)
+								//if (row.count > 0 && row.witnessed_level < min_mc_wl)
+								if (row.pow_type === constants.POW_TYPE_TRUSTME && row.witnessed_level < min_mc_wl)
 									min_mc_wl = row.witnessed_level;
-								count += row.count;  // this is a bug, should count only unique witnesses
+								//count += row.count;  // this is a bug, should count only unique witnesses
+								count++;
 								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(row.best_parent_unit) : handleMinMcWl(min_mc_wl);
 							}
 						);
 					}
-
+					
+					// pow modi 
+					// conn.query(
+					// 	"SELECT witnessed_level, best_parent_unit, \n\
+					// 		(SELECT COUNT(*) FROM unit_authors WHERE unit_authors.unit=units.unit AND address IN(?)) AS count \n\
+					// 	FROM units \n\
+					// 	WHERE unit IN(?) \n\
+					// 	ORDER BY witnessed_level DESC, \n\
+					// 		level-witnessed_level ASC, \n\
+					// 		unit ASC \n\
+					// 	LIMIT 1", 
+					// 	[arrWitnesses, arrLaterUnits],
 					conn.query(
-						"SELECT witnessed_level, best_parent_unit, \n\
-							(SELECT COUNT(*) FROM unit_authors WHERE unit_authors.unit=units.unit AND address IN(?)) AS count \n\
+						"SELECT witnessed_level, best_parent_unit, pow_type \n\
 						FROM units \n\
 						WHERE unit IN(?) \n\
 						ORDER BY witnessed_level DESC, \n\
 							level-witnessed_level ASC, \n\
 							unit ASC \n\
 						LIMIT 1", 
-						[arrWitnesses, arrLaterUnits],
+						[arrLaterUnits],
 						function(rows){
 							var row = rows[0];
-							if (row.count > 0)
+							//if (row.count > 0)
+							if (row.pow_type === constants.POW_TYPE_TRUSTME)
 								min_mc_wl = row.witnessed_level;
-							count += row.count;
+							//count += row.count;
+							count ++;
 							goUp(row.best_parent_unit);
 						}
 					);
@@ -715,6 +739,12 @@ function readBestParentAndItsWitnesses(conn, unit, handleBestParentAndItsWitness
 		storage.readWitnesses(conn, props.best_parent_unit, function(arrWitnesses){
 			handleBestParentAndItsWitnesses(props.best_parent_unit, arrWitnesses);
 		});
+	});
+}
+//pow add
+function readBestParent(conn, unit, handleBestParent){
+	storage.readStaticUnitProps(conn, unit, function(props){
+		handleBestParent(props.best_parent_unit);
 	});
 }
 

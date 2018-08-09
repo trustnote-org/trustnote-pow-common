@@ -4,6 +4,8 @@
 // pow add
 
 var constants = require('./constants.js');
+var db = require('./db.js');
+var conf = require('./conf.js');
 
 var ROUNDYEAR_TOTAL = 210240;
 
@@ -12,6 +14,36 @@ function getCoinbaseByRoundIndex(roundIndex){
     if(roundIndex < 1 || roundIndex > 4204800)
         return 0;
 	return constants.ROUND_COINBASE[Math.ceil(roundIndex/ROUNDYEAR_TOTAL)-1];
+}
+
+function getWitnessesByRoundIndex(round, callback){
+    // TODO ：cache the witnesses of recent rounds
+    db.query(
+		"SELECT distinc(address) \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE is_stable=1 and pow_type=1 and round_index=? order by main_chain_index,unit  \n\
+        LIMIT ?", 
+        [round, constants.COUNT_WITNESSES],
+		function(rows){
+			if (rows.length !==  constants.COUNT_WITNESSES)
+                throw Error("Can not find enough witnesses ");
+            var witnesses = rows.map(function(row) { return row.address; } );
+            callback(witnesses.push(constants.FOUNDATION_ADDRESS));
+		}
+	);
+}
+
+function checkIfCoinBaseUnitByRoundIndexAndAddressExists(round, address, callback){
+    // TODO ：cache the witnesses of recent rounds
+    db.query(
+		"SELECT  units.unit \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE pow_type=3 and round_index=? and address=? ", 
+        [round, address],
+		function(rows){
+			callback(rows.length > 0 );
+		}
+	);
 }
 
 

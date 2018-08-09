@@ -387,17 +387,17 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		
 		
 		function updateWitnessedLevel(cb){
-			if (objUnit.witnesses)
-				updateWitnessedLevelByWitnesslist(objUnit.witnesses, cb);
-			else
-				storage.readWitnessList(conn, objUnit.witness_list_unit, function(arrWitnesses){
-					updateWitnessedLevelByWitnesslist(arrWitnesses, cb);
-				});
-		}
-		
+			// pow modi
+			// if (objUnit.witnesses)
+			// 	updateWitnessedLevelByWitnesslist(objUnit.witnesses, cb);
+			// else
+			// 	storage.readWitnessList(conn, objUnit.witness_list_unit, function(arrWitnesses){
+			// 		updateWitnessedLevelByWitnesslist(arrWitnesses, cb);
+			// 	});
+		//}
 		// The level at which we collect at least 7 distinct witnesses while walking up the main chain from our unit.
 		// The unit itself is not counted even if it is authored by a witness
-		function updateWitnessedLevelByWitnesslist(arrWitnesses, cb){
+		// function updateWitnessedLevelByWitnesslist(arrWitnesses, cb){
 			var arrCollectedWitnesses = [];
 			
 			function setWitnessedLevel(witnessed_level){
@@ -419,23 +419,43 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 					if (level === 0) // genesis
 						return setWitnessedLevel(0);
 					profiler.start();
-					storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
-						profiler.stop('write-wl-select-authors');
-						profiler.start();
-						for (var i=0; i<arrAuthors.length; i++){
-							var address = arrAuthors[i];
-							if (arrWitnesses.indexOf(address) !== -1 && arrCollectedWitnesses.indexOf(address) === -1)
-								arrCollectedWitnesses.push(address);
-						}
-						profiler.stop('write-wl-search');
-						(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
-							? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
-					});
+					// pow: modi check trust me unit
+					// storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+					// 	profiler.stop('write-wl-select-authors');
+					// 	profiler.start();
+					// 	for (var i=0; i<arrAuthors.length; i++){
+					// 		var address = arrAuthors[i];
+					// 		if (arrWitnesses.indexOf(address) !== -1 && arrCollectedWitnesses.indexOf(address) === -1)
+					// 			arrCollectedWitnesses.push(address);
+					// 	}
+					// 	profiler.stop('write-wl-search');
+					// 	(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
+					// 		? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
+					// });
+					if(props.pow_type == constants.POW_TYPE_TRUSTME){
+						storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+							profiler.stop('write-wl-select-authors');
+							profiler.start();
+							for (var i=0; i<arrAuthors.length; i++){
+								var address = arrAuthors[i];
+								if (arrCollectedWitnesses.indexOf(address) === -1)
+									arrCollectedWitnesses.push(address);
+							}
+							profiler.stop('write-wl-search');
+							(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
+								? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
+						});
+					}
+					else{
+						addWitnessesAndGoUp(best_parent_unit);
+					}
 				});
 			}
 			
 			profiler.stop('write-update');
-			addWitnessesAndGoUp(my_best_parent_unit);
+			// pow modi:
+			//addWitnessesAndGoUp(my_best_parent_unit);
+			addWitnessesAndGoUp(objUnit.unit);
 		}
 		
 		// Victor ShareAddress 

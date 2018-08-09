@@ -18,6 +18,7 @@ var Definition = require("./definition.js");
 var conf = require('./conf.js');
 var profiler = require('./profiler.js');
 var breadcrumbs = require('./breadcrumbs.js');
+var round = require('./round.js');
 
 var MAX_INT32 = Math.pow(2, 31) - 1;
 
@@ -41,8 +42,8 @@ function hasValidHashes(objJoint){
 	return true;
 }
 
-function validate( objJoint, callbacks )
-{
+function validate(objJoint, callbacks) {
+	
 	var objUnit = objJoint.unit;
 	if (typeof objUnit !== "object" || objUnit === null)
 		throw Error("no unit object");
@@ -51,28 +52,23 @@ function validate( objJoint, callbacks )
 	
 	console.log("\nvalidating joint identified by unit "+objJoint.unit.unit);
 	
-	if ( ! isStringOfLength( objUnit.unit, constants.HASH_LENGTH ) )
-	{
+	if (!isStringOfLength(objUnit.unit, constants.HASH_LENGTH))
 		return callbacks.ifJointError("wrong unit length");
-	}
-
+	
 	try{
 		// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
-		if ( objectHash.getUnitHash( objUnit ) !== objUnit.unit )
-			return callbacks.ifJointError( "wrong unit hash: " + objectHash.getUnitHash(objUnit)+" != "+objUnit.unit );
+		if (objectHash.getUnitHash(objUnit) !== objUnit.unit)
+			return callbacks.ifJointError("wrong unit hash: "+objectHash.getUnitHash(objUnit)+" != "+objUnit.unit);
 	}
-	catch( e )
-	{
+	catch(e){
 		return callbacks.ifJointError("failed to calc unit hash: "+e);
 	}
-
-	if ( objJoint.unsigned )
-	{
-		if ( hasFieldsExcept( objJoint, [ "unit", "unsigned" ] ) )
+	
+	if (objJoint.unsigned){
+		if (hasFieldsExcept(objJoint, ["unit", "unsigned"]))
 			return callbacks.ifJointError("unknown fields in unsigned unit-joint");
 	}
-	else if ("ball" in objJoint)
-	{
+	else if ("ball" in objJoint){
 		if (!isStringOfLength(objJoint.ball, constants.HASH_LENGTH))
 			return callbacks.ifJointError("wrong ball length");
 		if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units", "arrShareDefinition"])) // Victor ShareAddress add arrShareDefinition field
@@ -92,20 +88,39 @@ function validate( objJoint, callbacks )
 	if ("content_hash" in objUnit){ // nonserial and stripped off content
 		if (!isStringOfLength(objUnit.content_hash, constants.HASH_LENGTH))
 			return callbacks.ifUnitError("wrong content_hash length");
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
-			return callbacks.ifUnitError("unknown fields in nonserial unit");
+		// Pow modi
+		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
+		return callbacks.ifUnitError("unknown fields in nonserial unit");
 		if (!objJoint.ball)
 			return callbacks.ifJointError("content_hash allowed only in finished ball");
 	}
 	else{ // serial
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
+		// Pow modi
+		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 			return callbacks.ifUnitError("unknown fields in unit");
 
 		if (typeof objUnit.headers_commission !== "number")
 			return callbacks.ifJointError("no headers_commission");
 		if (typeof objUnit.payload_commission !== "number")
 			return callbacks.ifJointError("no payload_commission");
-		
+		//Pow add:
+		if (objUnit.pow_type){
+			if (typeof objUnit.round_index !== "number")
+				return callbacks.ifJointError("no round index");
+			if (typeof objUnit.pow_type !== "number")
+				return callbacks.ifJointError("no unit type");
+			
+			// unity type should be in range of [1,3]
+			if ( objUnit.pow_type < 1 || objUnit.pow_type > 3)
+				return callbacks.ifJointError("invalid unit type");
+			// unity round index should be in range of [1,4204800]
+			if ( objUnit.round_index < 1 || objUnit.round_index > 4204800)
+				return callbacks.ifJointError("invalid unit round index");
+		}
+	
+
 		if (!isNonemptyArray(objUnit.messages))
 			return callbacks.ifUnitError("missing or empty messages array");
 		if (objUnit.messages.length > constants.MAX_MESSAGES_PER_UNIT)
@@ -137,9 +152,9 @@ function validate( objJoint, callbacks )
 			return callbacks.ifUnitError("wrong length of last ball unit");
 	}
 	
-	
-	if ("witness_list_unit" in objUnit && "witnesses" in objUnit)
-		return callbacks.ifUnitError("ambiguous witnesses");
+	// pow del
+	// if ("witness_list_unit" in objUnit && "witnesses" in objUnit)
+	// 	return callbacks.ifUnitError("ambiguous witnesses");
 		
 	var arrAuthorAddresses = objUnit.authors ? objUnit.authors.map(function(author) { return author.address; } ) : [];
 	
@@ -165,39 +180,33 @@ function validate( objJoint, callbacks )
 			return callbacks.ifJointError("bad timestamp");
 	}
 	
-	mutex.lock( arrAuthorAddresses, function( unlock )
-	{
+	mutex.lock(arrAuthorAddresses, function(unlock){
+		
 		var conn = null;
+
 		async.series(
 			[
-				function( cb )
-				{
-					db.takeConnectionFromPool(function(new_conn)
-					{
+				function(cb){
+					db.takeConnectionFromPool(function(new_conn){
 						conn = new_conn;
 						conn.query("BEGIN", function(){cb();});
 					});
 				},
-				function( cb )
-				{
+				function(cb){
 					profiler.start();
-					checkDuplicate( conn, objUnit.unit, cb );
+					checkDuplicate(conn, objUnit.unit, cb);
 				},
-				function( cb )
-				{
+				function(cb){
 					profiler.stop('validation-checkDuplicate');
 					profiler.start();
-					objUnit.content_hash
-						? cb()
-						: validateHeadersCommissionRecipients( objUnit, cb );
+					objUnit.content_hash ? cb() : validateHeadersCommissionRecipients(objUnit, cb);
 				},
-				function( cb )
-				{
+				function(cb){
 					profiler.stop('validation-hc-recipients');
 					profiler.start();
-					! objUnit.parent_units
+					!objUnit.parent_units
 						? cb()
-						: validateHashTree( conn, objJoint, objValidationState, cb );
+						: validateHashTree(conn, objJoint, objValidationState, cb);
 				},
 				function(cb){
 					profiler.stop('validation-hash-tree');
@@ -225,47 +234,33 @@ function validate( objJoint, callbacks )
 					profiler.stop('validation-authors');
 					profiler.start();
 					objUnit.content_hash ? cb() : validateMessages(conn, objUnit.messages, objUnit, objValidationState, cb);
+				},
+				function(cb){  // pow add: validate pow_types units
+					profiler.stop('validation-messages');
+					profiler.start();
+					objUnit.pow_type ? validatePowTypes(conn, objUnit, objValidationState, cb):cb();
 				}
 			], 
-			function( err )
-			{
-				profiler.stop('validation-messages');
-				if ( err )
-				{
-					conn.query( "ROLLBACK", function()
-					{
+			function(err){
+				profiler.stop('validation-pow_type');
+				if(err){
+					conn.query("ROLLBACK", function(){
 						conn.release();
 						unlock();
-
-						if ( typeof err === "object" )
-						{
-							if ( err.error_code === "unresolved_dependency")
-							{
+						if (typeof err === "object"){
+							if (err.error_code === "unresolved_dependency")
 								callbacks.ifNeedParentUnits(err.arrMissingUnits);
-							}
-							else if ( err.error_code === "need_hash_tree" )
-							{
-								//	need to download hash tree to catch up
+							else if (err.error_code === "need_hash_tree") // need to download hash tree to catch up
 								callbacks.ifNeedHashTree();
-							}
-							else if ( err.error_code === "invalid_joint" )
-							{
-								//	ball found in hash tree but with another unit
+							else if (err.error_code === "invalid_joint") // ball found in hash tree but with another unit
 								callbacks.ifJointError(err.message);
-							}
 							else if (err.error_code === "transient")
-							{
 								callbacks.ifTransientError(err.message);
-							}
 							else
-							{
 								throw Error("unknown error code");
-							}
 						}
 						else
-						{
 							callbacks.ifUnitError(err);
-						}
 					});
 				}
 				else{
@@ -301,23 +296,16 @@ function checkDuplicate(conn, unit, cb){
 	});
 }
 
-function validateHashTree( conn, objJoint, objValidationState, callback )
-{
-	if ( ! objJoint.ball )
+function validateHashTree(conn, objJoint, objValidationState, callback){
+	if (!objJoint.ball)
 		return callback();
-
 	var objUnit = objJoint.unit;
-
-	conn.query( "SELECT unit FROM hash_tree_balls WHERE ball=?", [ objJoint.ball ], function( rows )
-	{
-		if ( rows.length === 0 )
-			return callback( { error_code : "need_hash_tree", message : "ball " + objJoint.ball+" is not known in hash tree" } );
-		if ( rows[ 0 ].unit !== objUnit.unit )
-			return callback( createJointError( "ball " + objJoint.ball + " unit " + objUnit.unit + " contradicts hash tree" ) );
-
-		//	...
-		conn.query
-		(
+	conn.query("SELECT unit FROM hash_tree_balls WHERE ball=?", [objJoint.ball], function(rows){
+		if (rows.length === 0) 
+			return callback({error_code: "need_hash_tree", message: "ball "+objJoint.ball+" is not known in hash tree"});
+		if (rows[0].unit !== objUnit.unit)
+			return callback(createJointError("ball "+objJoint.ball+" unit "+objUnit.unit+" contradicts hash tree"));
+		conn.query(
 			"SELECT ball FROM hash_tree_balls WHERE unit IN(?) \n\
 			UNION \n\
 			SELECT ball FROM balls WHERE unit IN(?) \n\
@@ -970,7 +958,9 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		return callback("wrong payload hash size");
 	if (typeof objMessage.payload_location !== "string")
 		return callback("no payload_location");
-	if (hasFieldsExcept(objMessage, ["app", "payload_hash", "payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
+	// Pow modi  
+	//if (hasFieldsExcept(objMessage, ["app", "payload_hash", "payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
+	if (hasFieldsExcept(objMessage, ["app", "payload_hash", "pow_equihash","payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
 		return callback("unknown fields in message");
 	
 	if ("spend_proofs" in objMessage){
@@ -1044,8 +1034,8 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		if (objMessage.payload_location === "none" && !objMessage.spend_proofs)
 			return callback("private payment must come with spend proof(s)");
 	}
-	
-	var arrInlineOnlyApps = ["address_definition_change", "data_feed", "definition_template", "asset", "asset_attestors", "attestation", "poll", "vote"];
+	// pow modi
+	var arrInlineOnlyApps = ["address_definition_change", "data_feed","pow_equihash", "definition_template", "asset", "asset_attestors", "attestation", "poll", "vote"];
 	if (arrInlineOnlyApps.indexOf(objMessage.app) >= 0 && objMessage.payload_location !== "inline")
 		return callback(objMessage.app+" must be inline");
 
@@ -1077,6 +1067,31 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 	async.series([validateSpendProofs, validatePayload], callback);
 }
 
+// pow add :
+function validatePowTypes(conn, objUnit, objValidationState, callback) {
+	if (!objUnit.pow_type)
+		return callback();
+    var round_index = objUnit.round_index;
+	if (objUnit.pow_type == 1 ){	// Pow equhash unit
+	
+	}
+	else if(objUnit.pow_type ==2){	// trust me
+		if (objUnit.authors.length !== 1){
+			callback("trust me units contain more than one author ");
+		}
+		// check author is last round witnesses by pow units selected
+		var witnessesOfLastRound= round.getWitnessesByRoundIndex(round_index-1);
+		if(witnessesOfRound.indexOf(objUnit.authors[0].address) == -1){
+			callback("trust me unit author is invalid witness  ");
+		}
+
+	}
+	else{// coin base 
+		
+	}
+
+	async.series([validateSpendProofs, validatePayload], callback);
+}
 
 function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidationState, onAcceptedDoublespends, cb){
 	conn.query(
@@ -1099,7 +1114,7 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 							if (objConflictingRecord.main_chain_index > objValidationState.last_ball_mci || objConflictingRecord.main_chain_index === null)
 								return cb2(error);
 
-							// in good sequence (final state)
+							// in good sequence (final state)`
 							if (objConflictingRecord.sequence === 'good')
 								return cb2(error);
 
@@ -1285,10 +1300,31 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 		case "payment":
 			validatePayment(conn, payload, message_index, objUnit, objValidationState, callback);
 			break;
-
+		// pow add
+		case "pow_equihash":
+			validatePowEquhash(conn, payload, message_index, objUnit, objValidationState, callback);
+			break;
 		default:
 			return callback("unknown app: "+objMessage.app);
 	}
+}
+
+// used for both pow app 
+function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState, callback){
+
+	if (!("asset" in payload)){ // base currency
+		if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
+			return callback("unknown fields in payment message");
+		if (objValidationState.bHasBasePayment)
+			return callback("can have only one base payment");
+		objValidationState.bHasBasePayment = true;
+		return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
+	}
+	
+	
+	
+	var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
+	// note that light clients cannot check attestations
 }
 
 // used for both public and private payments
@@ -1424,6 +1460,8 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 		return callback("found "+count_open_outputs+" open outputs, expected 1");
 
 	var bIssue = false;
+	// pow add
+	var bCoinbase = false;
 	var bHaveHeadersComissions = false;
 	var bHaveWitnessings = false;
 	
@@ -1520,7 +1558,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							throw Error("spend proof didn't help: "+err);
 					//	if (objAsset)
 					//		profiler2.stop('checkInputDoubleSpend');
-						cb2(err);
+						cbb2(err);
 					}
 				);
 			}
@@ -1603,6 +1641,45 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						checkInputDoubleSpend(cb);
 					// attestations and issued_by_definer_only already checked before
 					break;
+					// Pow add
+					case "coinbase":
+						if (input_index !== 0)
+							return cb("coinbase must come first");
+						if (hasFieldsExcept(input, ["type", "address", "amount"]))
+							return cb("unknown fields in issue input");
+						if (!isPositiveInteger(input.amount))
+							return cb("amount must be positive");
+						if (bCoinbase)
+							return cb("only one coinbase per message allowed");
+							bCoinbase = true;
+						
+						var address = null;
+						if (arrAuthorAddresses.length !== 1){
+								return cb("coin base author must be one");			
+						}
+						if (typeof input.address !== "string")
+							return cb("when multi-authored, must put address in issue input");
+						if (arrAuthorAddresses.indexOf(input.address) === -1)
+							return cb("issue input address "+input.address+" is not an author");
+						
+						total_input += input.amount;
+						address = arrAuthorAddresses[0];
+						// Check author come from n-2 round pow units
+						round.getWitnessesByRoundIndex(round_index-1,function (witnessesOFLastTwoRound){
+							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) == -1){
+								return callback("coinbase unit author is invalid witness  ");
+							}
+							// Check duplicate coinbase unit in current round if exists(simialr to doublespend check)
+							round.checkIfCoinBaseUnitByRoundIndexAndAddressExists(round_index, objUnit.authors[0].address,function(isExisted){
+								if(isExisted){
+									return callback("coinbase unit by each author can not sent more than once ");
+								}								// check amount is valid
+								var expectedCoinBaseAmountForRound = round.getCoinbaseByRoundIndex(objUnit.round_index-1)
+								if (expectedCoinBaseAmountForRound != input.amount){
+									return callback("coinbase unit amount is incorrect ");
+								}
+						});
+						break;
 					
 				case "transfer":
 				//	if (objAsset)
