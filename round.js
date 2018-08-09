@@ -33,23 +33,6 @@ function getWitnessesByRoundIndex(round, callback){
 	);
 }
 
-function getWitnessesByRoundIndex(round, callback){
-    // TODO ：cache the witnesses of recent rounds
-    db.query(
-		"SELECT distinc(address) \n\
-		FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 and pow_type=1 and round_index=? order by main_chain_index,unit  \n\
-        LIMIT ?", 
-        [round, constants.COUNT_WITNESSES],
-		function(rows){
-			if (rows.length !==  constants.COUNT_WITNESSES)
-                throw Error("Can not find enough witnesses ");
-            var witnesses = rows.map(function(row) { return row.address; } );
-            callback(witnesses.push(constants.FOUNDATION_ADDRESS));
-		}
-	);
-}
-
 function checkIfCoinBaseUnitByRoundIndexAndAddressExists(round, address, callback){
     // TODO ：cache the witnesses of recent rounds
     db.query(
