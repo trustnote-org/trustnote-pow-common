@@ -1,5 +1,11 @@
 /*jslint node: true */
 "use strict";
+
+/**
+ *	@boss	XING
+ */
+
+
 var WebSocket = process.browser ? global.WebSocket : require('ws');
 var socks = process.browser ? null : require('socks'+'');
 var WebSocketServer = WebSocket.Server;
@@ -1529,72 +1535,110 @@ function broadcastJoint(objJoint){
 
 // catchup
 
-function checkCatchupLeftovers(){
-	db.query(
+function checkCatchupLeftovers()
+{
+	db.query
+	(
 		"SELECT 1 FROM hash_tree_balls \n\
 		UNION \n\
 		SELECT 1 FROM catchup_chain_balls \n\
 		LIMIT 1",
-		function(rows){
+		function( rows )
+		{
 			if (rows.length === 0)
-				return console.log('no leftovers');
+				return console.log( 'no leftovers' );
+
 			console.log('have catchup leftovers from the previous run');
-			findNextPeer(null, function(ws){
+			findNextPeer( null, function( ws )
+			{
 				console.log('will request leftovers from '+ws.peer);
-				if (!bCatchingUp && !bWaitingForCatchupChain)
-					requestCatchup(ws);
+				if ( ! bCatchingUp && ! bWaitingForCatchupChain )
+				{
+					requestCatchup( ws );
+				}
 			});
 		}
 	);
 }
 
+
 function requestCatchup( ws )
 {
-	console.log("will request catchup from "+ws.peer);
-	eventBus.emit('catching_up_started');
+	console.log( "will request catchup from " + ws.peer );
+	eventBus.emit( 'catching_up_started' );
 
 	catchup.purgeHandledBallsFromHashTree( db, function()
 	{
 		db.query
 		(
-			"SELECT hash_tree_balls.unit FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL ORDER BY ball_index", 
+			"SELECT hash_tree_balls.unit FROM hash_tree_balls \
+			LEFT JOIN units USING(unit) \
+			WHERE units.unit IS NULL ORDER BY ball_index",
 			function( tree_rows )
 			{
-				// leftovers from previous run
+				//
+				//	leftovers from previous run
+				//	unit does not exist in units but still in hash_tree_balls
+				//
 				if ( tree_rows.length > 0 )
 				{
 					bCatchingUp = true;
-					console.log("will request balls found in hash tree");
+					console.log( "will request balls found in hash tree" );
 					requestNewMissingJoints( ws, tree_rows.map( function( tree_row ){ return tree_row.unit; } ) );
-					waitTillHashTreeFullyProcessedAndRequestNext(ws);
+					waitTillHashTreeFullyProcessedAndRequestNext( ws );
 					return;
 				}
 
+				//
+				//	POW COMMENT
+				//	all sub-tasks stored in hash_tree_balls were finished
+				//
 				db.query( "SELECT 1 FROM catchup_chain_balls LIMIT 1", function( chain_rows )
 				{
+					//
 					//	leftovers from previous run
-					if (chain_rows.length > 0)
+					//	try to find new task range
+					//
+					if ( chain_rows.length > 0 )
 					{
 						bCatchingUp = true;
-						requestNextHashTree(ws);
+						requestNextHashTree( ws );
 						return;
 					}
-					// we are not switching to catching up mode until we receive a catchup chain - don't allow peers to throw us into 
-					// catching up mode by just sending a ball
+
+					//
+					//	we are not switching to catching up mode until we receive a catchup chain - don't allow peers to throw us into
+					//	catching up mode by just sending a ball
+					//
 					
-					// to avoid duplicate requests, we are raising this flag before actually sending the request 
-					// (will also reset the flag only after the response is fully processed)
+					//	to avoid duplicate requests, we are raising this flag before actually sending the request
+					//	(will also reset the flag only after the response is fully processed)
 					bWaitingForCatchupChain = true;
 					
 					storage.readLastStableMcIndex( db, function( last_stable_mci )
 					{
 						storage.readLastMainChainIndex( function( last_known_mci )
 						{
-							myWitnesses.readMyWitnesses( function( arrWitnesses )
-							{
-								var params = {witnesses: arrWitnesses, last_stable_mci: last_stable_mci, last_known_mci: last_known_mci};
-								sendRequest( ws, 'catchup', params, true, handleCatchupChain );
-							}, 'wait');
+							//
+							//	POW DEL
+							//
+							// myWitnesses.readMyWitnesses( function( arrWitnesses )
+							// {
+							// 	var params = {witnesses: arrWitnesses, last_stable_mci: last_stable_mci, last_known_mci: last_known_mci};
+							// 	sendRequest( ws, 'catchup', params, true, handleCatchupChain );
+							// }, 'wait');
+
+							//
+							//	POW ADD
+							//
+							sendRequest
+							(
+								ws,
+								'catchup',
+								{ last_stable_mci: last_stable_mci, last_known_mci: last_known_mci },
+								true,
+								handleCatchupChain
+							);
 						});
 					});
 				});
@@ -1603,15 +1647,19 @@ function requestCatchup( ws )
 	});
 }
 
-function handleCatchupChain(ws, request, response){
-	if (response.error){
+function handleCatchupChain( ws, request, response )
+{
+	if ( response.error )
+	{
 		bWaitingForCatchupChain = false;
 		console.log('catchup request got error response: '+response.error);
 		// findLostJoints will wake up and trigger another attempt to request catchup
 		return;
 	}
+
 	var catchupChain = response;
-	catchup.processCatchupChain(catchupChain, ws.peer, {
+	catchup.processCatchupChain( catchupChain, ws.peer,
+	{
 		ifError: function(error){
 			bWaitingForCatchupChain = false;
 			sendError(ws, error);
@@ -1631,65 +1679,97 @@ function handleCatchupChain(ws, request, response){
 
 // hash tree
 
-function requestNextHashTree(ws){
-	db.query("SELECT COUNT(1) AS count_left FROM catchup_chain_balls", function(rows){
-		if (rows.length > 0) {
+function requestNextHashTree( ws )
+{
+	db.query( "SELECT COUNT(1) AS count_left FROM catchup_chain_balls", function( rows )
+	{
+		if ( rows.length > 0 )
+		{
 			eventBus.emit('catchup_balls_left', rows[0].count_left);
 		}
 	});
-	db.query("SELECT ball FROM catchup_chain_balls ORDER BY member_index LIMIT 2", function(rows){
+	db.query( "SELECT ball FROM catchup_chain_balls ORDER BY member_index LIMIT 2", function(rows)
+	{
 		if (rows.length === 0)
 			return comeOnline();
-		if (rows.length === 1){
-			db.query("DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function(){
+		if (rows.length === 1)
+		{
+			db.query("DELETE FROM catchup_chain_balls WHERE ball=?", [rows[0].ball], function()
+			{
 				comeOnline();
 			});
 			return;
 		}
-		var from_ball = rows[0].ball;
-		var to_ball = rows[1].ball;
+
+		var from_ball	= rows[0].ball;
+		var to_ball	= rows[1].ball;
 		
 		// don't send duplicate requests
-		for (var tag in ws.assocPendingRequests)
-			if (ws.assocPendingRequests[tag].request.command === 'get_hash_tree'){
+		for ( var tag in ws.assocPendingRequests )
+		{
+			if ( ws.assocPendingRequests[ tag ].request.command === 'get_hash_tree' )
+			{
 				console.log("already requested hash tree from this peer");
 				return;
 			}
-		sendRequest(ws, 'get_hash_tree', {from_ball: from_ball, to_ball: to_ball}, true, handleHashTree);
+		}
+
+		//	...
+		sendRequest( ws, 'get_hash_tree', { from_ball: from_ball, to_ball: to_ball }, true, handleHashTree );
 	});
 }
 
-function handleHashTree(ws, request, response){
-	if (response.error){
-		console.log('get_hash_tree got error response: '+response.error);
-		waitTillHashTreeFullyProcessedAndRequestNext(ws); // after 1 sec, it'll request the same hash tree, likely from another peer
+function handleHashTree( ws, request, response )
+{
+	if ( response.error )
+	{
+		console.log( 'get_hash_tree got error response: ' + response.error );
+		waitTillHashTreeFullyProcessedAndRequestNext( ws );	// after 1 sec, it'll request the same hash tree, likely from another peer
 		return;
 	}
+
 	var hashTree = response;
-	catchup.processHashTree(hashTree.balls, {
-		ifError: function(error){
-			sendError(ws, error);
-			waitTillHashTreeFullyProcessedAndRequestNext(ws); // after 1 sec, it'll request the same hash tree, likely from another peer
+	catchup.processHashTree( hashTree.balls,
+	{
+		ifError: function( error )
+		{
+			sendError( ws, error );
+			waitTillHashTreeFullyProcessedAndRequestNext( ws );	// after 1 sec, it'll request the same hash tree, likely from another peer
 		},
-		ifOk: function(){
-			requestNewMissingJoints(ws, hashTree.balls.map(function(objBall){ return objBall.unit; }));
-			waitTillHashTreeFullyProcessedAndRequestNext(ws);
+		ifOk: function()
+		{
+			requestNewMissingJoints( ws, hashTree.balls.map(function(objBall){ return objBall.unit; } ) );
+			waitTillHashTreeFullyProcessedAndRequestNext( ws );
 		}
 	});
 }
 
-function waitTillHashTreeFullyProcessedAndRequestNext(ws){
-	setTimeout(function(){
-		db.query("SELECT 1 FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL LIMIT 1", function(rows){
-			if (rows.length === 0){
-				findNextPeer(ws, function(next_ws){
-					requestNextHashTree(next_ws);
-				});
+function waitTillHashTreeFullyProcessedAndRequestNext( ws )
+{
+	setTimeout( function()
+	{
+		db.query
+		(
+			"SELECT 1 FROM hash_tree_balls LEFT JOIN units USING(unit) WHERE units.unit IS NULL LIMIT 1",
+			function( rows )
+			{
+				if ( rows.length === 0 )
+				{
+					//
+					//	sub-tasks were already finished.
+					//
+					findNextPeer( ws, function( next_ws )
+					{
+						requestNextHashTree( next_ws );
+					});
+				}
+				else
+				{
+					waitTillHashTreeFullyProcessedAndRequestNext(ws);
+				}
 			}
-			else
-				waitTillHashTreeFullyProcessedAndRequestNext(ws);
-		});
-	}, 1000);
+		);
+	}, 1000 );
 }
 
 
@@ -2629,7 +2709,7 @@ function handleRequest(ws, tag, command, params){
 			});
 			break;
 			
-	   case 'light/get_parents_and_last_ball_and_witness_list_unit':
+		case 'light/get_parents_and_last_ball_and_witness_list_unit':
 			if (conf.bLight)
 				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
 			if (ws.bOutbound)
@@ -2639,6 +2719,31 @@ function handleRequest(ws, tag, command, params){
 					sendErrorResponse(ws, tag, err);
 				},
 				ifOk: function(objResponse){
+					sendResponse(ws, tag, objResponse);
+				}
+			});
+			break;
+
+
+		/**
+		 *	POW ADD
+		 *	@description
+		 *	remove parameter witness list
+		 */
+		case 'light/get_parents_and_last_ball':
+			if (conf.bLight)
+				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
+			if (ws.bOutbound)
+				return sendErrorResponse(ws, tag, "light clients have to be inbound");
+
+			light.prepareParentsAndLastBallAndWitnessListUnit( params.witnesses,
+			{
+				ifError: function(err)
+				{
+					sendErrorResponse(ws, tag, err);
+				},
+				ifOk: function(objResponse)
+				{
 					sendResponse(ws, tag, objResponse);
 				}
 			});

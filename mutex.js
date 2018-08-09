@@ -1,5 +1,11 @@
 /*jslint node: true */
 "use strict";
+
+/**
+ *	@boss	XING
+ */
+
+
 var _ = require('lodash');
 require('./enforce_singleton.js');
 
