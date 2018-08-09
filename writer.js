@@ -101,6 +101,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			}
 			else if (objUnit.content_hash)
 				conn.addQuery(arrQueries, "INSERT "+conn.getIgnore()+" INTO addresses (address) VALUES(?)", [author.address]);
+
 			conn.addQuery(arrQueries, "INSERT INTO unit_authors (unit, address, definition_chash) VALUES(?,?,?)", 
 				[objUnit.unit, author.address, definition_chash]);
 			if (!objUnit.content_hash){
