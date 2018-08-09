@@ -14,6 +14,8 @@ exports.alt = '1';
 
 exports.GENESIS_UNIT = 'rg1RzwKwnfRHjBojGol3gZaC5w7kR++rOR6O61JRsrQ=';
 exports.BLACKBYTES_ASSET = '9qQId3BlWRQHvVy+STWyLKFb3lUd0xfQhX6mPVEHC2c=';
+// Pow add
+exports.FOUNDATION_ADDRESS = "VIFOO3NSQURCHCPNV2TIHYR5E5JETJO7";
 
 exports.HASH_LENGTH = 44;
 exports.PUBKEY_LENGTH = 44;
