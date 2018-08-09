@@ -37,6 +37,8 @@ exports.MAX_AUTHENTIFIER_LENGTH = 4096;
 exports.MAX_CAP = 9e15;
 exports.MAX_COMPLEXITY = 100;
 
+exports.ROUND_TOTAL_YEAR = 210240;
+exports.ROUND_TOTAL_ALL = 4204800;
 exports.ROUND_COINBASE = [217.59,
 						176.74,
 						156.49,

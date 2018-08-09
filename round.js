@@ -7,23 +7,46 @@ var constants = require('./constants.js');
 var db = require('./db.js');
 var conf = require('./conf.js');
 
-var ROUNDYEAR_TOTAL = 210240;
 
-
-function getCoinbaseByRoundIndex(roundIndex){
-    if(roundIndex < 1 || roundIndex > 4204800)
-        return 0;
-	return constants.ROUND_COINBASE[Math.ceil(roundIndex/ROUNDYEAR_TOTAL)-1];
+function getCurrentRoundIndex(callback){
+    db.query(
+		"SELECT MAX(round_index) AS ci FROM round", 
+        [],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round index");
+            callback(rows[0]["ci"]);
+		}
+	);
 }
 
-function getWitnessesByRoundIndex(round, callback){
+// the MinWl and MaxWl maybe null
+function getMinWlAndMaxWlByRoundIndex(roundIndex, callback){
+    db.query(
+		"SELECT min_wl, max_wl FROM round where round_index=?", 
+        [roundIndex],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find the right round index");
+            callback(rows[0]["min_wl"], rows[0]["max_wl"]);
+		}
+	);
+}
+
+function getCoinbaseByRoundIndex(roundIndex){
+    if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
+        return 0;
+	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
+}
+
+function getWitnessesByRoundIndex(roundIndex, callback){
     // TODO ：cache the witnesses of recent rounds
     db.query(
-		"SELECT distinc(address) \n\
+		"SELECT distinct(address) \n\
 		FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 and pow_type=1 and round_index=? order by main_chain_index,unit  \n\
+        WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
         LIMIT ?", 
-        [round, constants.COUNT_WITNESSES],
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex, constants.COUNT_WITNESSES],
 		function(rows){
 			if (rows.length !==  constants.COUNT_WITNESSES)
                 throw Error("Can not find enough witnesses ");
@@ -33,13 +56,13 @@ function getWitnessesByRoundIndex(round, callback){
 	);
 }
 
-function checkIfCoinBaseUnitByRoundIndexAndAddressExists(round, address, callback){
+function checkIfCoinBaseUnitByRoundIndexAndAddressExists(roundIndex, address, callback){
     // TODO ：cache the witnesses of recent rounds
     db.query(
 		"SELECT  units.unit \n\
 		FROM units JOIN unit_authors using (unit)\n\
-        WHERE pow_type=3 and round_index=? and address=? ", 
-        [round, address],
+        WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? AND address=? ", 
+        [constants.POW_TYPE_COIN_BASE, roundIndex, address],
 		function(rows){
 			callback(rows.length > 0 );
 		}
@@ -48,6 +71,8 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(round, address, callbac
 
 
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
+exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
+exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 
 // console.log("roundIndex:0-"+getCoinbaseByRoundIndex(0));
 // console.log("roundIndex:1-"+getCoinbaseByRoundIndex(1));
