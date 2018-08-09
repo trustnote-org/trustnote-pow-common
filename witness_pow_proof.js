@@ -5,12 +5,12 @@
  *	@boss	XING
  */
 
-const async		= require( 'async' );
-const storage		= require( './storage.js' );
-const objectHash	= require( './object_hash.js' );
-const db		= require( './db.js' );
-const constants		= require( './constants.js' );
-const validation	= require( './validation.js' );
+const _async		= require( 'async' );
+const _storage		= require( './storage.js' );
+const _object_hash	= require( './object_hash.js' );
+const _db		= require( './db.js' );
+const _constants	= require( './constants.js' );
+const _validation	= require( './validation.js' );
 
 
 
@@ -29,20 +29,20 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 	let sLastBallUnit			= null;
 	let nLastBallMci			= null;
 
-	async.series
+	_async.series
 	([
 		function( cb )
 		{
 			//	collect all unstable MC units
 			let arrFoundTrustMEAuthors = [];
-			db.query
+			_db.query
 			(
 				"SELECT unit, pow_type FROM units WHERE is_on_main_chain=1 AND is_stable=0 ORDER BY main_chain_index DESC",
 				function( rows )
 				{
-					async.eachSeries( rows, function( row, cb2 )
+					_async.eachSeries( rows, function( row, cb2 )
 					{
-						storage.readJointWithBall( db, row.unit, function( objJoint )
+						_storage.readJointWithBall( _db, row.unit, function( objJoint )
 						{
 							delete objJoint.ball; // the unit might get stabilized while we were reading other units
 
@@ -54,7 +54,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 							for ( let i = 0; i < objJoint.unit.authors.length; i++ )
 							{
 								let address = objJoint.unit.authors[ i ].address;
-								if ( constants.POW_TYPE_TRUSTME === row.pow_type && -1 === arrFoundTrustMEAuthors.indexOf( address ) )
+								if ( _constants.POW_TYPE_TRUSTME === row.pow_type && -1 === arrFoundTrustMEAuthors.indexOf( address ) )
 								{
 									arrFoundTrustMEAuthors.push( address );
 								}
@@ -62,7 +62,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 
 							//	collect last balls of majority witnessed units
 							//	( genesis lacks sLastBallUnit )
-							if ( objJoint.unit.last_ball_unit && arrFoundTrustMEAuthors.length >= constants.MAJORITY_OF_WITNESSES )
+							if ( objJoint.unit.last_ball_unit && arrFoundTrustMEAuthors.length >= _constants.MAJORITY_OF_WITNESSES )
 							{
 								arrLastBallUnits.push( objJoint.unit.last_ball_unit );
 							}
@@ -82,7 +82,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 				return cb( "your witness list might be too much off, too few witness authored units" );
 			}
 
-			db.query
+			_db.query
 			(
 				"SELECT unit, main_chain_index FROM units WHERE unit IN(?) ORDER BY main_chain_index DESC LIMIT 1",
 				[ arrLastBallUnits ],
@@ -135,7 +135,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		{
 			return handleResult( "unstable mc but has ball" );
 		}
-		if ( ! validation.hasValidHashes( objJoint ) )
+		if ( ! _validation.hasValidHashes( objJoint ) )
 		{
 			return handleResult( "invalid hash" );
 		}
@@ -146,7 +146,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 
 		//	...
 		let bAddedJoint = false;
-		if ( constants.POW_TYPE_TRUSTME === objUnit.pow_type )
+		if ( _constants.POW_TYPE_TRUSTME === objUnit.pow_type )
 		{
 			for ( let j = 0; j < objUnit.authors.length; j++ )
 			{
@@ -166,7 +166,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		}
 
 		arrParentUnits = objUnit.parent_units;
-		if ( objUnit.last_ball_unit && arrFoundTrustMEAuthors.length >= constants.MAJORITY_OF_WITNESSES )
+		if ( objUnit.last_ball_unit && arrFoundTrustMEAuthors.length >= _constants.MAJORITY_OF_WITNESSES )
 		{
 			arrLastBallUnits.push( objUnit.last_ball_unit );
 			assocLastBallByLastBallUnit[ objUnit.last_ball_unit ] = objUnit.last_ball;
@@ -175,7 +175,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	//	end of forEach arrUnstableMcJoints
 
 
-	if ( arrFoundTrustMEAuthors.length < constants.MAJORITY_OF_WITNESSES )
+	if ( arrFoundTrustMEAuthors.length < _constants.MAJORITY_OF_WITNESSES )
 	{
 		return handleResult( "not enough witnesses" );
 	}
@@ -194,7 +194,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	function validateUnit( objUnit, bRequireDefinitionOrChange, cb2 )
 	{
 		let bFound = false;
-		async.eachSeries
+		_async.eachSeries
 		(
 			objUnit.authors,
 			function( author, cb3 )
@@ -219,7 +219,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 					//
 					//	do transaction for the first time
 					//
-					if ( objectHash.getChash160( author.definition ) !== definition_chash )
+					if ( _object_hash.getChash160( author.definition ) !== definition_chash )
 					{
 						return cb3( "definition doesn't hash to the expected value" );
 					}
@@ -232,7 +232,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 				function handleAuthor()
 				{
 					//	FIX
-					validation.validateAuthorSignaturesWithoutReferences
+					_validation.validateAuthorSignaturesWithoutReferences
 					(
 						author,
 						objUnit,
@@ -274,7 +274,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 				//	only an address with money
 				//	there is no transaction any more
 				//
-				storage.readDefinition( db, definition_chash,
+				_storage.readDefinition( _db, definition_chash,
 				{
 					ifFound : function( arrDefinition )
 					{
@@ -315,7 +315,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	//	...
 	//
 	let unlock = null;
-	async.series
+	_async.series
 	([
 		function( cb )
 		{
@@ -333,16 +333,16 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			//
 			//	try to obtain definitions
 			//
-			async.eachSeries
+			_async.eachSeries
 			(
 				arrFoundTrustMEAuthors,
 				function( address, cb2 )
 				{
-					storage.readDefinitionByAddress( db, address, null,
+					_storage.readDefinitionByAddress( _db, address, null,
 					{
 						ifFound : function( arrDefinition )
 						{
-							let definition_chash = objectHash.getChash160( arrDefinition );
+							let definition_chash = _object_hash.getChash160( arrDefinition );
 							assocDefinitions[ definition_chash ]	= arrDefinition;
 							assocDefinitionChashes[ address ]	= definition_chash;
 							cb2();
@@ -362,12 +362,12 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			//
 			//	check signatures of unstable witness joints
 			//
-			async.eachSeries
+			_async.eachSeries
 			(
 				arrTrustMEJoints.reverse(),	//	they came in reverse chronological order, reverse() reverses in place
-				function( objJoint, cb2 )
+				function( objJoint, pfnEachNext )
 				{
-					validateUnit( objJoint.unit, false, cb2 );
+					validateUnit( objJoint.unit, false, pfnEachNext );
 				},
 				cb
 			);
