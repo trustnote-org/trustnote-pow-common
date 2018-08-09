@@ -2664,18 +2664,23 @@ function handleRequest(ws, tag, command, params){
 				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
 			if (ws.bOutbound)
 				return sendErrorResponse(ws, tag, "light clients have to be inbound");
-			light.prepareHistory(params, {
-				ifError: function(err){
+
+			light.prepareHistory( params,
+			{
+				ifError: function(err)
+				{
 					sendErrorResponse(ws, tag, err);
 				},
-				ifOk: function(objResponse){
+				ifOk: function(objResponse)
+				{
 					sendResponse(ws, tag, objResponse);
 					if (params.addresses)
 						db.query(
 							"INSERT "+db.getIgnore()+" INTO watched_light_addresses (peer, address) VALUES "+
 							params.addresses.map(function(address){ return "("+db.escape(ws.peer)+", "+db.escape(address)+")"; }).join(", ")
 						);
-					if (params.requested_joints) {
+					if (params.requested_joints)
+					{
 						storage.sliceAndExecuteQuery("SELECT unit FROM units WHERE main_chain_index >= ? AND unit IN(?)",
 							[storage.getMinRetrievableMci(), params.requested_joints], params.requested_joints, function(rows) {
 							if(rows.length) {

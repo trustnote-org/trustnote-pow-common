@@ -161,15 +161,17 @@ function addSharedAddressesOfWallet(arrAddressList, handleAddedSharedAddresses){
 	});
 }
 
-function prepareHistory(historyRequest, callbacks){
-	var arrKnownStableUnits = historyRequest.known_stable_units;
-	var arrWitnesses = historyRequest.witnesses;
-	var arrAddresses = historyRequest.addresses;
-	var arrRequestedJoints = historyRequest.requested_joints;
+function prepareHistory( historyRequest, callbacks )
+{
+	var arrKnownStableUnits	= historyRequest.known_stable_units;
+	var arrWitnesses	= historyRequest.witnesses;
+	var arrAddresses	= historyRequest.addresses;
+	var arrRequestedJoints	= historyRequest.requested_joints;
 
 	if (!arrAddresses && !arrRequestedJoints)
 		return callbacks.ifError("neither addresses nor joints requested");
-	if (arrAddresses){
+	if (arrAddresses)
+	{
 		if (!ValidationUtils.isNonemptyArray(arrAddresses))
 			return callbacks.ifError("no addresses");
 		if (arrKnownStableUnits && !ValidationUtils.isNonemptyArray(arrKnownStableUnits))
