@@ -5,14 +5,12 @@
  *	@boss	XING
  */
 
-
-var async		= require('async');
-var storage		= require('./storage.js');
-var myWitnesses		= require('./my_witnesses.js');
-var objectHash		= require("./object_hash.js");
-var db			= require('./db.js');
-var constants		= require("./constants.js");
-var validation		= require('./validation.js');
+const async		= require( 'async' );
+const storage		= require( './storage.js' );
+const objectHash	= require( './object_hash.js' );
+const db		= require( './db.js' );
+const constants		= require( './constants.js' );
+const validation	= require( './validation.js' );
 
 
 
@@ -25,18 +23,18 @@ var validation		= require('./validation.js');
  */
 function preparePowWitnessProof( last_stable_mci, handleResult )
 {
-	var arrUnstableMcJoints			= [];
+	let arrUnstableMcJoints			= [];
 
-	var arrLastBallUnits			= []; // last ball units referenced from MC-majority-witnessed unstable MC units
-	var sLastBallUnit			= null;
-	var nLastBallMci			= null;
+	let arrLastBallUnits			= []; // last ball units referenced from MC-majority-witnessed unstable MC units
+	let sLastBallUnit			= null;
+	let nLastBallMci			= null;
 
 	async.series
 	([
 		function( cb )
 		{
 			//	collect all unstable MC units
-			var arrFoundTrustMEAuthors = [];
+			let arrFoundTrustMEAuthors = [];
 			db.query
 			(
 				"SELECT unit, pow_type FROM units WHERE is_on_main_chain=1 AND is_stable=0 ORDER BY main_chain_index DESC",
@@ -53,9 +51,9 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 							//
 							arrUnstableMcJoints.push( objJoint );
 
-							for ( var i = 0; i < objJoint.unit.authors.length; i++ )
+							for ( let i = 0; i < objJoint.unit.authors.length; i++ )
 							{
-								var address = objJoint.unit.authors[ i ].address;
+								let address = objJoint.unit.authors[ i ].address;
 								if ( constants.POW_TYPE_TRUSTME === row.pow_type && -1 === arrFoundTrustMEAuthors.indexOf( address ) )
 								{
 									arrFoundTrustMEAuthors.push( address );
@@ -118,16 +116,16 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult )
 {
 	//	unstable MC joints
-	var arrParentUnits = null;
-	var arrFoundTrustMEAuthors = [];
-	var arrLastBallUnits = [];
-	var assocLastBallByLastBallUnit = {};
-	var arrWitnessJoints = [];
+	let arrParentUnits		= null;
+	let arrFoundTrustMEAuthors	= [];
+	let arrLastBallUnits		= [];
+	let assocLastBallByLastBallUnit	= {};
+	let arrWitnessJoints		= [];
 
-	for ( var i = 0; i < arrUnstableMcJoints.length; i ++ )
+	for ( let i = 0; i < arrUnstableMcJoints.length; i ++ )
 	{
-		var objJoint = arrUnstableMcJoints[i];
-		var objUnit = objJoint.unit;
+		let objJoint = arrUnstableMcJoints[i];
+		let objUnit = objJoint.unit;
 
 		if ( objJoint.ball )
 			return handleResult("unstable mc but has ball");
@@ -137,12 +135,12 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			return handleResult("not in parents");
 
 		//	...
-		var bAddedJoint = false;
+		let bAddedJoint = false;
 		if ( constants.POW_TYPE_TRUSTME === objUnit.pow_type )
 		{
-			for ( var j = 0; j < objUnit.authors.length; j++ )
+			for ( let j = 0; j < objUnit.authors.length; j++ )
 			{
-				var address = objUnit.authors[ j ].address;
+				let address = objUnit.authors[ j ].address;
 				if ( arrFoundTrustMEAuthors.indexOf( address ) === -1 )
 					arrFoundTrustMEAuthors.push( address );
 				if ( ! bAddedJoint )
@@ -167,23 +165,23 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		throw Error("processWitnessProof: no last ball units");
 
 
-	var assocDefinitions		= {};	//	keyed by definition chash
-	var assocDefinitionChashes	= {};	//	keyed by address
+	let assocDefinitions		= {};	//	keyed by definition chash
+	let assocDefinitionChashes	= {};	//	keyed by address
 
 	//	checks signatures and updates definitions
 	function validateUnit( objUnit, bRequireDefinitionOrChange, cb2 )
 	{
-		var bFound = false;
+		let bFound = false;
 		async.eachSeries
 		(
 			objUnit.authors,
 			function( author, cb3 )
 			{
-				var address = author.address;
+				let address = author.address;
 				if ( arrFoundTrustMEAuthors.indexOf( address ) === -1 )	//	not a witness - skip it
 					return cb3();
 
-				var definition_chash = assocDefinitionChashes[address];
+				let definition_chash = assocDefinitionChashes[address];
 				if ( ! definition_chash )
 					throw Error( "definition chash not known for address " + address );
 
@@ -208,9 +206,9 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 							if ( err )
 								return cb3(err);
 
-							for ( var i = 0; i < objUnit.messages.length; i++ )
+							for ( let i = 0; i < objUnit.messages.length; i++ )
 							{
-								var message = objUnit.messages[i];
+								let message = objUnit.messages[i];
 								if ( message.app === 'address_definition_change'
 									&& (message.payload.address === address || objUnit.authors.length === 1 && objUnit.authors[0].address === address) )
 								{
@@ -265,7 +263,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	//
 	//	...
 	//
-	var unlock = null;
+	let unlock = null;
 	async.series
 	([
 		function( cb )
@@ -289,7 +287,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 					{
 						ifFound : function( arrDefinition )
 						{
-							var definition_chash = objectHash.getChash160(arrDefinition);
+							let definition_chash = objectHash.getChash160(arrDefinition);
 							assocDefinitions[ definition_chash ]	= arrDefinition;
 							assocDefinitionChashes[ address ]	= definition_chash;
 							cb2();
