@@ -222,10 +222,11 @@ function validate(objJoint, callbacks) {
 						? cb()
 						: validateSkiplist(conn, objJoint.skiplist_units, cb);
 				},
-				function(cb){
-					profiler.stop('validation-skiplist');
-					validateWitnesses(conn, objUnit, objValidationState, cb);
-				},
+				// pow remove
+				// function(cb){
+				// 	profiler.stop('validation-skiplist');
+				// 	validateWitnesses(conn, objUnit, objValidationState, cb);
+				// },
 				function(cb){
 					profiler.start();
 					validateAuthors(conn, objUnit.authors, objUnit, objValidationState, cb);
@@ -234,6 +235,12 @@ function validate(objJoint, callbacks) {
 					profiler.stop('validation-authors');
 					profiler.start();
 					objUnit.content_hash ? cb() : validateMessages(conn, objUnit.messages, objUnit, objValidationState, cb);
+				},
+				function(cb){  // pow add: determine witenessed_level and best_parent  .
+					profiler.stop('validation-messages');
+					profiler.start();
+					// move old writer method here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
+					ValidateWitnessLevelForSpecificRoundIndex(conn, objUnit, objValidationState, cb);
 				},
 				function(cb){  // pow add: validate pow_types units
 					profiler.stop('validation-messages');
@@ -1068,6 +1075,49 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 }
 
 // pow add :
+function ValidateWitnessLevelForSpecificRoundIndex(conn, objUnit, objValidationState, callback) {
+	var best_parent;
+	async.series(
+		[
+			function(cb){
+				storage.determineBestParent(conn,objUnit, function(best_parent_unit){
+					best_parent =best_parent_unit;
+					objValidationState.best_parent_unit= best_parent_unit;
+					cb();
+				});
+			},
+			function(cb){
+				storage.determinewitnessedLevel(conn,objUnit,best_parent, function(witenessed_level){
+					objValidationState.witnessed_level= witenessed_level;
+					cb();
+				});
+		},
+		function(cb){
+			// check witnessed_level is betwwen min_wl and max_wl
+			if (objUnit.pow_type){ // for only pow related units,validate wl
+				round.getMinWlAndMaxWlByRoundIndex(objUnit.round_index, function(min_wl,max_wl){
+					if(!min_wl){ // min_wl is null
+
+					}
+					else if(!max_wl) {//max_wl is null
+					}
+					else {  //both min and max have value
+
+					}
+				});
+			}
+			cb();
+		}
+	],
+	function(err){
+		if (err){
+			return callback("error occured during validation witnessed_level" + err);
+		}
+		return callback();
+	}
+}
+
+// pow add :
 function validatePowTypes(conn, objUnit, objValidationState, callback) {
 	if (!objUnit.pow_type)
 		return callback();
@@ -1089,8 +1139,6 @@ function validatePowTypes(conn, objUnit, objValidationState, callback) {
 	else{// coin base 
 		
 	}
-
-	async.series([validateSpendProofs, validatePayload], callback);
 }
 
 function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidationState, onAcceptedDoublespends, cb){
@@ -2069,8 +2117,7 @@ function checkAttestorList(arrAttestors){
 
 
 
-function validateAuthorSignaturesWithoutReferences( objAuthor, objUnit, arrAddressDefinition, callback )
-{
+function validateAuthorSignaturesWithoutReferences(objAuthor, objUnit, arrAddressDefinition, callback){
 	var objValidationState = {
 		unit_hash_to_sign: objectHash.getUnitHashToSign(objUnit),
 		last_ball_mci: -1,

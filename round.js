@@ -46,9 +46,9 @@ function getWitnessesByRoundIndex(roundIndex, callback){
 		FROM units JOIN unit_authors using (unit)\n\
         WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
         LIMIT ?", 
-        [constants.POW_TYPE_POW_EQUHASH, roundIndex, constants.COUNT_WITNESSES],
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex, constants.COUNT_POW_WITNESSES],
 		function(rows){
-			if (rows.length !==  constants.COUNT_WITNESSES)
+			if (rows.length !==  constants.COUNT_POW_WITNESSES)
                 throw Error("Can not find enough witnesses ");
             var witnesses = rows.map(function(row) { return row.address; } );
             callback(witnesses.push(constants.FOUNDATION_ADDRESS));
@@ -61,7 +61,7 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(roundIndex, address, ca
     db.query(
 		"SELECT  units.unit \n\
 		FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? AND address=? ", 
+        WHERE pow_type=? AND round_index=? AND address=? ", 
         [constants.POW_TYPE_COIN_BASE, roundIndex, address],
 		function(rows){
 			callback(rows.length > 0 );
@@ -69,7 +69,8 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(roundIndex, address, ca
 	);
 }
 
-
+exports.getCurrentRoundIndex = getCurrentRoundIndex;
+exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;

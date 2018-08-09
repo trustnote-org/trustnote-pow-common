@@ -101,7 +101,6 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			}
 			else if (objUnit.content_hash)
 				conn.addQuery(arrQueries, "INSERT "+conn.getIgnore()+" INTO addresses (address) VALUES(?)", [author.address]);
-
 			conn.addQuery(arrQueries, "INSERT INTO unit_authors (unit, address, definition_chash) VALUES(?,?,?)", 
 				[objUnit.unit, author.address, definition_chash]);
 			if (!objUnit.content_hash){
@@ -229,7 +228,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			}
 		}
 
-		var my_best_parent_unit;
+		// pow remove
+		//var my_best_parent_unit;
 		
 		function determineInputAddressFromSrcOutput(asset, denomination, input, handleAddress){
 			conn.query(
@@ -358,22 +358,23 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			// 		level-witnessed_level ASC, \n\
 			// 		unit ASC \n\
 			// 	LIMIT 1", 
-			conn.query(
-				"SELECT unit \n\
-				FROM units  \n\
-				WHERE unit IN(?) \n\
-				ORDER BY witnessed_level DESC, \n\
-					level-witnessed_level ASC, \n\
-					unit ASC \n\
-				LIMIT 1", 
-				[objUnit.parent_units], 
-				function(rows){
-					if (rows.length !== 1)
-						throw Error("zero or more than one best parent unit?");
-					my_best_parent_unit = rows[0].unit;
-					conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [my_best_parent_unit, objUnit.unit], function(){ cb(); });
-				}
-			);
+			// conn.query(
+			// 	"SELECT unit \n\
+			// 	FROM units  \n\
+			// 	WHERE unit IN(?) \n\
+			// 	ORDER BY witnessed_level DESC, \n\
+			// 		level-witnessed_level ASC, \n\
+			// 		unit ASC \n\
+			// 	LIMIT 1", 
+			// 	[objUnit.parent_units], 
+			// 	function(rows){
+			// 		if (rows.length !== 1)
+			// 			throw Error("zero or more than one best parent unit?");
+			// 		my_best_parent_unit = rows[0].unit;
+			// 		conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [my_best_parent_unit, objUnit.unit], function(){ cb(); });
+			// 	}
+			// );
+			conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [objValidationState.best_parent_unit;, objUnit.unit], function(){ cb(); });
 		}
 		
 		function updateLevel(cb){
@@ -387,7 +388,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		}
 		
 		
-		function updateWitnessedLevel(cb){
+		//function updateWitnessedLevel(cb){
 			// pow modi
 			// if (objUnit.witnesses)
 			// 	updateWitnessedLevelByWitnesslist(objUnit.witnesses, cb);
@@ -399,27 +400,23 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		// The level at which we collect at least 7 distinct witnesses while walking up the main chain from our unit.
 		// The unit itself is not counted even if it is authored by a witness
 		// function updateWitnessedLevelByWitnesslist(arrWitnesses, cb){
-			var arrCollectedWitnesses = [];
-			
-			function setWitnessedLevel(witnessed_level){
-				profiler.start();
-				conn.query("UPDATE units SET witnessed_level=? WHERE unit=?", [witnessed_level, objUnit.unit], function(){
+		function updateWitnessedLevel(cb){
+				conn.query("UPDATE units SET witnessed_level=? WHERE unit=?", [objValidationState.witnessed_level, objUnit.unit], function(){
 					profiler.stop('write-wl-update');
 					cb();
 				});
-			}
 			
-			function addWitnessesAndGoUp(start_unit){
-				profiler.start();
-				storage.readStaticUnitProps(conn, start_unit, function(props){
-					profiler.stop('write-wl-select-bp');
-					var best_parent_unit = props.best_parent_unit;
-					var level = props.level;
-					if (level === null)
-						throw Error("null level in updateWitnessedLevel");
-					if (level === 0) // genesis
-						return setWitnessedLevel(0);
-					profiler.start();
+			// function addWitnessesAndGoUp(start_unit){
+			// 	profiler.start();
+			// 	storage.readStaticUnitProps(conn, start_unit, function(props){
+			// 		profiler.stop('write-wl-select-bp');
+			// 		var best_parent_unit = props.best_parent_unit;
+			// 		var level = props.level;
+			// 		if (level === null)
+			// 			throw Error("null level in updateWitnessedLevel");
+			// 		if (level === 0) // genesis
+			// 			return setWitnessedLevel(0);
+			// 		profiler.start();
 					// pow: modi check trust me unit
 					// storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
 					// 	profiler.stop('write-wl-select-authors');
@@ -433,30 +430,30 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 					// 	(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
 					// 		? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
 					// });
-					if(props.pow_type == constants.POW_TYPE_TRUSTME){
-						storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
-							profiler.stop('write-wl-select-authors');
-							profiler.start();
-							for (var i=0; i<arrAuthors.length; i++){
-								var address = arrAuthors[i];
-								if (arrCollectedWitnesses.indexOf(address) === -1)
-									arrCollectedWitnesses.push(address);
-							}
-							profiler.stop('write-wl-search');
-							(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
-								? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
-						});
-					}
-					else{
-						addWitnessesAndGoUp(best_parent_unit);
-					}
-				});
-			}
+			// 		if(props.pow_type == constants.POW_TYPE_TRUSTME){
+			// 			storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+			// 				profiler.stop('write-wl-select-authors');
+			// 				profiler.start();
+			// 				for (var i=0; i<arrAuthors.length; i++){
+			// 					var address = arrAuthors[i];
+			// 					if (arrCollectedWitnesses.indexOf(address) === -1)
+			// 						arrCollectedWitnesses.push(address);
+			// 				}
+			// 				profiler.stop('write-wl-search');
+			// 				(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
+			// 					? addWitnessesAndGoUp(best_parent_unit) : setWitnessedLevel(level);
+			// 			});
+			// 		}
+			// 		else{
+			// 			addWitnessesAndGoUp(best_parent_unit);
+			// 		}
+			// 	});
+			// }
 			
-			profiler.stop('write-update');
-			// pow modi:
-			//addWitnessesAndGoUp(my_best_parent_unit);
-			addWitnessesAndGoUp(objUnit.unit);
+			// profiler.stop('write-update');
+			// // pow modi:
+			// //addWitnessesAndGoUp(my_best_parent_unit);
+			// addWitnessesAndGoUp(objUnit.unit);
 		}
 		
 		// Victor ShareAddress 

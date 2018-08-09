@@ -1240,7 +1240,8 @@ function filterNewOrUnstableUnits(arrUnits, handleFilteredUnits){
 }
 
 // for unit that is not saved to the db yet
-function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
+// function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
+function determineBestParent(conn, objUnit, handleBestParent){
 	// POW modi remove witness compatitiblity
 	// choose best parent among compatible parents only
 	// conn.query(
@@ -1274,6 +1275,45 @@ function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
 			handleBestParent(best_parent_unit);
 		}
 	);
+}
+//POW add:
+// objNewUnit has not saved to db yet 
+function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWitnessLevel){
+	var arrCollectedWitnesses = [];
+	var arrAuthorAddresses = objNewUnit.authors.map(function(author) { return author.address; } );
+	if (objNewUnit.pow_type === constants.POW_TYPE_TRUSTME){ // count self as wl start point
+		arrCollectedWitnesses.concat(arrAuthorAddresses);
+	}
+	function addWitnessesAndGoUp(start_unit){
+		storage.readStaticUnitProps(conn, start_unit, function(props){
+			profiler.stop('write-wl-select-bp');
+			var best_parent_unit = props.best_parent_unit;
+			var level = props.level;
+			if (level === null)
+				throw Error("null level in updateWitnessedLevel");
+			if (level === 0) // genesis
+				return handleWitnessLevel(0);
+			if(props.pow_type === constants.POW_TYPE_TRUSTME){
+				storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+					for (var i=0; i<arrAuthors.length; i++){
+						var address = arrAuthors[i];
+						if (arrCollectedWitnesses.indexOf(address) === -1)
+							arrCollectedWitnesses.push(address);
+					}
+					(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
+						? addWitnessesAndGoUp(best_parent_unit) : handleWitnessLevel(level);
+				});
+			}
+			else{
+				addWitnessesAndGoUp(best_parent_unit);
+			}
+		});
+		}
+		// find best parent ,then go up to count trust me addresses .
+		//determineBestParent(conn,objUnit,function(best_parent_unit){
+		addWitnessesAndGoUp(bestParentOfNewUnit);
+		//});
+		
 }
 
 // POW modi : we donn't need to check witness mutation in pow mode
