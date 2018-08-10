@@ -239,17 +239,12 @@ function validate(objJoint, callbacks) {
 				function(cb){  // pow add: determine witenessed_level and best_parent  .
 					profiler.stop('validation-messages');
 					profiler.start();
-					// move old writer method here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
-					ValidateWitnessLevelForSpecificRoundIndex(conn, objUnit, objValidationState, cb);
-				},
-				function(cb){  // pow add: validate pow_types units
-					profiler.stop('validation-messages');
-					profiler.start();
-					objUnit.pow_type ? validatePowTypes(conn, objUnit, objValidationState, cb):cb();
+					// move old writer method (updateBestParnt and updateWitnessedlevel) here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
+					ValidateWitnessLevel(conn, objUnit, objValidationState, cb);
 				}
 			], 
 			function(err){
-				profiler.stop('validation-pow_type');
+				profiler.stop('validation-WitnessLevel');
 				if(err){
 					conn.query("ROLLBACK", function(){
 						conn.release();
@@ -721,8 +716,7 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 	}
 	else
 		return callback("bad type of definition");
-	
-	
+
 	function validateAuthentifiers(arrAddressDefinition){
 		Definition.validateAuthentifiers(
 			conn, objAuthor.address, null, arrAddressDefinition, objUnit, objValidationState, objAuthor.authentifiers, 
@@ -731,11 +725,26 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 					return callback(err);
 				if (!res) // wrong signature or the like
 					return callback("authentifier verification failed");
-				checkSerialAddressUse();
+				// pow modi
+				//checkSerialAddressUse();
+				checkTrustMeAuthor();
 			}
 		);
 	}
 	
+	//pow add: check trust me author must come from pow unit authors of last round
+	function checkTrustMeAuthor(){
+		if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
+			round.getWitnessesByRoundIndex(conn, objUnit.round_index -1, function(last_Round_witnesses){
+				if(last_Round_witnesses.indexOf(objAuthor.address) === -1){
+					return callback("author of trust me unit is invalid");
+				}
+				checkSerialAddressUse();
+			});
+		}else{
+			checkSerialAddressUse();
+		}
+	}
 	
 	function findConflictingUnits(handleConflictingUnits){
 		var cross = (objValidationState.max_known_mci - objValidationState.max_parent_limci < 1000) ? 'CROSS' : '';
@@ -1075,35 +1084,51 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 }
 
 // pow add :
-function ValidateWitnessLevelForSpecificRoundIndex(conn, objUnit, objValidationState, callback) {
-	var best_parent;
+function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
+	var unit_best_parent;
+	var unit_witenessed_level;
 	async.series(
 		[
 			function(cb){
 				storage.determineBestParent(conn,objUnit, function(best_parent_unit){
-					best_parent =best_parent_unit;
-					objValidationState.best_parent_unit= best_parent_unit;
+					unit_best_parent = best_parent_unit;
+					objValidationState.best_parent_unit = best_parent_unit;
 					cb();
 				});
 			},
 			function(cb){
-				storage.determinewitnessedLevel(conn,objUnit,best_parent, function(witenessed_level){
+				storage.determinewitnessedLevel(conn,objUnit,unit_best_parent, function(witenessed_level){
+					unit_witenessed_level = witenessed_level;
 					objValidationState.witnessed_level= witenessed_level;
 					cb();
 				});
 		},
 		function(cb){
-			// check witnessed_level is betwwen min_wl and max_wl
 			if (objUnit.pow_type){ // for only pow related units,validate wl
-				round.getMinWlAndMaxWlByRoundIndex(objUnit.round_index, function(min_wl,max_wl){
-					if(!min_wl){ // min_wl is null
-
+				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
+					if(!min_wl){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
+						// in this condition, we check wl is bigger than last round 's max wl.
+						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
+							if (!last_round_min_wl || !last_round_max_wl){
+								cb("last_round_min_wl or last_round_min_wl is null ");
+							}
+							if(unit_witenessed_level <= last_round_max_wl){
+								cb("unit witnessed level is not bigger than last round max wl");
+							}
+						});
 					}
-					else if(!max_wl) {//max_wl is null
+					else if(!max_wl) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
+						if(unit_witenessed_level < min_wl){
+							cb("unit witnessed level is less than min_wl")
+						}
 					}
-					else {  //both min and max have value
-
+					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
+						if(unit_witenessed_level < min_wl || unit_witenessed_level > max_wl){
+							cb("unit witnessed level is incorrct which is either less than min_wl or bigger than max_wl ");
+						}
 					}
+					// wl is valid 
+					cb();
 				});
 			}
 			cb();
@@ -1114,30 +1139,6 @@ function ValidateWitnessLevelForSpecificRoundIndex(conn, objUnit, objValidationS
 			return callback("error occured during validation witnessed_level" + err);
 		}
 		return callback();
-	}
-}
-
-// pow add :
-function validatePowTypes(conn, objUnit, objValidationState, callback) {
-	if (!objUnit.pow_type)
-		return callback();
-    var round_index = objUnit.round_index;
-	if (objUnit.pow_type == 1 ){	// Pow equhash unit
-	
-	}
-	else if(objUnit.pow_type ==2){	// trust me
-		if (objUnit.authors.length !== 1){
-			callback("trust me units contain more than one author ");
-		}
-		// check author is last round witnesses by pow units selected
-		var witnessesOfLastRound= round.getWitnessesByRoundIndex(round_index-1);
-		if(witnessesOfRound.indexOf(objUnit.authors[0].address) == -1){
-			callback("trust me unit author is invalid witness  ");
-		}
-
-	}
-	else{// coin base 
-		
 	}
 }
 
@@ -1350,29 +1351,34 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 			break;
 		// pow add
 		case "pow_equihash":
-			validatePowEquhash(conn, payload, message_index, objUnit, objValidationState, callback);
+			validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback);
 			break;
 		default:
 			return callback("unknown app: "+objMessage.app);
 	}
 }
 
-// used for both pow app 
-function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState, callback){
-
-	if (!("asset" in payload)){ // base currency
-		if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
-			return callback("unknown fields in payment message");
-		if (objValidationState.bHasBasePayment)
-			return callback("can have only one base payment");
-		objValidationState.bHasBasePayment = true;
-		return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
+// pow add:
+function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState){	
+	if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
+		return callback("unknown fields in pow_equihash message");
+	if (objValidationState.bHasBasePowequihash)
+		return callback("can have only one PowEquhash message");
+	objValidationState.bHasBasePowequihash = true;
+	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
+	// Todo: to be implemented 
+    if (!pow.isValidEquihash()){
+		return callback("invalid pow equhash payload");
 	}
+	if (!pow.isValidDifficulty()){
+		return callback("invalid pow difficulty payload");
+	}
+	if (!pow.isValidseed()){
+		return callback("invalid pow seed payload");
+	}
+    callback();
+	//return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
 	
-	
-	
-	var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
-	// note that light clients cannot check attestations
 }
 
 // used for both public and private payments
@@ -1453,7 +1459,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 	if (payload.inputs.length > constants.MAX_INPUTS_PER_PAYMENT_MESSAGE)
 		return callback("too many inputs");
 	if (payload.outputs.length > constants.MAX_OUTPUTS_PER_PAYMENT_MESSAGE)
-		return callback("too many outputs");
+		return callback("too many outputs"); 
 	
 	if (objAsset && objAsset.fixed_denominations && payload.inputs.length !== 1)
 		return callback("fixed denominations payment must have 1 input");
@@ -1701,30 +1707,25 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							return cb("only one coinbase per message allowed");
 							bCoinbase = true;
 						
-						var address = null;
 						if (arrAuthorAddresses.length !== 1){
 								return cb("coin base author must be one");			
 						}
-						if (typeof input.address !== "string")
-							return cb("when multi-authored, must put address in issue input");
-						if (arrAuthorAddresses.indexOf(input.address) === -1)
-							return cb("issue input address "+input.address+" is not an author");
 						
 						total_input += input.amount;
-						address = arrAuthorAddresses[0];
-						// Check author come from n-2 round pow units
-						round.getWitnessesByRoundIndex(round_index-1,function (witnessesOFLastTwoRound){
+						// Check author come from n-2 round pow units authors
+						round.getWitnessesByRoundIndex(conn, objUnit.round_index -2,function (witnessesOFLastTwoRound){
 							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) == -1){
-								return callback("coinbase unit author is invalid witness  ");
+								return cb("coinbase unit author is invalid witness  ");
 							}
 							// Check duplicate coinbase unit in current round if exists(simialr to doublespend check)
-							round.checkIfCoinBaseUnitByRoundIndexAndAddressExists(round_index, objUnit.authors[0].address,function(isExisted){
+							round.checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address,function(isExisted){
 								if(isExisted){
-									return callback("coinbase unit by each author can not sent more than once ");
-								}								// check amount is valid
+									return cb("coinbase unit by each author can not sent more than once ");
+								}								
+								// check amount is valid
 								var expectedCoinBaseAmountForRound = round.getCoinbaseByRoundIndex(objUnit.round_index-1)
 								if (expectedCoinBaseAmountForRound != input.amount){
-									return callback("coinbase unit amount is incorrect ");
+									return cb("coinbase unit amount is incorrect ");
 								}
 						});
 						break;
