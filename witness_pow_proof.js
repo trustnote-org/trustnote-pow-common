@@ -18,7 +18,7 @@ const _validation	= require( './validation.js' );
  *	POW ADD
  *
  *	@param	{number}	last_stable_mci
- *	@param	{function}	handleResult
+ *	@param	{function}	handleResult	function( err, arrUnstableMcJoints, sLastBallUnit, nLastBallMci )
  *	@return	{void}
  */
 function preparePowWitnessProof( last_stable_mci, handleResult )
@@ -113,6 +113,13 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 }
 
 
+/**
+ *	process witness proof received from server in client side
+ *	@param	arrUnstableMcJoints
+ *	@param	bFromCurrent
+ *	@param	handleResult	function( err, arrLastBallUnits, assocLastBallByLastBallUnit )
+ *	@return {*}
+ */
 function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult )
 {
 	//	unstable MC joints
