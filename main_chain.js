@@ -763,10 +763,16 @@ function markMcIndexStable(conn, mci, onDone){
 		[mci], 
 		function(){
 			// next op
-			handleNonserialUnits();
+			// pow modi
+			//handleNonserialUnits();  
+			handlePowUnits();
 		}
 	);
 
+	// pow add
+	function handlePowUnits(){
+		
+	}
 
 	function handleNonserialUnits(){
 		conn.query(
