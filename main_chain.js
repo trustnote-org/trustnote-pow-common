@@ -481,6 +481,7 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 				function findMinMcWitnessedLevel(handleMinMcWl){
 					var min_mc_wl = Number.MAX_VALUE;
 					var count = 0;
+					var arrCollectedWitnesses = [];
 
 					function goUp(start_unit){
 						// pow modi 
@@ -489,15 +490,19 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 						// 		(SELECT COUNT(*) FROM unit_authors WHERE unit_authors.unit=units.unit AND address IN(?)) AS count \n\
 						// 	FROM units WHERE unit=?", [arrWitnesses, start_unit],
 						conn.query(
-							"SELECT best_parent_unit, witnessed_level, pow_type \n\
-							FROM units WHERE unit=?", [start_unit],
+							"SELECT best_parent_unit, witnessed_level, pow_type, address \n\
+							FROM units JOIN unit_authors using (unit) WHERE unit=?", 
+							[start_unit],
 							function(rows){
 								if (rows.length !== 1)
 									throw Error("findMinMcWitnessedLevel: not 1 row");
 								var row = rows[0];
 								//if (row.count > 0 && row.witnessed_level < min_mc_wl)
-								if (row.pow_type === constants.POW_TYPE_TRUSTME && row.witnessed_level < min_mc_wl)
+								if (row.pow_type === constants.POW_TYPE_TRUSTME && arrCollectedWitnesses.indexOf(row.address) === -1
+										 && row.witnessed_level < min_mc_wl){
 									min_mc_wl = row.witnessed_level;
+									arrCollectedWitnesses.push(row.address);
+								}
 								//count += row.count;  // this is a bug, should count only unique witnesses
 								count++;
 								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(row.best_parent_unit) : handleMinMcWl(min_mc_wl);
@@ -517,8 +522,8 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 					// 	LIMIT 1", 
 					// 	[arrWitnesses, arrLaterUnits],
 					conn.query(
-						"SELECT witnessed_level, best_parent_unit, pow_type \n\
-						FROM units \n\
+						"SELECT witnessed_level, best_parent_unit, pow_type, address \n\
+						FROM units JOIN unit_authors using (unit)\n\
 						WHERE unit IN(?) \n\
 						ORDER BY witnessed_level DESC, \n\
 							level-witnessed_level ASC, \n\
@@ -528,8 +533,10 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 						function(rows){
 							var row = rows[0];
 							//if (row.count > 0)
-							if (row.pow_type === constants.POW_TYPE_TRUSTME)
+							if (row.pow_type === constants.POW_TYPE_TRUSTME){
 								min_mc_wl = row.witnessed_level;
+								arrCollectedWitnesses.push(row.address);
+							}
 							//count += row.count;
 							count ++;
 							goUp(row.best_parent_unit);
