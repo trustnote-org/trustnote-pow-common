@@ -44,7 +44,18 @@ let _objEquihashLibrary		= null;
  *	////////////////////////////////////////////////////////////
  *	@examples
  *
- *	let nCallStartCalculation = startCalculation
+ * 	let bCallStartCalculation = startCalculation( oConn, function( err )
+ * 	{
+ * 		if ( err )
+ * 		{
+ * 			console.log( `failed to start calculation, `, err );
+ * 			return;
+ * 		}
+ *
+ * 		console.log( `start calculation successfully.` );
+ * 	});
+ *
+ *	let nCallStartCalculation = startCalculationWithInput
  *	({
  *		 coinBaseList	: {
  *			 '4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
@@ -54,11 +65,19 @@ let _objEquihashLibrary		= null;
  *		 difficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
  *		 pubSeed		: 'public key',
  *		 superNode	: 'xing.supernode.trustnote.org',
- *	 });
- *	console.log(  nCallStartCalculation );
+ *	}, function( err )
+ *	{
+ * 		if ( err )
+ * 		{
+ * 			console.log( `failed to start calculation, `, err );
+ * 			return;
+ * 		}
+ *
+ * 		console.log( `start calculation successfully.` );
+ * 	});
  *
  *
- *	let nCallIsValidEquihash = isValidEquihash
+ *	let bIsValidEquihash = isValidEquihash
  *	(
  *		{
  *			coinBaseList	: {
@@ -73,15 +92,32 @@ let _objEquihashLibrary		= null;
  *		'00000001c570c4764aadb3f09895619f549000b8b51a789e7f58ea7500007097',
  *		'xxxxxxxxxxxx'
  *	);
- *	console.log(  nCallIsValidEquihash );
+ *	console.log( bIsValidEquihash );
  *
  */
 
 
+/**
+ *	start calculation
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	pfnCallback( err )
+ *	@return {boolean}
+ */
+function startCalculation( oConn, pfnCallback )
+{
+	if ( 'function' !== typeof pfnCallback )
+	{
+		throw new Error( `call startCalculation with invalid pfnCallback.` );
+	}
+
+	pfnCallback( null );
+	return true;
+}
 
 
 /**
- *	start calculation
+ *	start calculation with inputs
  *
  * 	@param	{object}	objInput
  *	@param	{array}		objInput.coinBaseList		@see description
@@ -89,12 +125,10 @@ let _objEquihashLibrary		= null;
  *	@param	{string}	objInput.difficulty
  *	@param	{string}	objInput.pubSeed
  *	@param	{string}	objInput.superNode
- *	@return	{number}
- *		0	successfully
- *		-1	error
- *		...
+ *	@param	{function}	pfnCallback( err )
+ *	@return	{boolean}
  */
-function startCalculation( objInput )
+function startCalculationWithInputs( objInput, pfnCallback )
 {
 	if ( 'object' !== typeof objInput )
 	{
@@ -120,9 +154,14 @@ function startCalculation( objInput )
 	{
 		throw new Error( 'call startCalculation with invalid sSuperNode' );
 	}
+	if ( 'function' !== typeof pfnCallback )
+	{
+		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
+	}
 
-	return 0;
+	return true;
 }
+
 
 
 /**
@@ -237,9 +276,14 @@ function _loadEquihashLibrary()
 
 
 
+
+
+
+
 /**
  *	@exports
  */
 module.exports.startCalculation			= startCalculation;
+module.exports.startCalculationWithInputs	= startCalculationWithInputs;
 module.exports.isValidEquihash			= isValidEquihash;
 module.exports.createInputBufferFromObject	= createInputBufferFromObject;
