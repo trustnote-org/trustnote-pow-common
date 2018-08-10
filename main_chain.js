@@ -776,14 +776,14 @@ function markMcIndexStable(conn, mci, onDone){
 			async.series([
 				function(cb){ // min wl
 					if(min_wl)
-						cb();
+						return cb();
 					conn.query(
 						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
 						AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
 							if (rowTrustME.length === 0)
-								handleNonserialUnits(); // next op
+								return handleNonserialUnits(); // next op
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
 								[row[0].witnessed_level, round_index], 
@@ -802,7 +802,7 @@ function markMcIndexStable(conn, mci, onDone){
 						[round_index, constants.POW_TYPE_POW_EQUHASH], 
 						function(rowsPow){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
-								cb();
+								return cb();
 							conn.query(
 								"UPDATE round SET max_wl= \n\ 
 								(SELECT MAX(witnessed_level) FROM units \n\ 
@@ -824,8 +824,7 @@ function markMcIndexStable(conn, mci, onDone){
 				}
 			], function(err){
 				handleNonserialUnits();
-			});
-			
+			});			
 		});
 	}
 
