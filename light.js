@@ -9,7 +9,7 @@ var constants = require("./constants.js");
 var graph = require('./graph.js');
 var writer = require('./writer.js');
 var validation = require('./validation.js');
-var witnessProof = require('./witness_proof.js');
+var witnessPowProof = require('./witness_pow_proof.js');
 var ValidationUtils = require("./validation_utils.js");
 var parentComposer = require('./parent_composer.js');
 var breadcrumbs = require('./breadcrumbs.js');
@@ -215,14 +215,22 @@ function prepareHistory( historyRequest, callbacks )
 			if (rows.length > MAX_HISTORY_ITEMS)
 				return callbacks.ifError("your history is too large, consider switching to a full client");
 
-			witnessProof.prepareWitnessProof(
-				arrWitnesses, 0, 
-				function(err, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, last_ball_unit, last_ball_mci){
+			witnessPowProof.preparePowWitnessProof(
+				0,
+				function( err, arrUnstableMcJoints, last_ball_unit, last_ball_mci )
+				//	POW DEL
+				//function(err, arrUnstableMcJoints, arrWitnessChangeAndDefinitionJoints, last_ball_unit, last_ball_mci)
+				{
 					if (err)
 						return callbacks.ifError(err);
 					objResponse.unstable_mc_joints = arrUnstableMcJoints;
-					if (arrWitnessChangeAndDefinitionJoints.length > 0)
-						objResponse.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
+
+					/**
+					 *	POW DEL
+					 *	@author	XING
+					 */
+					// if (arrWitnessChangeAndDefinitionJoints.length > 0)
+					// 	objResponse.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
 
 					// add my joints and proofchain to those joints
 					objResponse.joints = [];
@@ -275,10 +283,19 @@ function processHistory(objResponse, callbacks){
 	if (!objResponse.proofchain_balls)
 		objResponse.proofchain_balls = [];
 
-	witnessProof.processWitnessProof(
-		objResponse.unstable_mc_joints, objResponse.witness_change_and_definition_joints, false, 
-		function(err, arrLastBallUnits, assocLastBallByLastBallUnit){
-			
+	//
+	//	POW MOD
+	//	@auth		XING
+	//	@datetime	2018/8/10 9:56 AM
+	//
+	//	witnessPowProof.processPowWitnessProof(
+	// 		objResponse.unstable_mc_joints, objResponse.witness_change_and_definition_joints, false,
+	// 		function(err, arrLastBallUnits, assocLastBallByLastBallUnit)
+	//
+	witnessPowProof.processPowWitnessProof(
+		objResponse.unstable_mc_joints, false,
+		function( err, arrLastBallUnits, assocLastBallByLastBallUnit )
+		{
 			if (err)
 				return callbacks.ifError(err);
 			
