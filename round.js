@@ -8,8 +8,8 @@ var db = require('./db.js');
 var conf = require('./conf.js');
 
 
-function getCurrentRoundIndex(callback){
-    db.query(
+function getCurrentRoundIndex(conn, callback){
+    conn.query(
 		"SELECT MAX(round_index) AS ci FROM round", 
         [],
 		function(rows){
@@ -21,8 +21,8 @@ function getCurrentRoundIndex(callback){
 }
 
 // the MinWl and MaxWl maybe null
-function getMinWlAndMaxWlByRoundIndex(roundIndex, callback){
-    db.query(
+function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
+    conn.query(
 		"SELECT min_wl, max_wl FROM round where round_index=?", 
         [roundIndex],
 		function(rows){
@@ -39,9 +39,9 @@ function getCoinbaseByRoundIndex(roundIndex){
 	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
 }
 
-function getWitnessesByRoundIndex(roundIndex, callback){
+function getWitnessesByRoundIndex(conn, roundIndex, callback){
     // TODO ：cache the witnesses of recent rounds
-    db.query(
+    conn.query(
 		"SELECT distinct(address) \n\
 		FROM units JOIN unit_authors using (unit)\n\
         WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
@@ -56,9 +56,9 @@ function getWitnessesByRoundIndex(roundIndex, callback){
 	);
 }
 
-function checkIfCoinBaseUnitByRoundIndexAndAddressExists(roundIndex, address, callback){
+function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
     // TODO ：cache the witnesses of recent rounds
-    db.query(
+    conn.query(
 		"SELECT  units.unit \n\
 		FROM units JOIN unit_authors using (unit)\n\
         WHERE pow_type=? AND round_index=? AND address=? ", 

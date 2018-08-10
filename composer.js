@@ -374,46 +374,36 @@ function composePowJoint(from_address, seed, difficulty, solution, signer, callb
 		payload_hash: objectHash.getBase64Hash(payload),
 		payload: payload
 	};
-	round.getCurrentRoundIndex(function(round_index){
-		composeJoint({
-			paying_addresses: [from_address], 
-			outputs: [{address: from_address, amount: 0}], 
-			messages: [objMessage], 
-			round_index: round_index,
-			pow_type: constants.POW_TYPE_POW_EQUHASH,
-			signer: signer, 
-			callbacks: callbacks
-		});
-	});	
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		messages: [objMessage], 
+		pow_type: constants.POW_TYPE_POW_EQUHASH,
+		signer: signer, 
+		callbacks: callbacks
+	});
 }
 
 // pow add trustme joint
 function composeTrustMEJoint(from_address, signer, callbacks){
-	round.getCurrentRoundIndex(function(round_index){
-		composeJoint({
-			paying_addresses: [from_address], 
-			outputs: [{address: from_address, amount: 0}], 
-			round_index: round_index,
-			pow_type: constants.POW_TYPE_TRUSTME,
-			signer: signer, 
-			callbacks: callbacks
-		});
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		pow_type: constants.POW_TYPE_TRUSTME,
+		signer: signer, 
+		callbacks: callbacks
 	});
-	
 }
 
 // pow add Coinbase joint
 function composeCoinbaseJoint(from_address, coinbase_amount, signer, callbacks){
-	round.getCurrentRoundIndex(function(round_index){
-		composeJoint({
-			paying_addresses: [from_address], 
-			outputs: [{address: from_address, amount: 0}], 
-			inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
-			round_index: round_index,
-			pow_type: constants.POW_TYPE_COIN_BASE,
-			signer: signer, 
-			callbacks: callbacks
-		});
+	composeJoint({
+		paying_addresses: [from_address], 
+		outputs: [{address: from_address, amount: 0}], 
+		inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
+		pow_type: constants.POW_TYPE_COIN_BASE,
+		signer: signer, 
+		callbacks: callbacks
 	});
 }
 
@@ -531,12 +521,7 @@ function composeJoint(params){
 		messages: arrMessages,
 		authors: []
 	};
-	// pow add 
-	if(params.round_index){
-		objUnit.round_index = params.round_index;
-		objUnit.pow_type = params.pow_type;
-	}
-
+	
 	var objJoint = {unit: objUnit};
 	if (params.earned_headers_commission_recipients) // it needn't be already sorted by address, we'll sort it now
 		objUnit.earned_headers_commission_recipients = params.earned_headers_commission_recipients.concat().sort(function(a,b){
@@ -574,6 +559,15 @@ function composeJoint(params){
 				conn = new_conn;
 				conn.query("BEGIN", function(){cb();});
 			});
+		},
+		function(cb){ //pow add 
+			if(!params.pow_type)
+				return cb();
+			objUnit.pow_type = params.pow_type;
+			round.getCurrentRoundIndex(conn, function(round_index){
+				objUnit.round_index = round_index;
+				return cb();
+			});			
 		},
 		function(cb){ // parent units
 			if (bGenesis)
