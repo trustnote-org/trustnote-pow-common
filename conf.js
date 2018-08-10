@@ -38,6 +38,8 @@ exports.port = null;
 
 // WebSocket protocol prefixed to all hosts.  Must be wss:// on livenet, ws:// is allowed on testnet
 exports.WS_PROTOCOL = "wss://";
+//True save to joints table
+exports.bSaveJointJson = true;
 
 exports.MAX_INBOUND_CONNECTIONS = 100;
 exports.MAX_OUTBOUND_CONNECTIONS = 100;

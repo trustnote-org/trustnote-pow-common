@@ -87,7 +87,7 @@ if ( process.browser )
 }
 
 
-// if not using a hub and accepting messages directly (be your own hub)
+//	if not using a hub and accepting messages directly (be your own hub)
 var my_device_address;
 var objMyTempPubkeyPackage;
 
@@ -142,14 +142,19 @@ function sendErrorResult( ws, unit, error )
 function sendVersion( ws )
 {
 	var libraryPackageJson = require('./package.json');
-	sendJustsaying( ws, 'version', {
-		protocol_version: constants.version, 
-		alt: constants.alt, 
-		library: libraryPackageJson.name, 
-		library_version: libraryPackageJson.version, 
-		program: conf.program, 
-		program_version: conf.program_version
-	});
+	sendJustsaying
+	(
+		ws,
+		'version',
+		{
+			protocol_version: constants.version,
+			alt: constants.alt,
+			library: libraryPackageJson.name,
+			library_version: libraryPackageJson.version,
+			program: conf.program,
+			program_version: conf.program_version
+		}
+	);
 }
 
 function sendResponse( ws, tag, response )
@@ -177,23 +182,34 @@ function sendRequest( ws, command, params, bReroutable, responseHandler )
 	var tag = objectHash.getBase64Hash(request);
 	//if (ws.assocPendingRequests[tag]) // ignore duplicate requests while still waiting for response from the same peer
 	//    return console.log("will not send identical "+command+" request");
-	if (ws.assocPendingRequests[tag]){
+	if ( ws.assocPendingRequests[ tag ] )
+	{
 		console.log('already sent a '+command+' request to '+ws.peer+', will add one more response handler rather than sending a duplicate request to the wire');
 		ws.assocPendingRequests[tag].responseHandlers.push(responseHandler);
 	}
-	else{
+	else
+	{
 		content.tag = tag;
-		// after STALLED_TIMEOUT, reroute the request to another peer
-		// it'll work correctly even if the current peer is already disconnected when the timeout fires
-		var reroute = !bReroutable ? null : function(){
+
+		//
+		//	after STALLED_TIMEOUT, reroute the request to another peer
+		//	it'll work correctly even if the current peer is already disconnected when the timeout fires
+		//
+		var reroute = ! bReroutable ? null : function()
+		{
 			console.log('will try to reroute a '+command+' request stalled at '+ws.peer);
-			if (!ws.assocPendingRequests[tag])
+			if ( ! ws.assocPendingRequests[ tag ] )
 				return console.log('will not reroute - the request was already handled by another peer');
+
 			ws.assocPendingRequests[tag].bRerouted = true;
-			findNextPeer(ws, function(next_ws){ // the callback may be called much later if findNextPeer has to wait for connection
+			findNextPeer( ws, function( next_ws )
+			{
+				//	the callback may be called much later if findNextPeer has to wait for connection
 				if (!ws.assocPendingRequests[tag])
 					return console.log('will not reroute after findNextPeer - the request was already handled by another peer');
-				if (next_ws === ws || assocReroutedConnectionsByTag[tag] && assocReroutedConnectionsByTag[tag].indexOf(next_ws) >= 0){
+
+				if (next_ws === ws || assocReroutedConnectionsByTag[tag] && assocReroutedConnectionsByTag[tag].indexOf(next_ws) >= 0)
+				{
 					console.log('will not reroute '+command+' to the same peer, will rather wait for a new connection');
 					eventBus.once('connected_to_source', function(){ // try again
 						console.log('got new connection, retrying reroute '+command);
@@ -245,12 +261,15 @@ function handleResponse( ws, tag, response )
 	delete ws.assocPendingRequests[tag];
 	
 	// if the request was rerouted, cancel all other pending requests
-	if (assocReroutedConnectionsByTag[tag]){
-		assocReroutedConnectionsByTag[tag].forEach(function(client){
-			if (client.assocPendingRequests[tag]){
-				clearTimeout(client.assocPendingRequests[tag].reroute_timer);
-				clearTimeout(client.assocPendingRequests[tag].cancel_timer);
-				delete client.assocPendingRequests[tag];
+	if ( assocReroutedConnectionsByTag[ tag ] )
+	{
+		assocReroutedConnectionsByTag[ tag ].forEach( function( client )
+		{
+			if ( client.assocPendingRequests[ tag ] )
+			{
+				clearTimeout( client.assocPendingRequests[ tag ].reroute_timer );
+				clearTimeout( client.assocPendingRequests[ tag ].cancel_timer );
+				delete client.assocPendingRequests[ tag ];
 			}
 		});
 		delete assocReroutedConnectionsByTag[tag];
