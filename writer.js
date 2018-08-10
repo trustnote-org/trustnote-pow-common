@@ -508,10 +508,12 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 								arrOps.push(updateBestParent);
 								arrOps.push(updateLevel);
 								arrOps.push(updateWitnessedLevel);
-								arrOps.push(function(cb){
-									console.log("updating MC after adding "+objUnit.unit);
-									main_chain.updateMainChain(conn, null, cb);
-								});
+								if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
+									arrOps.push(function(cb){
+										console.log("updating MC after adding "+objUnit.unit);
+										main_chain.updateMainChain(conn, null, cb);
+									});
+								}
 							}
 							if (preCommitCallback)
 								arrOps.push(function(cb){
