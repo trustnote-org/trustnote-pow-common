@@ -11,6 +11,7 @@ var paid_witnessing = require("./paid_witnessing.js");
 var headers_commission = require("./headers_commission.js");
 var mutex = require('./mutex.js');
 var eventBus = require('./event_bus.js');
+var pow = require('./pow.js');
 var profiler = require('./profiler.js');
 var breadcrumbs = require('./breadcrumbs.js');
 
@@ -771,7 +772,61 @@ function markMcIndexStable(conn, mci, onDone){
 
 	// pow add
 	function handlePowUnits(){
-		
+		round.getCurrentRoundInfo(conn, function(round_index, min_wl, max_wl){
+			async.series([
+				function(cb){ // min wl
+					if(min_wl)
+						cb();
+					conn.query(
+						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
+						AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
+						[round_index, constants.POW_TYPE_TRUSTME], 
+						function(rowTrustME){
+							if (rowTrustME.length === 0)
+								handleNonserialUnits(); // next op
+							conn.query(
+								"UPDATE round SET min_wl=? WHERE round_index=?", 
+								[row[0].witnessed_level, round_index], 
+								function(){
+									cb();
+								}
+							);
+						}
+					);
+				},
+				function(cb){ // switch round
+					conn.query(
+						"SELECT distinct(address) \n\
+						FROM units JOIN unit_authors using (unit) \n\ 
+						WHERE round_index=? AND is_stable=1 AND pow_type=? ", 
+						[round_index, constants.POW_TYPE_POW_EQUHASH], 
+						function(rowsPow){
+							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
+								cb();
+							conn.query(
+								"UPDATE round SET max_wl= \n\ 
+								(SELECT MAX(witnessed_level) FROM units \n\ 
+								WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\ 
+								WHERE round_index=?", 
+								[round_index, constants.POW_TYPE_TRUSTME, round_index], 
+								function(){
+									conn.query(
+										"INSERT INTO round VALUES (?, null, null)", 
+										[round_index+1], 
+										function(){
+											cb();
+										}
+									);
+								}
+							);
+						}
+					);
+				}
+			], function(err){
+				handleNonserialUnits();
+			});
+			
+		});
 	}
 
 	function handleNonserialUnits(){

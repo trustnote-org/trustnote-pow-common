@@ -10,12 +10,37 @@ var conf = require('./conf.js');
 
 function getCurrentRoundIndex(conn, callback){
     conn.query(
-		"SELECT MAX(round_index) AS ci FROM round", 
+		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
         [],
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find current round index");
-            callback(rows[0]["ci"]);
+            callback(rows[0].round_index);
+		}
+	);
+}
+
+
+function getCurrentRoundInfo(conn, callback){
+    conn.query(
+		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
+        [],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round index");
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl);
+		}
+	);
+}
+
+
+function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
+    conn.query(
+		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
+		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
+        [round_index, constants.POW_TYPE_TRUSTME],
+		function(rows){
+            callback(rows.length === 1);
 		}
 	);
 }
