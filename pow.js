@@ -5,11 +5,13 @@
  *	@boss	XING
  */
 
+const _ref		= require( 'ref' );
+//const _ffi		= require( 'ffi' );
+const _fs		= require( 'fs' );
+const _crypto		= require( 'crypto' );
 
-const _ref	= require( 'ref' );
-//const _ffi	= require( 'ffi' );
-const _fs	= require( 'fs' );
-const _crypto	= require('crypto');
+const _constants	= require( './constants.js' );
+const _round		= require( './round.js' );
 
 
 
@@ -101,6 +103,7 @@ let _objEquihashLibrary		= null;
  *	start calculation
  *
  *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
  *	@param	{function}	pfnCallback( err )
  *	@return {boolean}
  */
@@ -111,7 +114,35 @@ function startCalculation( oConn, pfnCallback )
 		throw new Error( `call startCalculation with invalid pfnCallback.` );
 	}
 
-	pfnCallback( null );
+	_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
+	{
+		oConn.query
+		(
+			"SELECT DISTINCT address FROM units JOIN unit_authors USING(unit) \
+			WHERE round_index = ? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? \
+			ORDER BY main_chain_index",
+			[ nRoundIndex, _constants.POW_TYPE_COIN_BASE ],
+			function( arrRows )
+			{
+				if ( 0 === arrRows.length )
+				{
+					return pfnCallback( `no coin base unit.` );
+				}
+				if ( arrRows.length < 8 )
+				{
+					return pfnCallback( `not enough coin base units.` );
+				}
+
+				//
+				//	TODO
+				//	calculate address : amount
+				//
+				pfnCallback( null, arrRows );
+			}
+		);
+	});
+
+
 	return true;
 }
 
