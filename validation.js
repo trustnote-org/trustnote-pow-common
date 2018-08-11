@@ -1139,7 +1139,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 			return callback("error occured during validation witnessed_level" + err);
 		}
 		return callback();
-	}
+	})
 }
 
 function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidationState, onAcceptedDoublespends, cb){
@@ -1695,8 +1695,8 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						checkInputDoubleSpend(cb);
 					// attestations and issued_by_definer_only already checked before
 					break;
-					// Pow add
-					case "coinbase":
+				// Pow add
+				case "coinbase":
 						if (input_index !== 0)
 							return cb("coinbase must come first");
 						if (hasFieldsExcept(input, ["type", "address", "amount"]))
@@ -1727,7 +1727,8 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 								if (expectedCoinBaseAmountForRound != input.amount){
 									return cb("coinbase unit amount is incorrect ");
 								}
-						});
+							});
+						})
 						break;
 					
 				case "transfer":
