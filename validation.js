@@ -1116,6 +1116,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							if(unit_witenessed_level <= last_round_max_wl){
 								cb("unit witnessed level is not bigger than last round max wl");
 							}
+							cb();
 						});
 					}
 					else if(!max_wl) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
@@ -1132,7 +1133,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 					cb();
 				});
 			}
-			cb();
+			cb();	
 		}
 	],
 	function(err){
@@ -1718,7 +1719,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							cb("can not send coinbase unit in first round ");
 
 						round.getWitnessesByRoundIndex(conn, objUnit.round_index -1,function (witnessesOFLastTwoRound){
-							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) == -1){
+							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) === -1){
 								return cb("coinbase unit author is invalid witness  ");
 							}
 							// Check duplicate coinbase unit in current round if exists(simialr to doublespend check)
@@ -1727,10 +1728,13 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 									return cb("coinbase unit by each author can not sent more than once ");
 								}								
 								// check amount is valid
-								var expectedCoinBaseAmountForRound = round.getCoinbaseByRoundIndex(objUnit.round_index-1)
-								if (expectedCoinBaseAmountForRound != input.amount){
-									return cb("coinbase unit amount is incorrect ");
-								}
+								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address, 
+								function(commission)){
+									if (commission != input.amount){
+										return cb("coinbase unit amount is incorrect ");
+									}
+									return cb();
+								});
 							});
 						})
 						break;
