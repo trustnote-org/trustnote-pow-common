@@ -9,6 +9,7 @@ const _ref		= require( 'ref' );
 //const _ffi		= require( 'ffi' );
 const _fs		= require( 'fs' );
 const _crypto		= require( 'crypto' );
+const _async		= require( 'async' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
@@ -30,8 +31,11 @@ let _objEquihashLibrary		= null;
  * 	////////////////////////////////////////////////////////////
  *	@description
  *
- *	arrCoinBaseList
- *	[
+ * 	Assume that this is the round N, the inputs of the round N+1 are:
+ * 	1, unique coin-base units sorted by address from round (N-1)
+ *	   arrCoinBaseList
+ *	   [
+ *		'address0'	: 20% of total amount,
  *		'address1'	: amount of coins,
  *		'address2'	: amount of coins,
  *		'address3'	: amount of coins,
@@ -40,8 +44,20 @@ let _objEquihashLibrary		= null;
  *		'address6'	: amount of coins,
  *		'address7'	: amount of coins,
  *		'address8'	: amount of coins,
- *	]
+ *	   ]
+ *	   Note:
+ *	   the address0 came from TrustNote Foundation.
+ *	2, ball address of the first TrustME unit from round (N)
+ *	3, difficulty value of round (N)
+ *	4, public seed of round (N)
+ *	5, author address of current SuperNode.
  *
+ * 	第n+2轮的挖矿输入包括：
+ * 	第n轮的Coinbase交易信息排序后合并哈希（例如{address1:1000,address2:1200,...,address8:1500}）、
+ * 	第n+1轮第一个主链TrustME单元的Ball、
+ * 	当前难度值、
+ * 	n+1轮种子、
+ * 	本节点的Address。
  *
  *	////////////////////////////////////////////////////////////
  *	@examples
@@ -106,6 +122,10 @@ let _objEquihashLibrary		= null;
  *	@param	{function}	oConn.query
  *	@param	{function}	pfnCallback( err )
  *	@return {boolean}
+ *
+ * 	@description
+ * 	start successfully	pfnCallback( null );
+ * 	failed to start		pfnCallback( error );
  */
 function startCalculation( oConn, pfnCallback )
 {
@@ -114,36 +134,213 @@ function startCalculation( oConn, pfnCallback )
 		throw new Error( `call startCalculation with invalid pfnCallback.` );
 	}
 
-	_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
-	{
-		oConn.query
-		(
-			"SELECT DISTINCT address FROM units JOIN unit_authors USING(unit) \
-			WHERE round_index = ? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? \
-			ORDER BY main_chain_index",
-			[ nRoundIndex, _constants.POW_TYPE_COIN_BASE ],
-			function( arrRows )
+	let nCurrentRoundIndex		= null;
+	let nPreviousRoundIndex		= null;
+	let arrPreviousCoinBaseList	= null;
+	let sFirstBallOfTrustME		= null;
+
+	_async.series
+	([
+		function( pfnNext )
+		{
+			//
+			//	get round index
+			//
+			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
 			{
-				if ( 0 === arrRows.length )
+				if ( 'number' === nRoundIndex && nRoundIndex > 0 )
 				{
-					return pfnCallback( `no coin base unit.` );
+					nCurrentRoundIndex	= nRoundIndex;
+					nPreviousRoundIndex	= nRoundIndex - 1;
+					pfnNext();
 				}
-				if ( arrRows.length < 8 )
+				else
 				{
-					return pfnCallback( `not enough coin base units.` );
+					pfnNext( `previous round index must be great then 0` );
+				}
+			});
+		},
+		function( pfnNext )
+		{
+			//
+			//	obtain coin-base list of the previous round
+			//
+			getCoinBaseListByRoundIndex( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
 				}
 
-				//
-				//	TODO
-				//	calculate address : amount
-				//
-				pfnCallback( null, arrRows );
-			}
-		);
+				arrPreviousCoinBaseList = arrCoinBaseList;
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//
+			//	obtain ball address of the first TrustME unit from current round
+			//
+			getBallOfFirstTrustMEByRoundIndex( oConn, nCurrentRoundIndex, function( err, sBall )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+
+				sFirstBallOfTrustME = sBall;
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//	obtain difficulty
+		},
+		function( pfnNext )
+		{
+			//	obtain pubSeed
+		},
+		function( pfnNext )
+		{
+			//	obtain superNode
+		}
+	], function( err )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		//
+		//	TODO
+		//	calculate address : amount
+		//
+		pfnCallback( null );
 	});
 
-
 	return true;
+}
+
+
+/**
+ * 	get current round public seed
+ *
+ * 	@documentation
+ *	https://github.com/trustnote/document/blob/master/TrustNote-TR-2018-02.md#PoW-Unit
+ */
+function calculateCurrentRoundPublicSeed( pfnCallback )
+{
+
+}
+
+
+/**
+ *	get public seed by round index
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err, arrCoinBaseList )
+ */
+function getPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
+{
+
+}
+
+
+/**
+ *	get coin-base list by round index
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err, arrCoinBaseList )
+ */
+function getCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid oConn` );
+	}
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
+	{
+		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid nRoundIndex` );
+	}
+
+	//
+	//	obtain coin-base list of the previous round
+	//
+	oConn.query
+	(
+		"SELECT DISTINCT units.address AS u_address, inputs.amount AS i_amount \
+		FROM units JOIN unit_authors USING(unit) JOIN inputs USING(unit) \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.pow_type=? \
+		AND 'coinbase' = inputs.type \
+		ORDER BY main_chain_index ASC",
+		[
+			nRoundIndex,
+			_constants.POW_TYPE_COIN_BASE
+		],
+		function( arrRows )
+		{
+			if ( 0 === arrRows.length )
+			{
+				return pfnCallback( `no coin base unit.` );
+			}
+			if ( arrRows.length < _constants.COUNT_WITNESSES )
+			{
+				return pfnCallback( `not enough coin base units.` );
+			}
+
+			return pfnCallback( null, arrRows.map( oRow =>
+			{
+				return { address : oRow.u_address, amount : oRow.i_amount };
+			}));
+		}
+	);
+}
+
+/**
+ *	obtain ball address of the first TrustME unit from current round
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err, arrCoinBaseList )
+ */
+function getBallOfFirstTrustMEByRoundIndex( oConn, nRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid oConn` );
+	}
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
+	{
+		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid nRoundIndex` );
+	}
+
+	oConn.query
+	(
+		"SELECT ball \
+		FROM balls JOIN units USING(unit) \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
+		ORDER BY units.main_chain_index ASC \
+		LIMIT 1",
+		[
+			nRoundIndex,
+			_constants.POW_TYPE_TRUSTME
+		],
+		function( arrRows )
+		{
+			if ( 1 !== arrRows.length )
+			{
+				return pfnCallback( `Can not find a suitable ball for calculation pow.` );
+			}
+
+			//	...
+			return pfnCallback( null, arrRows[ 0 ][ 'ball' ] );
+		}
+	);
 }
 
 
@@ -314,7 +511,11 @@ function _loadEquihashLibrary()
 /**
  *	@exports
  */
-module.exports.startCalculation			= startCalculation;
-module.exports.startCalculationWithInputs	= startCalculationWithInputs;
-module.exports.isValidEquihash			= isValidEquihash;
-module.exports.createInputBufferFromObject	= createInputBufferFromObject;
+module.exports.startCalculation				= startCalculation;
+module.exports.startCalculationWithInputs		= startCalculationWithInputs;
+
+module.exports.getCoinBaseListByRoundIndex		= getCoinBaseListByRoundIndex;
+module.exports.getBallOfFirstTrustMEByRoundIndex	= getBallOfFirstTrustMEByRoundIndex;
+
+module.exports.isValidEquihash				= isValidEquihash;
+module.exports.createInputBufferFromObject		= createInputBufferFromObject;
