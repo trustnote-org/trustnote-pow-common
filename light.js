@@ -708,5 +708,6 @@ exports.prepareLinkProofs = prepareLinkProofs;
 exports.processLinkProofs = processLinkProofs;
 exports.determineIfHaveUnstableJoints = determineIfHaveUnstableJoints;
 exports.prepareParentsAndLastBallAndWitnessListUnit = prepareParentsAndLastBallAndWitnessListUnit;
+exports.prepareParentsAndLastBall = prepareParentsAndLastBall;
 
 
