@@ -1116,6 +1116,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							if(unit_witenessed_level <= last_round_max_wl){
 								cb("unit witnessed level is not bigger than last round max wl");
 							}
+							cb();
 						});
 					}
 					else if(!max_wl) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
