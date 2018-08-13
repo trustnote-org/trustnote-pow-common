@@ -7,6 +7,11 @@ var constants = require('./constants.js');
 var db = require('./db.js');
 var conf = require('./conf.js');
 
+var MAX_ROUND_IN_CACHE = 10;
+var assocCachedWitnesses = {};
+var assocCachedTotalCommission = {};
+var assocCachedMaxMci = {};
+var assocCachedCoinbaseRatio = {};
 
 function getCurrentRoundIndex(conn, callback){
     conn.query(
@@ -123,8 +128,10 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 		if(witnesses.length != constants.COUNT_POW_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
 		return  callback(witnesses.push(constants.FOUNDATION_ADDRESS));
-	}
-	 
+    }
+    
+    if (assocCachedWitnesses[roundIndex])
+      return callback(assocCachedWitnesses[roundIndex]);
     conn.query(
 		"SELECT distinct(address) \n\
 		FROM units JOIN unit_authors using (unit)\n\
@@ -134,8 +141,10 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 		function(rows){
 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
                 throw Error("Can not find enough witnesses ");
-            var witnesses = rows.map(function(row) { return row.address; } );
-            callback(witnesses.push(constants.FOUNDATION_ADDRESS));
+            witnesses = rows.map(function(row) { return row.address; } );
+            witnesses.push(constants.FOUNDATION_ADDRESS)
+            assocCachedWitnesses[roundIndex] = witnesses;
+            callback(witnesses);
 		}
 	);
 }
@@ -153,6 +162,119 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 	);
 }
 
+
+// coinbase begin
+
+function getMaxMciByRoundIndex(conn, roundIndex, callback){
+    if (assocCachedMaxMci[roundIndex])
+      return callback(assocCachedMaxMci[roundIndex]);
+    conn.query(
+        "select max(main_chain_index) AS max_mci from units \n\
+        where is_on_main_chain=1 AND is_stable=1 AND pow_type=? AND round_index=?, 
+        [constants.POW_TYPE_TRUSTME, roundIndex],
+        function(rows){
+            if (rows.length !== 1)
+                throw Error("Can not find max mci ");
+            assocCachedMaxMci[roundIndex] = rows[0].max_mci;
+            callback(rows[0].max_mci);
+        }
+    );
+}
+
+function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
+    if(roundIndex === 1) 
+        throw Error("The first round have no commission ");
+    if (assocCachedTotalCommission[roundIndex])
+        return callback(assocCachedTotalCommission[roundIndex]);
+    getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
+        if(!minWl || !maxWl)
+            throw Error("Can't get commission before the round switch.");
+        getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+            getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
+                conn.query(
+                    "select sum(headers_commission+payload_commission) AS total_commission from units \n\
+                    where  is_stable=1 \n\
+                    AND main_chain_index>? AND main_chain_index<=?", 
+                    [lastRoundMaxMci, currentRoundMaxMci],
+                    function(rows){
+                        if (rows.length !== 1)
+                            throw Error("Can not calculate the total commision of round index " + roundIndex);
+                        assocCachedTotalCommission[roundIndex] = rows[0].total_commission;
+                        callback(rows[0].total_commission);
+                    }
+                );
+            });
+        });
+    });
+}
+
+function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
+    if(roundIndex === 1) 
+        throw Error("The first round have no commission ");
+    if (assocCachedRatio[roundIndex])
+        return callback(assocCachedRatio[roundIndex]);
+    getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
+        if(!minWl || !maxWl)
+            throw Error("Can't get commission before the round switch.");
+        getWitnessesByRoundIndex(conn, roundIndex-1, function(witnesses){
+            conn.query(
+                "SELECT unit, witnessed_level, address \n\
+                FROM units JOIN unit_authors using (unit)\n\
+                WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=?", 
+                [constants.POW_TYPE_TRUSTME, roundIndex],
+                function(rows){
+                    if (rows.length === 0 )
+                        throw Error("Can not find any trustme units ");
+                    var totalCountOfTrustMe = 0;
+                    var witnessRatioOfTrustMe = {};
+                    var addressTrustMeWl = {};
+                    rows.forEach(function(row){
+                        if(witnesses.indexOf(row.address) === -1)
+                            throw Error("wrong trustme unit exit ");
+                        if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
+                            continue;                            
+                        
+                        addressTrustMeWl[row.address] = witnessed_level;
+
+                        totalCountOfTrustMe++;
+                        if(!witnessRatioOfTrustMe[row.address])
+                            witnessRatioOfTrustMe[row.address]=1;
+                        else
+                            witnessRatioOfTrustMe[row.address]++;
+                    });
+
+                    Object.keys(witnessRatioOfTrustMe).forEach(function(address){
+                        witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
+                    });
+                    assocCachedRatio[roundIndex] = witnessRatioOfTrustMe;
+                }
+            );    
+        });        
+    });
+}
+
+function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
+    getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
+        callback(witnessRatioOfTrustMe[witnessAddress]);
+    });
+}
+
+function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
+    var coinbase = getCoinbaseByRoundIndex(roundIndex);
+    getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
+        getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
+            callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
+        });
+    });
+}
+
+// coinbase end
+
+function shrinkCache(){
+  
+}
+
+setInterval(shrinkCache, 300*1000);
 
 
 

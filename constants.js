@@ -61,6 +61,8 @@ exports.ROUND_COINBASE = [217.59,
 						88.58,
 						0];
 
+exports.MIN_INTERVAL_WL_OF_TRUSTME = 3;
+
 /**
  *	pow_type
  */
