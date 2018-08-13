@@ -735,12 +735,13 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 	//pow add: check trust me author must come from pow unit authors of last round
 	function checkTrustMeAuthor(){
 		if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
-			round.getWitnessesByRoundIndex(conn, objUnit.round_index -1, function(last_Round_witnesses){
+			round.getWitnessesByRoundIndex(conn, objUnit.round_index , function(last_Round_witnesses){
 				if(last_Round_witnesses.indexOf(objAuthor.address) === -1){
 					return callback("author of trust me unit is invalid");
 				}
 				checkSerialAddressUse();
 			});
+		
 		}else{
 			checkSerialAddressUse();
 		}
@@ -1713,7 +1714,10 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						
 						total_input += input.amount;
 						// Check author come from n-2 round pow units authors
-						round.getWitnessesByRoundIndex(conn, objUnit.round_index -2,function (witnessesOFLastTwoRound){
+						if (objUnit.round_index === 1 )
+							cb("can not send coinbase unit in first round ");
+
+						round.getWitnessesByRoundIndex(conn, objUnit.round_index -1,function (witnessesOFLastTwoRound){
 							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) == -1){
 								return cb("coinbase unit author is invalid witness  ");
 							}
