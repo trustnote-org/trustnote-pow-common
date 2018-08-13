@@ -2958,7 +2958,7 @@ function handleRequest( ws, tag, command, params )
 			if (ws.bOutbound)
 				return sendErrorResponse(ws, tag, "light clients have to be inbound");
 
-			light.prepareParentsAndLastBallAndWitnessListUnit( params.witnesses,
+			light.prepareParentsAndLastBall(
 			{
 				ifError: function(err)
 				{

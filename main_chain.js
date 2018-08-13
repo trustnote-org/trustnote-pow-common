@@ -783,7 +783,7 @@ function markMcIndexStable(conn, mci, onDone){
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
 							if (rowTrustME.length === 0)
-								return handleNonserialUnits(); // next op
+								return cb(); // next op
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
 								[row[0].witnessed_level, round_index], 

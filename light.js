@@ -497,6 +497,25 @@ function prepareParentsAndLastBallAndWitnessListUnit(arrWitnesses, callbacks){
 	});
 }
 
+// pow add
+function prepareParentsAndLastBall(callbacks){
+	parentComposer.pickParentUnitsAndLastBall(
+		db, 
+		function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
+			if (err)
+				return callbacks.ifError("unable to find parents: "+err);
+			var objResponse = {
+				parent_units: arrParentUnits,
+				last_stable_mc_ball: last_stable_mc_ball,
+				last_stable_mc_ball_unit: last_stable_mc_ball_unit,
+				last_stable_mc_ball_mci: last_stable_mc_ball_mci
+			};
+	
+			callbacks.ifOk(objResponse);
+		}
+	);
+}
+
 // arrUnits sorted in reverse chronological order
 function prepareLinkProofs(arrUnits, callbacks){
 	if (!ValidationUtils.isNonemptyArray(arrUnits))
