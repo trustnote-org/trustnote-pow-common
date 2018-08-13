@@ -30,6 +30,8 @@
 		"sqlite3": "^3.1.4",
 		"async": "^1.5.2",
 		"secp256k1": "^3.1.0",
-		"ref": ">=1.0"
+		"ref": ">=1.0",
+		"blakejs" : "git+https://github.com/dcposch/blakejs.git",
+		"ffi": ">=1.0"
 	}
 }

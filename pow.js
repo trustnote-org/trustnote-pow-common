@@ -6,9 +6,10 @@
  */
 
 const _ref		= require( 'ref' );
-//const _ffi		= require( 'ffi' );
+const _ffi		= require( 'ffi' );
 const _fs		= require( 'fs' );
 const _crypto		= require( 'crypto' );
+const _blakejs		= require( 'blakejs' );
 const _async		= require( 'async' );
 
 const _constants	= require( './constants.js' );
@@ -131,13 +132,16 @@ function startCalculation( oConn, pfnCallback )
 {
 	if ( 'function' !== typeof pfnCallback )
 	{
+		//	arguments.callee.name
 		throw new Error( `call startCalculation with invalid pfnCallback.` );
 	}
 
 	let nCurrentRoundIndex		= null;
 	let nPreviousRoundIndex		= null;
 	let arrPreviousCoinBaseList	= null;
-	let sFirstBallOfTrustME		= null;
+	let sCurrentFirstBallOfTrustME	= null;
+	let sCurrentDifficultyValue	= null;
+	let sCurrentPublicSeed		= null;
 
 	_async.series
 	([
@@ -165,7 +169,7 @@ function startCalculation( oConn, pfnCallback )
 			//
 			//	obtain coin-base list of the previous round
 			//
-			getCoinBaseListByRoundIndex( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
+			getCoinBaseListByRoundIndexFromDb( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -181,24 +185,39 @@ function startCalculation( oConn, pfnCallback )
 			//
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			getBallOfFirstTrustMEByRoundIndex( oConn, nCurrentRoundIndex, function( err, sBall )
+			getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
 					return pfnNext( err );
 				}
 
-				sFirstBallOfTrustME = sBall;
+				sCurrentFirstBallOfTrustME = sBall;
 				return pfnNext();
 			});
 		},
 		function( pfnNext )
 		{
-			//	obtain difficulty
+			//
+			//	calculate difficulty value
+			//
+			sCurrentDifficultyValue	= null;
 		},
 		function( pfnNext )
 		{
-			//	obtain pubSeed
+			//
+			//	calculate public seed
+			//
+			calculateCurrentRoundPublicSeed( function( err, sSeed )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+
+				sCurrentPublicSeed = sSeed;
+				return pfnNext();
+			});
 		},
 		function( pfnNext )
 		{
@@ -223,14 +242,111 @@ function startCalculation( oConn, pfnCallback )
 
 
 /**
- * 	get current round public seed
+ * 	calculate public seed by round index
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ * 	@param	{function}	pfnCallback( err, sSeed )
  *
  * 	@documentation
  *	https://github.com/trustnote/document/blob/master/TrustNote-TR-2018-02.md#PoW-Unit
+ *
+ * 	pubSeed(i)	= blake2s256
+ * 		(
+ * 			pubSeed(i-1) + hash( Coin-base(i-2) ) + hash( FirstStableMCUnit(i-1) )
+ * 		)
  */
-function calculateCurrentRoundPublicSeed( pfnCallback )
+function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
+	if ( ! oConn )
+	{
+		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid oConn` );
+	}
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 3 )
+	{
+		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid nRoundIndex` );
+	}
 
+	let sPreviousPublicSeed		= null;
+	let arrPrePreviousCoinBase	= null;
+	let sPreviousTrustMEBall	= null;
+
+	_async.series
+	([
+		function( pfnNext )
+		{
+			//	public seed
+			getPublicSeedByRoundIndexFromDb( oConn, nRoundIndex - 1, function( err, sSeed )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+				if ( 'string' !== typeof sSeed || 0 === sSeed.length )
+				{
+					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sSeed.` );
+				}
+
+				sPreviousPublicSeed = sSeed;
+				return pfnNext();
+			} );
+		},
+		function( pfnNext )
+		{
+			//	coin base
+			getCoinBaseListByRoundIndexFromDb( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+				if ( ! Array.isArray( arrCoinBaseList ) )
+				{
+					return pfnNext( 'empty coin base list' );
+				}
+				if ( _constants.COUNT_WITNESSES !== arrCoinBaseList.length )
+				{
+					return pfnNext( 'no enough coin base units.' );
+				}
+
+				arrPrePreviousCoinBase = arrCoinBaseList;
+				return pfnNext();
+			} );
+		},
+		function( pfnNext )
+		{
+			//	first ball
+			getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nRoundIndex - 1, function( err, sBall )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+				if ( 'string' !== typeof sBall || 0 === sBall.length )
+				{
+					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sBall.` );
+				}
+
+				sPreviousTrustMEBall = sBall;
+				return pfnNext();
+			} );
+		}
+	], function( err )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		//	...
+		let sSource = ""
+		+ sPreviousPublicSeed
+		+ _crypto.createHash( 'sha512' ).update( JSON.stringify( arrPrePreviousCoinBase ), 'utf8' ).digest();
+		+ _crypto.createHash( 'sha512' ).update( sPreviousTrustMEBall, 'utf8' ).digest();
+
+		pfnCallback( null, _blakejs.blake2sHex( sSource ) );
+	});
 }
 
 
@@ -242,10 +358,60 @@ function calculateCurrentRoundPublicSeed( pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
+function getPublicSeedByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
 {
+	if ( ! oConn )
+	{
+		return pfnCallback( `call getPublicSeedByRoundIndexFromDb with invalid oConn` );
+	}
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
+	{
+		return pfnCallback( `call getPublicSeedByRoundIndexFromDb with invalid nRoundIndex` );
+	}
+
+	oConn.query
+	(
+		"SELECT pow.seed AS p_seed \
+		FROM pow JOIN units USING(unit) \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
+		ORDER BY main_chain_index ASC \
+		LIMIT 1",
+		[
+			nRoundIndex,
+			_constants.POW_TYPE_POW_EQUHASH
+		],
+		function( arrRows )
+		{
+			if ( 0 === arrRows.length )
+			{
+				return pfnCallback( `no pow unit.` );
+			}
+
+			return pfnCallback( null, arrRows[ 0 ][ 'p_seed' ] );
+		}
+	);
+}
+
+
+/**
+ *	calculate current round difficulty value
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ * 	@param	{function}	pfnCallback( err, sSeed )
+ */
+function calculateCurrentRoundDifficultyValue( oConn, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call calculateCurrentRoundDifficultyValue with invalid oConn` );
+	}
+
+
 
 }
+
+
 
 
 /**
@@ -256,15 +422,15 @@ function getPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
+function getCoinBaseListByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid oConn` );
+		return pfnCallback( `call getCoinBaseListByRoundIndexFromDb with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid nRoundIndex` );
+		return pfnCallback( `call getCoinBaseListByRoundIndexFromDb with invalid nRoundIndex` );
 	}
 
 	//
@@ -274,7 +440,7 @@ function getCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
 	(
 		"SELECT DISTINCT units.address AS u_address, inputs.amount AS i_amount \
 		FROM units JOIN unit_authors USING(unit) JOIN inputs USING(unit) \
-		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.pow_type=? \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
 		AND 'coinbase' = inputs.type \
 		ORDER BY main_chain_index ASC",
 		[
@@ -300,6 +466,7 @@ function getCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
 	);
 }
 
+
 /**
  *	obtain ball address of the first TrustME unit from current round
  *
@@ -308,15 +475,15 @@ function getCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getBallOfFirstTrustMEByRoundIndex( oConn, nRoundIndex, pfnCallback )
+function getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid oConn` );
+		return pfnCallback( `call getBallOfFirstTrustMEByRoundIndexFromDb with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndex with invalid nRoundIndex` );
+		return pfnCallback( `call getBallOfFirstTrustMEByRoundIndexFromDb with invalid nRoundIndex` );
 	}
 
 	oConn.query
@@ -431,17 +598,12 @@ function isValidEquihash( objInput, sHash, nNonce )
 	bufInput	= createInputBufferFromObject( objInput );
 	bufHash		= Buffer.concat( [ Buffer.from( sHash, 'utf8' ) ], 32 );
 
-	// //	load library
-	// _loadEquihashLibrary();
-	//
-	//
-	//
-	//
+	//	load library
+	_loadEquihashLibraryIfNeed();
 
-	//
-	// let nCall       = _objEquihashLibrary.equihash( bufInput, nNonce, bufHash, nInputLen );
-	//
-	// console.log( `call equihash = ${ nCall }` );
+	let nCall       = _objEquihashLibrary.equihash( bufInput, nNonce, bufHash, nInputLen );
+
+	console.log( `call equihash = ${ nCall }` );
 
 
 
@@ -486,7 +648,7 @@ function createInputBufferFromObject( objInput )
  *	load libequihash.so dynamically
  *	@private
  */
-function _loadEquihashLibrary()
+function _loadEquihashLibraryIfNeed()
 {
 	if ( null === _objEquihashLibrary )
 	{
@@ -505,17 +667,17 @@ function _loadEquihashLibrary()
 
 
 
-
-
-
 /**
  *	@exports
  */
 module.exports.startCalculation				= startCalculation;
+module.exports.calculatePublicSeedByRoundIndex		= calculatePublicSeedByRoundIndex;
+module.exports.calculateCurrentRoundDifficultyValue	= calculateCurrentRoundDifficultyValue;
 module.exports.startCalculationWithInputs		= startCalculationWithInputs;
 
-module.exports.getCoinBaseListByRoundIndex		= getCoinBaseListByRoundIndex;
-module.exports.getBallOfFirstTrustMEByRoundIndex	= getBallOfFirstTrustMEByRoundIndex;
+module.exports.getPublicSeedByRoundIndexFromDb		= getPublicSeedByRoundIndexFromDb;
+module.exports.getCoinBaseListByRoundIndexFromDb		= getCoinBaseListByRoundIndexFromDb;
+module.exports.getBallOfFirstTrustMEByRoundIndexFromDb	= getBallOfFirstTrustMEByRoundIndexFromDb;
 
 module.exports.isValidEquihash				= isValidEquihash;
 module.exports.createInputBufferFromObject		= createInputBufferFromObject;
