@@ -116,13 +116,21 @@ function getCoinbaseByRoundIndex(roundIndex){
 }
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
-    // TODO ：cache the witnesses of recent rounds
+	// TODO ：cache the witnesses of recent rounds
+	var witnesses  = [];
+	if (roundIndex === 1){// first round
+		witnesses = witnesses.concat(conf.initialWitnesses);
+		if(witnesses.length != constants.COUNT_POW_WITNESSES)
+			throw Error("Can not find enough witnesses in conf initialWitnesses");
+		return  callback(witnesses.push(constants.FOUNDATION_ADDRESS));
+	}
+	 
     conn.query(
 		"SELECT distinct(address) \n\
 		FROM units JOIN unit_authors using (unit)\n\
         WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
         LIMIT ?", 
-        [constants.POW_TYPE_POW_EQUHASH, roundIndex, constants.COUNT_POW_WITNESSES],
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
 		function(rows){
 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
                 throw Error("Can not find enough witnesses ");
