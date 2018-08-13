@@ -366,7 +366,7 @@ function composeAssetAttestorsJoint(from_address, asset, arrNewAttestors, signer
 }
 
 // pow add pow joint
-function composePowJoint(from_address, seed, difficulty, solution, signer, callbacks){
+function composePowJoint(from_address, round_index, seed, difficulty, solution, signer, callbacks){
 	var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	var objMessage = {
 		app: "pow_equihash",
@@ -378,6 +378,7 @@ function composePowJoint(from_address, seed, difficulty, solution, signer, callb
 		paying_addresses: [from_address], 
 		outputs: [{address: from_address, amount: 0}], 
 		messages: [objMessage], 
+		round_index: round_index,
 		pow_type: constants.POW_TYPE_POW_EQUHASH,
 		signer: signer, 
 		callbacks: callbacks
@@ -385,10 +386,11 @@ function composePowJoint(from_address, seed, difficulty, solution, signer, callb
 }
 
 // pow add trustme joint
-function composeTrustMEJoint(from_address, signer, callbacks){
+function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 	composeJoint({
 		paying_addresses: [from_address], 
 		outputs: [{address: from_address, amount: 0}], 
+		round_index: round_index,
 		pow_type: constants.POW_TYPE_TRUSTME,
 		signer: signer, 
 		callbacks: callbacks
@@ -396,11 +398,12 @@ function composeTrustMEJoint(from_address, signer, callbacks){
 }
 
 // pow add Coinbase joint
-function composeCoinbaseJoint(from_address, coinbase_amount, signer, callbacks){
+function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer, callbacks){
 	composeJoint({
 		paying_addresses: [from_address], 
 		outputs: [{address: from_address, amount: 0}], 
 		inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
+		round_index: round_index,
 		pow_type: constants.POW_TYPE_COIN_BASE,
 		signer: signer, 
 		callbacks: callbacks
@@ -561,13 +564,11 @@ function composeJoint(params){
 			});
 		},
 		function(cb){ //pow add 
-			if(!params.pow_type)
+			if(!params.round_index)
 				return cb();
+			objUnit.round_index = params.round_index;
 			objUnit.pow_type = params.pow_type;
-			round.getCurrentRoundIndex(conn, function(round_index){
-				objUnit.round_index = round_index;
-				return cb();
-			});			
+			cb();			
 		},
 		function(cb){ // parent units
 			if (bGenesis)
