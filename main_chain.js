@@ -1011,23 +1011,23 @@ function markMcIndexStable(conn, mci, onDone){
 		});
 	}
 	
-	function calcCommissions(){
-		async.series([
-			function(cb){
-				profiler.start();
-				headers_commission.calcHeadersCommissions(conn, cb);
-			},
-			function(cb){
-				profiler.stop('mc-headers-commissions');
-				paid_witnessing.updatePaidWitnesses(conn, cb);
-			}
-		], function(){
-			process.nextTick(function(){ // don't call it synchronously with event emitter
-				eventBus.emit("mci_became_stable", mci);
-			});
-			onDone();
-		});
-	}
+	// function calcCommissions(){
+	// 	async.series([
+	// 		function(cb){
+	// 			profiler.start();
+	// 			headers_commission.calcHeadersCommissions(conn, cb);
+	// 		},
+	// 		function(cb){
+	// 			profiler.stop('mc-headers-commissions');
+	// 			paid_witnessing.updatePaidWitnesses(conn, cb);
+	// 		}
+	// 	], function(){
+	// 		process.nextTick(function(){ // don't call it synchronously with event emitter
+	// 			eventBus.emit("mci_became_stable", mci);
+	// 		});
+	// 		onDone();
+	// 	});
+	// }
 	
 }
 

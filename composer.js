@@ -154,51 +154,52 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 		);
 	}
 	
-	function addHeadersCommissionInputs(){
-		addMcInputs("headers_commission", HEADERS_COMMISSION_INPUT_SIZE, 
-			headers_commission.getMaxSpendableMciForLastBallMci(last_ball_mci), addWitnessingInputs);
-	}
+	// pow del
+	// function addHeadersCommissionInputs(){
+	// 	addMcInputs("headers_commission", HEADERS_COMMISSION_INPUT_SIZE, 
+	// 		headers_commission.getMaxSpendableMciForLastBallMci(last_ball_mci), addWitnessingInputs);
+	// }
 	
-	function addWitnessingInputs(){
-		addMcInputs("witnessing", WITNESSING_INPUT_SIZE, paid_witnessing.getMaxSpendableMciForLastBallMci(last_ball_mci), issueAsset);
-	}
+	// function addWitnessingInputs(){
+	// 	addMcInputs("witnessing", WITNESSING_INPUT_SIZE, paid_witnessing.getMaxSpendableMciForLastBallMci(last_ball_mci), issueAsset);
+	// }
 	
-	function addMcInputs(type, input_size, max_mci, onStillNotEnough){
-		async.eachSeries(
-			arrAddresses, 
-			function(address, cb){
-				var target_amount = required_amount + input_size + (bMultiAuthored ? ADDRESS_SIZE : 0) - total_amount;
-				mc_outputs.findMcIndexIntervalToTargetAmount(conn, type, address, max_mci, target_amount, {
-					ifNothing: cb,
-					ifFound: function(from_mc_index, to_mc_index, earnings, bSufficient){
-						if (earnings === 0)
-							throw Error("earnings === 0");
-						total_amount += earnings;
-						var input = {
-							type: type,
-							from_main_chain_index: from_mc_index,
-							to_main_chain_index: to_mc_index
-						};
-						var full_input_size = input_size;
-						if (bMultiAuthored){
-							full_input_size += ADDRESS_SIZE; // address length
-							input.address = address;
-						}
-						required_amount += full_input_size;
-						arrInputsWithProofs.push({input: input});
-						(total_amount > required_amount)
-							? cb("found") // break eachSeries
-							: cb(); // try next address
-					}
-				});
-			},
-			function(err){
-				if (!err)
-					console.log(arrAddresses+" "+type+": got only "+total_amount+" out of required "+required_amount);
-				(err === "found") ? onDone(arrInputsWithProofs, total_amount) : onStillNotEnough();
-			}
-		);
-	}
+	// function addMcInputs(type, input_size, max_mci, onStillNotEnough){
+	// 	async.eachSeries(
+	// 		arrAddresses, 
+	// 		function(address, cb){
+	// 			var target_amount = required_amount + input_size + (bMultiAuthored ? ADDRESS_SIZE : 0) - total_amount;
+	// 			mc_outputs.findMcIndexIntervalToTargetAmount(conn, type, address, max_mci, target_amount, {
+	// 				ifNothing: cb,
+	// 				ifFound: function(from_mc_index, to_mc_index, earnings, bSufficient){
+	// 					if (earnings === 0)
+	// 						throw Error("earnings === 0");
+	// 					total_amount += earnings;
+	// 					var input = {
+	// 						type: type,
+	// 						from_main_chain_index: from_mc_index,
+	// 						to_main_chain_index: to_mc_index
+	// 					};
+	// 					var full_input_size = input_size;
+	// 					if (bMultiAuthored){
+	// 						full_input_size += ADDRESS_SIZE; // address length
+	// 						input.address = address;
+	// 					}
+	// 					required_amount += full_input_size;
+	// 					arrInputsWithProofs.push({input: input});
+	// 					(total_amount > required_amount)
+	// 						? cb("found") // break eachSeries
+	// 						: cb(); // try next address
+	// 				}
+	// 			});
+	// 		},
+	// 		function(err){
+	// 			if (!err)
+	// 				console.log(arrAddresses+" "+type+": got only "+total_amount+" out of required "+required_amount);
+	// 			(err === "found") ? onDone(arrInputsWithProofs, total_amount) : onStillNotEnough();
+	// 		}
+	// 	);
+	// }
 	
 	function issueAsset(){
 		if (!asset)
