@@ -2931,12 +2931,12 @@ function handleRequest( ws, tag, command, params )
 			});
 			break;
 			
-		case 'light/get_parents_and_last_ball_and_witness_list_unit':
+		case 'light/get_parents_and_last_ball':
 			if (conf.bLight)
 				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
 			if (ws.bOutbound)
 				return sendErrorResponse(ws, tag, "light clients have to be inbound");
-			light.prepareParentsAndLastBallAndWitnessListUnit(params.witnesses, {
+			light.prepareParentsAndLastBall ({
 				ifError: function(err){
 					sendErrorResponse(ws, tag, err);
 				},
