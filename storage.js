@@ -134,15 +134,16 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 				function(callback){ // earned_headers_commission_recipients
 					if (bVoided)
 						return callback();
-					conn.query("SELECT address, earned_headers_commission_share FROM earned_headers_commission_recipients \
-						WHERE unit=? ORDER BY address", 
-						[unit], 
-						function(rows){
-							if (rows.length > 0)
-								objUnit.earned_headers_commission_recipients = rows;
-							callback();
-						}
-					);
+					// pow del
+					// conn.query("SELECT address, earned_headers_commission_share FROM earned_headers_commission_recipients \
+					// 	WHERE unit=? ORDER BY address", 
+					// 	[unit], 
+					// 	function(rows){
+					// 		if (rows.length > 0)
+					// 			objUnit.earned_headers_commission_recipients = rows;
+					// 		callback();
+					// 	}
+					// );
 				},
 				function(callback){ // authors
 					conn.query("SELECT address, definition_chash FROM unit_authors WHERE unit=? ORDER BY address", [unit], function(rows){
@@ -885,9 +886,10 @@ function generateQueriesToArchiveJoint(conn, objJoint, reason, arrQueries, cb){
 
 function generateQueriesToRemoveJoint(conn, unit, arrQueries, cb){
 	generateQueriesToUnspendOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
-		conn.addQuery(arrQueries, "DELETE FROM witness_list_hashes WHERE witness_list_unit=?", [unit]);
-		conn.addQuery(arrQueries, "DELETE FROM earned_headers_commission_recipients WHERE unit=?", [unit]);
-		conn.addQuery(arrQueries, "DELETE FROM unit_witnesses WHERE unit=?", [unit]);
+		// pow del
+		// conn.addQuery(arrQueries, "DELETE FROM witness_list_hashes WHERE witness_list_unit=?", [unit]);
+		// conn.addQuery(arrQueries, "DELETE FROM earned_headers_commission_recipients WHERE unit=?", [unit]);
+		// conn.addQuery(arrQueries, "DELETE FROM unit_witnesses WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "DELETE FROM authentifiers WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "DELETE FROM unit_authors WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "DELETE FROM parenthoods WHERE child_unit=?", [unit]);
@@ -913,8 +915,9 @@ function generateQueriesToRemoveJoint(conn, unit, arrQueries, cb){
 function generateQueriesToVoidJoint(conn, unit, arrQueries, cb){
 	generateQueriesToUnspendOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
 		// we keep witnesses, author addresses, and the unit itself
-		conn.addQuery(arrQueries, "DELETE FROM witness_list_hashes WHERE witness_list_unit=?", [unit]);
-		conn.addQuery(arrQueries, "DELETE FROM earned_headers_commission_recipients WHERE unit=?", [unit]);
+		//pow del
+		// conn.addQuery(arrQueries, "DELETE FROM witness_list_hashes WHERE witness_list_unit=?", [unit]);
+		// conn.addQuery(arrQueries, "DELETE FROM earned_headers_commission_recipients WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "DELETE FROM authentifiers WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "UPDATE unit_authors SET definition_chash=NULL WHERE unit=?", [unit]);
 		conn.addQuery(arrQueries, "DELETE FROM address_definition_changes WHERE unit=?", [unit]);
@@ -935,11 +938,12 @@ function generateQueriesToVoidJoint(conn, unit, arrQueries, cb){
 }
 
 function generateQueriesToUnspendOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb){
-	generateQueriesToUnspendTransferOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
-		generateQueriesToUnspendHeadersCommissionOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
-			generateQueriesToUnspendWitnessingOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb);
-		});
-	});
+	generateQueriesToUnspendTransferOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb});
+		//function(){ //pow del
+		// generateQueriesToUnspendHeadersCommissionOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
+		// 	generateQueriesToUnspendWitnessingOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb);
+		// });
+	//});
 }
 
 function generateQueriesToUnspendTransferOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb){

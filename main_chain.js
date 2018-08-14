@@ -1002,7 +1002,12 @@ function markMcIndexStable(conn, mci, onDone){
 	function updateRetrievable(){
 		storage.updateMinRetrievableMciAfterStabilizingMci(conn, mci, function(min_retrievable_mci){
 			profiler.stop('mc-mark-stable');
-			calcCommissions();
+			// pow modi
+			//calcCommissions();
+			process.nextTick(function(){ // don't call it synchronously with event emitter
+				eventBus.emit("mci_became_stable", mci);
+			});
+			onDone();
 		});
 	}
 	
