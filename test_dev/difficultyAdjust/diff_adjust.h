@@ -14,9 +14,9 @@
 extern "C" {
 #endif
 
-unsigned int CalculateNextWorkRequired(int64_t difficult,
-                                        int64_t nActualTimespan,
-                                        int64_t nStandardTimespan,
+uint32_t CalculateNextWorkRequired(uint32_t difficult,
+                                        uint32_t nActualTimespan,
+                                        uint32_t nStandardTimespan,
                                         const char* sPowLimit);
 
 #ifdef __cplusplus 

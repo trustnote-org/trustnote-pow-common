@@ -8,8 +8,7 @@
 
 int main(){
 
-
-	unsigned int diff = CalculateNextWorkRequired(100, 100, 100, "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+	unsigned int diff = CalculateNextWorkRequired( 100, 100, 100, "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
 	printf("diff = %d\n\n", diff);
 	return 0;
 

@@ -22,7 +22,7 @@ const _round		= require( './round.js' );
  *	@variables
  */
 let _objEquihashLibrary		= null;
-
+let _objDifficultyAdjust	= null;
 
 
 /**
@@ -475,6 +475,14 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
 	}
 
+	let nDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
+	(
+		100,
+		100,
+		100,
+		Buffer.from( "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" )
+	);
+	console.log( `difficulty = ${ nDifficultyValue }` );
 
 
 }
@@ -681,6 +689,17 @@ function _loadEquihashLibraryIfNeed()
 			}
 		);
 	}
+
+	if ( null === _objDifficultyAdjust )
+	{
+		_objDifficultyAdjust = _ffi.Library
+		(
+			`${ __dirname }/libs/libdiff_adjust.so`,
+			{
+				'CalculateNextWorkRequired': [ 'uint',  [ 'uint', 'uint', 'uint', 'pointer'  ] ]
+			}
+		);
+	}
 }
 
 
@@ -691,14 +710,14 @@ function _loadEquihashLibraryIfNeed()
 /**
  *	@exports
  */
-module.exports.startCalculation				= startCalculation;
+module.exports.startCalculation			= startCalculation;
 module.exports.calculatePublicSeed		= calculatePublicSeed;
-module.exports.calculateDifficultyValue	= calculateDifficultyValue;
-module.exports.startCalculationWithInputs		= startCalculationWithInputs;
+module.exports.calculateDifficultyValue		= calculateDifficultyValue;
+module.exports.startCalculationWithInputs	= startCalculationWithInputs;
 
 module.exports.getPublicSeedFromDb		= getPublicSeedFromDb;
-module.exports.getCoinBaseListFromDb	= getCoinBaseListFromDb;
+module.exports.getCoinBaseListFromDb		= getCoinBaseListFromDb;
 module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallFromDb;
 
-module.exports.isValidEquihash				= isValidEquihash;
-module.exports.createInputBufferFromObject		= createInputBufferFromObject;
+module.exports.isValidEquihash			= isValidEquihash;
+module.exports.createInputBufferFromObject	= createInputBufferFromObject;

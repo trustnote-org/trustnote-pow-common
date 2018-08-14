@@ -6,19 +6,12 @@
 #include "diff_adjust.h"
 
 
-/**
- *		difficult			历史难度，上一次的难度
- *		nActualTimespan		实际的执行时间
- *		nStandardTimespan	应该使用的时间： 150 * round
- *		sPowLimit			计算使用的最低难度值，常量，不需要修改
- *
- *		@return		>= 1
- */
-unsigned int CalculateNextWorkRequired(int64_t difficult,
-                                        int64_t nActualTimespan,
-                                        int64_t nStandardTimespan,
+uint32_t CalculateNextWorkRequired(uint32_t difficult,
+                                        uint32_t nActualTimespan,
+                                        uint32_t nStandardTimespan,
                                         const char* sPowLimit)
 {
+
 	uint256 powLimit = uint256S(sPowLimit);
 	arith_uint256 bnTot {difficult};
 	int64_t MinActualTimespan = (nStandardTimespan * ( 100 - 16 )) / 100;
