@@ -270,12 +270,37 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
 
 // coinbase end
 
-function shrinkCache(){
-  
+// cache begin
+function shrinkRoundCacheObj(roundIndex, arrIndex, assocCachedObj){
+    var minIndex = Math.min.apply(Math, arrIndex);
+    if(roundIndex - minIndex > 10000){
+        assocCachedObj = {};
+    }
+    else{
+        for (var offset = minIndex; offset < roundIndex - MAX_ROUND_IN_CACHE; offset++){
+            delete assocCachedObj[offset];
+        }
+    }
+}
+function shrinkRoundCache(){
+    var arrWitnesses = Object.keys(assocCachedWitnesses);
+	var arrTotalCommission = Object.keys(assocCachedTotalCommission);
+	var arrMaxMci = Object.keys(assocCachedMaxMci);
+	var arrCoinbaseRatio = Object.keys(assocCachedCoinbaseRatio);
+    if (arrWitnesses.length < MAX_ROUND_IN_CACHE && arrTotalCommission.length < MAX_ROUND_IN_CACHE
+        && arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE)
+		return console.log('round cache is small, will not shrink');
+	getCurrentRoundIndex(db, function(roundIndex){
+        shrinkRoundCacheObj(roundIndex, arrWitnesses, assocCachedWitnesses);        
+        shrinkRoundCacheObj(roundIndex, arrTotalCommission, assocCachedTotalCommission);        
+        shrinkRoundCacheObj(roundIndex, arrMaxMci, assocCachedMaxMci);        
+        shrinkRoundCacheObj(roundIndex, arrCoinbaseRatio, assocCachedCoinbaseRatio);        
+	});
 }
 
-setInterval(shrinkCache, 300*1000);
+setInterval(shrinkRoundCache, 1000*1000);
 
+// cache end
 
 
 /**
@@ -294,6 +319,10 @@ exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
+
+exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
+
+
 
 // console.log("roundIndex:0-"+getCoinbaseByRoundIndex(0));
 // console.log("roundIndex:1-"+getCoinbaseByRoundIndex(1));

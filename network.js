@@ -2989,6 +2989,21 @@ function handleRequest( ws, tag, command, params )
 				sendResponse(ws, tag, rows);
 			});
 			break;
+
+		case 'pow/submit_solution':
+			/**
+			 *	I'm super node
+			 *	received a message that contains a pow solution from PoW miner.
+			 */
+			if ( '127.0.0.1' !== ws.host )
+			{
+				return sendErrorResponse( ws, tag, "only accept request from loopback." );
+			}
+			//
+			//	tag, params
+			//
+
+			break;
 	}
 }
 
