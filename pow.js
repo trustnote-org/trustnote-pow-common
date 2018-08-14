@@ -14,6 +14,7 @@ const _async		= require( 'async' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
+const _super_node	= require( './supernode.js' );
 
 
 
@@ -23,6 +24,7 @@ const _round		= require( './round.js' );
  */
 let _objEquihashLibrary		= null;
 let _objDifficultyAdjust	= null;
+let _sAssocSingleWallet		= null;
 
 
 /**
@@ -130,11 +132,11 @@ function startCalculation( oConn, pfnCallback )
 	}
 
 	let nCurrentRoundIndex		= null;
-	let nPreviousRoundIndex		= null;
 	let arrPreviousCoinBaseList	= null;
 	let sCurrentFirstTrustMEBall	= null;
 	let sCurrentDifficultyValue	= null;
 	let sCurrentPublicSeed		= null;
+	let sSuperNodeAuthorAddress	= null;
 
 	_async.series
 	([
@@ -145,10 +147,9 @@ function startCalculation( oConn, pfnCallback )
 			//
 			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
 			{
-				if ( 'number' === nRoundIndex && nRoundIndex > 0 )
+				if ( 'number' === nRoundIndex )
 				{
 					nCurrentRoundIndex	= nRoundIndex;
-					nPreviousRoundIndex	= nRoundIndex - 1;
 					pfnNext();
 				}
 				else
@@ -160,10 +161,21 @@ function startCalculation( oConn, pfnCallback )
 		function( pfnNext )
 		{
 			//
+			//	author address of this super node
+			//
+			_super_node.readSingleWallet( function( sAddress )
+			{
+				sSuperNodeAuthorAddress = sAddress;
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//
 			//	round (N-1)
 			//	obtain coin-base list of the previous round
 			//
-			getCoinBaseListFromDb( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
+			getCoinBaseListFromDb( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -224,10 +236,6 @@ function startCalculation( oConn, pfnCallback )
 				sCurrentPublicSeed = sSeed;
 				return pfnNext();
 			});
-		},
-		function( pfnNext )
-		{
-			//	author address of this super node
 		}
 	], function( err )
 	{
@@ -241,7 +249,7 @@ function startCalculation( oConn, pfnCallback )
 			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
 			currentDifficulty	: sCurrentDifficultyValue,
 			currentPubSeed		: sCurrentPublicSeed,
-			superNodeAuthor		: '',
+			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
 		startCalculationWithInputs( objInput, function( err )
 		{
@@ -488,8 +496,6 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 }
 
 
-
-
 /**
  *	get coin-base list by round index
  *
@@ -504,9 +510,19 @@ function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
 	{
 		return pfnCallback( `call getCoinBaseListFromDb with invalid oConn` );
 	}
-	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
+	if ( 'number' !== typeof nRoundIndex )
 	{
 		return pfnCallback( `call getCoinBaseListFromDb with invalid nRoundIndex` );
+	}
+	if ( nRoundIndex <= 0 )
+	{
+		//
+		//	return default coin-base list by hard coding
+		//
+		return _readSingleWallet( function( sAddress )
+		{
+			pfnCallback( null, [ { address : sAddress, amount : 0 } ] );
+		});
 	}
 
 	//
@@ -557,11 +573,22 @@ function getFirstTrustMEBallOnMainchainFromDb( oConn, nRoundIndex, pfnCallback )
 	{
 		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid oConn` );
 	}
-	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
+	if ( 'number' !== typeof nRoundIndex )
 	{
 		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid nRoundIndex` );
 	}
+	if ( nRoundIndex <= 0 )
+	{
+		//
+		//	return default ball by hard coding
+		//
+		return _readSingleWallet( function( sAddress )
+		{
+			pfnCallback( null, sAddress );
+		});
+	}
 
+	//	...
 	oConn.query
 	(
 		"SELECT ball \
@@ -671,6 +698,28 @@ function createInputBufferFromObject( objInput )
 }
 
 
+/**
+ *	create an 256bit hex string with length of 128 from Js plain object
+ *	@public
+ *	@param	{object}	objInput
+ *	@return	{Buffer}
+ */
+function createMiningInputHexFromObject( objInput )
+{
+	let sInput;
+
+	if ( 'object' !== typeof objInput )
+	{
+		return null;
+	}
+
+	//	...
+	sInput = JSON.stringify( objInput );
+	return _crypto.createHash( 'sha256' ).update( sInput, 'utf8' ).digest( 'hex' );
+}
+
+
+
 
 
 /**
@@ -703,6 +752,28 @@ function _loadEquihashLibraryIfNeed()
 }
 
 
+/**
+ *	read single wallet
+ *
+ *	@private
+ *	@param	{function}	pfnCallback( sAddress )
+ *	@return {*}
+ */
+function _readSingleWallet( pfnCallback )
+{
+	if ( 'string' === typeof _sAssocSingleWallet && 44 === _sAssocSingleWallet.length )
+	{
+		return pfnCallback( _sAssocSingleWallet );
+	}
+
+	return _super_node.readSingleWallet( sAddress =>
+	{
+		pfnCallback( sAddress );
+	});
+}
+
+
+
 
 
 
@@ -721,3 +792,4 @@ module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallOnMainchainFromDb;
 
 module.exports.isValidEquihash			= isValidEquihash;
 module.exports.createInputBufferFromObject	= createInputBufferFromObject;
+module.exports.createMiningInputHexFromObject	= createMiningInputHexFromObject;
