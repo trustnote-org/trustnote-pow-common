@@ -143,8 +143,11 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 							onDone(arrInputsWithProofs, total_amount);
 						else if (asset)
 							issueAsset();
-						else
-							addHeadersCommissionInputs();
+						else{
+							// pow modi
+							//addHeadersCommissionInputs();
+							finish();
+						}
 					}
 				);
 			}
@@ -526,13 +529,20 @@ function composeJoint(params){
 	};
 	
 	var objJoint = {unit: objUnit};
-	if (params.earned_headers_commission_recipients) // it needn't be already sorted by address, we'll sort it now
-		objUnit.earned_headers_commission_recipients = params.earned_headers_commission_recipients.concat().sort(function(a,b){
-			return ((a.address < b.address) ? -1 : 1);
-		});
-	else if (bMultiAuthored) // by default, the entire earned hc goes to the change address
-		objUnit.earned_headers_commission_recipients = [{address: arrChangeOutputs[0].address, earned_headers_commission_share: 100}];
+	// pow del
+	// if (params.earned_headers_commission_recipients) // it needn't be already sorted by address, we'll sort it now
+	// 	objUnit.earned_headers_commission_recipients = params.earned_headers_commission_recipients.concat().sort(function(a,b){
+	// 		return ((a.address < b.address) ? -1 : 1);
+	// 	});
+	// else if (bMultiAuthored) // by default, the entire earned hc goes to the change address
+	// 	objUnit.earned_headers_commission_recipients = [{address: arrChangeOutputs[0].address, earned_headers_commission_share: 100}];
 	
+	//pow add 
+	if(!params.round_index){
+		objUnit.round_index = params.round_index;
+		objUnit.pow_type = params.pow_type;
+	}
+
 	var total_input;
 	var last_ball_mci;
 	var assocSigningPaths = {};
@@ -562,13 +572,6 @@ function composeJoint(params){
 				conn = new_conn;
 				conn.query("BEGIN", function(){cb();});
 			});
-		},
-		function(cb){ //pow add 
-			if(!params.round_index)
-				return cb();
-			objUnit.round_index = params.round_index;
-			objUnit.pow_type = params.pow_type;
-			cb();			
 		},
 		function(cb){ // parent units
 			if (bGenesis)
