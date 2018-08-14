@@ -73,14 +73,15 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			});
 		}
 		
-		if (Array.isArray(objUnit.witnesses)){
-			for (var i=0; i<objUnit.witnesses.length; i++){
-				var address = objUnit.witnesses[i];
-				conn.addQuery(arrQueries, "INSERT INTO unit_witnesses (unit, address) VALUES(?,?)", [objUnit.unit, address]);
-			}
-			conn.addQuery(arrQueries, "INSERT "+conn.getIgnore()+" INTO witness_list_hashes (witness_list_unit, witness_list_hash) VALUES (?,?)", 
-				[objUnit.unit, objectHash.getBase64Hash(objUnit.witnesses)]);
-		}
+		// pow del:
+		// if (Array.isArray(objUnit.witnesses)){
+		// 	for (var i=0; i<objUnit.witnesses.length; i++){
+		// 		var address = objUnit.witnesses[i];
+		// 		conn.addQuery(arrQueries, "INSERT INTO unit_witnesses (unit, address) VALUES(?,?)", [objUnit.unit, address]);
+		// 	}
+		// 	conn.addQuery(arrQueries, "INSERT "+conn.getIgnore()+" INTO witness_list_hashes (witness_list_unit, witness_list_hash) VALUES (?,?)", 
+		// 		[objUnit.unit, objectHash.getBase64Hash(objUnit.witnesses)]);
+		// }
 		
 		var arrAuthorAddresses = [];
 		for (var i=0; i<objUnit.authors.length; i++){
@@ -218,15 +219,15 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 				}
 			}
 		}
-
-		if ("earned_headers_commission_recipients" in objUnit){
-			for (var i=0; i<objUnit.earned_headers_commission_recipients.length; i++){
-				var recipient = objUnit.earned_headers_commission_recipients[i];
-				conn.addQuery(arrQueries, 
-					"INSERT INTO earned_headers_commission_recipients (unit, address, earned_headers_commission_share) VALUES(?,?,?)", 
-					[objUnit.unit, recipient.address, recipient.earned_headers_commission_share]);
-			}
-		}
+		//pow del`
+		// if ("earned_headers_commission_recipients" in objUnit){
+		// 	for (var i=0; i<objUnit.earned_headers_commission_recipients.length; i++){
+		// 		var recipient = objUnit.earned_headers_commission_recipients[i];
+		// 		conn.addQuery(arrQueries, 
+		// 			"INSERT INTO earned_headers_commission_recipients (unit, address, earned_headers_commission_share) VALUES(?,?,?)", 
+		// 			[objUnit.unit, recipient.address, recipient.earned_headers_commission_share]);
+		// 	}
+		// }
 
 		// pow remove
 		//var my_best_parent_unit;
@@ -276,12 +277,13 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							var src_unit = (type === "transfer") ? input.unit : null;
 							var src_message_index = (type === "transfer") ? input.message_index : null;
 							var src_output_index = (type === "transfer") ? input.output_index : null;
-							var from_main_chain_index = (type === "witnessing" || type === "headers_commission") ? input.from_main_chain_index : null;
-							var to_main_chain_index = (type === "witnessing" || type === "headers_commission") ? input.to_main_chain_index : null;
+							// pow del
+							// var from_main_chain_index = (type === "witnessing" || type === "headers_commission") ? input.from_main_chain_index : null;
+							// var to_main_chain_index = (type === "witnessing" || type === "headers_commission") ? input.to_main_chain_index : null;
 							
 							var determineInputAddress = function(handleAddress){
 								//if (type === "headers_commission" || type === "witnessing" || type === "issue")  //pow modi
-								if (type === "headers_commission" || type === "witnessing" || type === "issue" || type === "coinbase")
+								if (type === "issue" || type === "coinbase")
 									return handleAddress((arrAuthorAddresses.length === 1) ? arrAuthorAddresses[0] : input.address);
 								// hereafter, transfer
 								if (arrAuthorAddresses.length === 1)
@@ -293,30 +295,41 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 								var is_unique = 
 									objValidationState.arrDoubleSpendInputs.some(function(ds){ return (ds.message_index === i && ds.input_index === j); }) 
 									? null : 1;
+								// pow modi : remove 	from_main_chain_index, to_main_chain_index field
+								// conn.addQuery(arrQueries, "INSERT INTO inputs \n\
+								// 		(unit, message_index, input_index, type, \n\
+								// 		src_unit, src_message_index, src_output_index, \
+								// 		from_main_chain_index, to_main_chain_index, \n\
+								// 		denomination, amount, serial_number, \n\
+								// 		asset, is_unique, address) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+								// 	[objUnit.unit, i, j, type, 
+								// 	 src_unit, src_message_index, src_output_index, 
+								// 	 from_main_chain_index, to_main_chain_index, 
+								// 	 denomination, input.amount, input.serial_number, 
+								// 	 payload.asset, is_unique, address]);
 								conn.addQuery(arrQueries, "INSERT INTO inputs \n\
-										(unit, message_index, input_index, type, \n\
-										src_unit, src_message_index, src_output_index, \
-										from_main_chain_index, to_main_chain_index, \n\
-										denomination, amount, serial_number, \n\
-										asset, is_unique, address) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-									[objUnit.unit, i, j, type, 
-									 src_unit, src_message_index, src_output_index, 
-									 from_main_chain_index, to_main_chain_index, 
-									 denomination, input.amount, input.serial_number, 
-									 payload.asset, is_unique, address]);
+								(unit, message_index, input_index, type, \n\
+								src_unit, src_message_index, src_output_index, \n
+								denomination, amount, serial_number, \n\
+								asset, is_unique, address) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+								[objUnit.unit, i, j, type, 
+								src_unit, src_message_index, src_output_index, 
+								denomination, input.amount, input.serial_number, 
+								payload.asset, is_unique, address]);
 								switch (type){
 									case "transfer":
 										conn.addQuery(arrQueries, 
 											"UPDATE outputs SET is_spent=1 WHERE unit=? AND message_index=? AND output_index=?",
 											[src_unit, src_message_index, src_output_index]);
 										break;
-									case "headers_commission":
-									case "witnessing":
-										var table = type + "_outputs";
-										conn.addQuery(arrQueries, "UPDATE "+table+" SET is_spent=1 \n\
-											WHERE main_chain_index>=? AND main_chain_index<=? AND address=?", 
-											[from_main_chain_index, to_main_chain_index, address]);
-										break;
+									// Pow del:
+									// case "headers_commission":
+									// case "witnessing":
+									// 	var table = type + "_outputs";
+									// 	conn.addQuery(arrQueries, "UPDATE "+table+" SET is_spent=1 \n\
+									// 		WHERE main_chain_index>=? AND main_chain_index<=? AND address=?", 
+									// 		[from_main_chain_index, to_main_chain_index, address]);
+									// 	break;
 								}
 								cb3();
 							});
