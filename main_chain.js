@@ -499,13 +499,13 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 									throw Error("findMinMcWitnessedLevel: not 1 row");
 								var row = rows[0];
 								//if (row.count > 0 && row.witnessed_level < min_mc_wl)
-								if (row.pow_type === constants.POW_TYPE_TRUSTME && arrCollectedWitnesses.indexOf(row.address) === -1
-										 && row.witnessed_level < min_mc_wl){
-									min_mc_wl = row.witnessed_level;
+								if (row.pow_type === constants.POW_TYPE_TRUSTME && arrCollectedWitnesses.indexOf(row.address) === -1 ){
+									if(row.witnessed_level < min_mc_wl)
+										min_mc_wl = row.witnessed_level;
 									arrCollectedWitnesses.push(row.address);
+									count++;
 								}
 								//count += row.count;  // this is a bug, should count only unique witnesses
-								count++;
 								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(row.best_parent_unit) : handleMinMcWl(min_mc_wl);
 							}
 						);
@@ -537,9 +537,9 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 							if (row.pow_type === constants.POW_TYPE_TRUSTME){
 								min_mc_wl = row.witnessed_level;
 								arrCollectedWitnesses.push(row.address);
+								count ++;
 							}
 							//count += row.count;
-							count ++;
 							goUp(row.best_parent_unit);
 						}
 					);

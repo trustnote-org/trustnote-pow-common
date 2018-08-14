@@ -180,7 +180,7 @@ function startCalculation( oConn, pfnCallback )
 			//	round (N)
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			getFirstTrustMEBallFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
+			getFirstTrustMEBallOnMainchainFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -384,7 +384,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	first ball
-			getFirstTrustMEBallFromDb( oConn, nRoundIndex - 1, function( err, sBall )
+			getFirstTrustMEBallOnMainchainFromDb( oConn, nRoundIndex - 1, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -440,7 +440,7 @@ function getPublicSeedFromDb( oConn, nRoundIndex, pfnCallback )
 	(
 		"SELECT pow.seed AS p_seed \
 		FROM pow JOIN units USING(unit) \
-		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.sequence='good' AND units.pow_type=? \
 		ORDER BY main_chain_index ASC \
 		LIMIT 1",
 		[
@@ -514,11 +514,11 @@ function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
 	//
 	oConn.query
 	(
-		"SELECT DISTINCT units.address AS u_address, inputs.amount AS i_amount \
+		"SELECT DISTINCT unit_authors.address AS u_address, inputs.amount AS i_amount \
 		FROM units JOIN unit_authors USING(unit) JOIN inputs USING(unit) \
-		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.sequence='good' AND units.pow_type=? \
 		AND 'coinbase' = inputs.type \
-		ORDER BY main_chain_index ASC",
+		ORDER BY main_chain_index, unit",
 		[
 			nRoundIndex,
 			_constants.POW_TYPE_COIN_BASE
@@ -551,7 +551,7 @@ function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getFirstTrustMEBallFromDb( oConn, nRoundIndex, pfnCallback )
+function getFirstTrustMEBallOnMainchainFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
@@ -717,7 +717,7 @@ module.exports.startCalculationWithInputs	= startCalculationWithInputs;
 
 module.exports.getPublicSeedFromDb		= getPublicSeedFromDb;
 module.exports.getCoinBaseListFromDb		= getCoinBaseListFromDb;
-module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallFromDb;
+module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallOnMainchainFromDb;
 
 module.exports.isValidEquihash			= isValidEquihash;
 module.exports.createInputBufferFromObject	= createInputBufferFromObject;

@@ -343,7 +343,7 @@ function checkAndWitness(){
 		return console.log('witnessing under way');
 	bWitnessingUnderWay = true;
 	// abort if there are my units without an mci
-	determineIfThereAreMyUnitsWithoutMci(function(bMyUnitsWithoutMci){ // pow del
+	determineIfThereAreMyUnitsWithoutMci(function(bMyUnitsWithoutMci){
 		if (bMyUnitsWithoutMci){
 			bWitnessingUnderWay = false;
 			return console.log('my units without mci');
@@ -531,7 +531,7 @@ function createOptimalOutputs(handleOutputs){
 	});
 }
 
-function checkTrustMEAndStartMinig() {
+function checkTrustMEAndStartMining() {
 	round.getCurrentRoundIndex(function(round_index) {
 		let lastRound = currentRound;
 		if (currentRound !== round_index) {
@@ -554,6 +554,6 @@ function checkTrustMEAndStartMinig() {
 exports.readKeys = readKeys;
 exports.writeKeys = writeKeys;
 exports.readSingleWallet = readSingleWallet;
-exports.checkTrustMEAndStartMinig = checkTrustMEAndStartMinig;
+exports.checkTrustMEAndStartMinig = checkTrustMEAndStartMining;
 exports.checkAndWitness = checkAndWitness;
 exports.setupChatEventHandlers = setupChatEventHandlers;
