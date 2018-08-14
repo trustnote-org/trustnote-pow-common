@@ -25,7 +25,7 @@ var count_witnessings_available = 0;
 
 // pow add
 var bMining = false; // if miner is mining
-var currentRound = 0; // to record current round index
+var currentRound = 1; // to record current round index
 
 const callbacks = composer.getSavingCallbacks({
 	ifNotEnoughFunds: onError,
