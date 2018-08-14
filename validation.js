@@ -4,8 +4,9 @@ var async = require('async');
 var storage = require('./storage.js');
 var graph = require('./graph.js');
 var main_chain = require('./main_chain.js');
-var paid_witnessing = require("./paid_witnessing.js");
-var headers_commission = require("./headers_commission.js");
+// pow del
+//var paid_witnessing = require("./paid_witnessing.js");
+//var headers_commission = require("./headers_commission.js");
 var mc_outputs = require("./mc_outputs.js");
 var objectHash = require("./object_hash.js");
 var objectLength = require("./object_length.js");
@@ -98,7 +99,7 @@ function validate(objJoint, callbacks) {
 	else{ // serial
 		// Pow modi
 		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 			return callbacks.ifUnitError("unknown fields in unit");
 
 		if (typeof objUnit.headers_commission !== "number")
@@ -196,13 +197,13 @@ function validate(objJoint, callbacks) {
 					profiler.start();
 					checkDuplicate(conn, objUnit.unit, cb);
 				},
+				// function(cb){  //pow remove validateHeadersCommissionRecipients
+				// 	profiler.stop('validation-checkDuplicate');
+				// 	profiler.start();
+				// 	objUnit.content_hash ? cb() : validateHeadersCommissionRecipients(objUnit, cb);
+				// },
 				function(cb){
-					profiler.stop('validation-checkDuplicate');
-					profiler.start();
-					objUnit.content_hash ? cb() : validateHeadersCommissionRecipients(objUnit, cb);
-				},
-				function(cb){
-					profiler.stop('validation-hc-recipients');
+					//sprofiler.stop('validation-hc-recipients');
 					profiler.start();
 					!objUnit.parent_units
 						? cb()
@@ -630,32 +631,33 @@ function validateWitnesses(conn, objUnit, objValidationState, callback){
 		return callback("no witnesses or not enough witnesses");
 }
 
-function validateHeadersCommissionRecipients(objUnit, cb){
-	if (objUnit.authors.length > 1 && typeof objUnit.earned_headers_commission_recipients !== "object")
-		return cb("must specify earned_headers_commission_recipients when more than 1 author");
-	if ("earned_headers_commission_recipients" in objUnit){
-		if (!isNonemptyArray(objUnit.earned_headers_commission_recipients))
-			return cb("empty earned_headers_commission_recipients array");
-		var total_earned_headers_commission_share = 0;
-		var prev_address = "";
-		for (var i=0; i<objUnit.earned_headers_commission_recipients.length; i++){
-			var recipient = objUnit.earned_headers_commission_recipients[i];
-			if (!isPositiveInteger(recipient.earned_headers_commission_share))
-				return cb("earned_headers_commission_share must be positive integer");
-			if (hasFieldsExcept(recipient, ["address", "earned_headers_commission_share"]))
-				return cb("unknowsn fields in recipient");
-			if (recipient.address <= prev_address)
-				return cb("recipient list must be sorted by address");
-			if (!isValidAddress(recipient.address))
-				return cb("invalid recipient address checksum");
-			total_earned_headers_commission_share += recipient.earned_headers_commission_share;
-			prev_address = recipient.address;
-		}
-		if (total_earned_headers_commission_share !== 100)
-			return cb("sum of earned_headers_commission_share is not 100");
-	}
-	cb();
-}
+//pow del
+// function validateHeadersCommissionRecipients(objUnit, cb){
+// 	if (objUnit.authors.length > 1 && typeof objUnit.earned_headers_commission_recipients !== "object")
+// 		return cb("must specify earned_headers_commission_recipients when more than 1 author");
+// 	if ("earned_headers_commission_recipients" in objUnit){
+// 		if (!isNonemptyArray(objUnit.earned_headers_commission_recipients))
+// 			return cb("empty earned_headers_commission_recipients array");
+// 		var total_earned_headers_commission_share = 0;
+// 		var prev_address = "";
+// 		for (var i=0; i<objUnit.earned_headers_commission_recipients.length; i++){
+// 			var recipient = objUnit.earned_headers_commission_recipients[i];
+// 			if (!isPositiveInteger(recipient.earned_headers_commission_share))
+// 				return cb("earned_headers_commission_share must be positive integer");
+// 			if (hasFieldsExcept(recipient, ["address", "earned_headers_commission_share"]))
+// 				return cb("unknowsn fields in recipient");
+// 			if (recipient.address <= prev_address)
+// 				return cb("recipient list must be sorted by address");
+// 			if (!isValidAddress(recipient.address))
+// 				return cb("invalid recipient address checksum");
+// 			total_earned_headers_commission_share += recipient.earned_headers_commission_share;
+// 			prev_address = recipient.address;
+// 		}
+// 		if (total_earned_headers_commission_share !== 100)
+// 			return cb("sum of earned_headers_commission_share is not 100");
+// 	}
+// 	cb();
+// }
 
 function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback) {
 	if (arrAuthors.length > constants.MAX_AUTHORS_PER_UNIT) // this is anti-spam. Otherwise an attacker would send nonserial balls signed by zillions of authors.
@@ -1518,8 +1520,9 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 	var bIssue = false;
 	// pow add
 	var bCoinbase = false;
-	var bHaveHeadersComissions = false;
-	var bHaveWitnessings = false;
+	//pow del
+	// var bHaveHeadersComissions = false;
+	// var bHaveWitnessings = false;
 	
 	// same for both public and private
 	function validateIndivisibleIssue(input, cb){
@@ -1741,9 +1744,9 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 					
 				case "transfer":
 				//	if (objAsset)
-				//		profiler2.start();
-					if (bHaveHeadersComissions || bHaveWitnessings)
-						return cb("all transfers must come before hc and witnessings");
+				//		profiler2.start(); pow del
+				// if (bHaveHeadersComissions || bHaveWitnessings)
+				// 	return cb("all transfers must come before hc and witnessings");
 					if (hasFieldsExcept(input, ["type", "unit", "message_index", "output_index"]))
 						return cb("unknown fields in payment input");
 					if (!isStringOfLength(input.unit, constants.HASH_LENGTH))
@@ -1846,76 +1849,76 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 					);
 					break;
 
+				// pow del headers_commission & witnessing check
+				// case "headers_commission":
+				// case "witnessing":
+				// 	if (type === "headers_commission"){
+				// 		if (bHaveWitnessings)
+				// 			return cb("all headers commissions must come before witnessings");
+				// 		bHaveHeadersComissions = true;
+				// 	}
+				// 	else
+				// 		bHaveWitnessings = true;
+				// 	if (objAsset)
+				// 		return cb("only base asset can have "+type);
+				// 	if (hasFieldsExcept(input, ["type", "from_main_chain_index", "to_main_chain_index", "address"]))
+				// 		return cb("unknown fields in witnessing input");
+				// 	if (!isNonnegativeInteger(input.from_main_chain_index))
+				// 		return cb("from_main_chain_index must be nonnegative int");
+				// 	if (!isNonnegativeInteger(input.to_main_chain_index))
+				// 		return cb("to_main_chain_index must be nonnegative int");
+				// 	if (input.from_main_chain_index > input.to_main_chain_index)
+				// 		return cb("from_main_chain_index > input.to_main_chain_index");
+				// 	if (input.to_main_chain_index > objValidationState.last_ball_mci)
+				// 		return cb("to_main_chain_index > last_ball_mci");
+				// 	if (input.from_main_chain_index > objValidationState.last_ball_mci)
+				// 		return cb("from_main_chain_index > last_ball_mci");
 
-				case "headers_commission":
-				case "witnessing":
-					if (type === "headers_commission"){
-						if (bHaveWitnessings)
-							return cb("all headers commissions must come before witnessings");
-						bHaveHeadersComissions = true;
-					}
-					else
-						bHaveWitnessings = true;
-					if (objAsset)
-						return cb("only base asset can have "+type);
-					if (hasFieldsExcept(input, ["type", "from_main_chain_index", "to_main_chain_index", "address"]))
-						return cb("unknown fields in witnessing input");
-					if (!isNonnegativeInteger(input.from_main_chain_index))
-						return cb("from_main_chain_index must be nonnegative int");
-					if (!isNonnegativeInteger(input.to_main_chain_index))
-						return cb("to_main_chain_index must be nonnegative int");
-					if (input.from_main_chain_index > input.to_main_chain_index)
-						return cb("from_main_chain_index > input.to_main_chain_index");
-					if (input.to_main_chain_index > objValidationState.last_ball_mci)
-						return cb("to_main_chain_index > last_ball_mci");
-					if (input.from_main_chain_index > objValidationState.last_ball_mci)
-						return cb("from_main_chain_index > last_ball_mci");
+				// 	var address = null;
+				// 	if (arrAuthorAddresses.length === 1){
+				// 		if ("address" in input)
+				// 			return cb("when single-authored, must not put address in "+type+" input");
+				// 		address = arrAuthorAddresses[0];
+				// 	}
+				// 	else{
+				// 		if (typeof input.address !== "string")
+				// 			return cb("when multi-authored, must put address in "+type+" input");
+				// 		if (arrAuthorAddresses.indexOf(input.address) === -1)
+				// 			return cb(type+" input address "+input.address+" is not an author");
+				// 		address = input.address;
+				// 	}
 
-					var address = null;
-					if (arrAuthorAddresses.length === 1){
-						if ("address" in input)
-							return cb("when single-authored, must not put address in "+type+" input");
-						address = arrAuthorAddresses[0];
-					}
-					else{
-						if (typeof input.address !== "string")
-							return cb("when multi-authored, must put address in "+type+" input");
-						if (arrAuthorAddresses.indexOf(input.address) === -1)
-							return cb(type+" input address "+input.address+" is not an author");
-						address = input.address;
-					}
-
-					var input_key = type + "-" + address + "-" + input.from_main_chain_index;
-					if (objValidationState.arrInputKeys.indexOf(input_key) >= 0)
-						return cb("input "+input_key+" already used");
-					objValidationState.arrInputKeys.push(input_key);
+				// 	var input_key = type + "-" + address + "-" + input.from_main_chain_index;
+				// 	if (objValidationState.arrInputKeys.indexOf(input_key) >= 0)
+				// 		return cb("input "+input_key+" already used");
+				// 	objValidationState.arrInputKeys.push(input_key);
 					
-					doubleSpendWhere = "type=? AND from_main_chain_index=? AND address=? AND asset IS NULL";
-					doubleSpendVars = [type, input.from_main_chain_index, address];
+				// 	doubleSpendWhere = "type=? AND from_main_chain_index=? AND address=? AND asset IS NULL";
+				// 	doubleSpendVars = [type, input.from_main_chain_index, address];
 
-					mc_outputs.readNextSpendableMcIndex(conn, type, address, objValidationState.arrConflictingUnits, function(next_spendable_mc_index){
-						if (input.from_main_chain_index < next_spendable_mc_index)
-							return cb(type+" ranges must not overlap"); // gaps allowed, in case a unit becomes bad due to another address being nonserial
-						var max_mci = (type === "headers_commission") 
-							? headers_commission.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci)
-							: paid_witnessing.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci);
-						if (input.to_main_chain_index > max_mci)
-							return cb(type+" to_main_chain_index is too large");
+				// 	mc_outputs.readNextSpendableMcIndex(conn, type, address, objValidationState.arrConflictingUnits, function(next_spendable_mc_index){
+				// 		if (input.from_main_chain_index < next_spendable_mc_index)
+				// 			return cb(type+" ranges must not overlap"); // gaps allowed, in case a unit becomes bad due to another address being nonserial
+				// 		var max_mci = (type === "headers_commission") 
+				// 			? headers_commission.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci)
+				// 			: paid_witnessing.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci);
+				// 		if (input.to_main_chain_index > max_mci)
+				// 			return cb(type+" to_main_chain_index is too large");
 
-						var calcFunc = (type === "headers_commission") ? mc_outputs.calcEarnings : paid_witnessing.calcWitnessEarnings;
-						calcFunc(conn, type, input.from_main_chain_index, input.to_main_chain_index, address, {
-							ifError: function(err){
-								throw Error(err);
-							},
-							ifOk: function(commission){
-								if (commission === 0)
-									return cb("zero "+type+" commission");
-								total_input += commission;
-								checkInputDoubleSpend(cb);
-							}
-						});
-					});
-					break;
+				// 		var calcFunc = (type === "headers_commission") ? mc_outputs.calcEarnings : paid_witnessing.calcWitnessEarnings;
+				// 		calcFunc(conn, type, input.from_main_chain_index, input.to_main_chain_index, address, {
+				// 			ifError: function(err){
+				// 				throw Error(err);
+				// 			},
+				// 			ifOk: function(commission){
+				// 				if (commission === 0)
+				// 					return cb("zero "+type+" commission");
+				// 				total_input += commission;
+				// 				checkInputDoubleSpend(cb);
+				// 			}
+				// 		});
+				// 	});
+				// 	break;
 
 				default:
 					return cb("unrecognized input type: "+input.type);
