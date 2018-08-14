@@ -199,7 +199,8 @@ function sendLoginCommand(ws, challenge){
 	network.sendJustsaying(ws, 'hub/login', objLogin);
 	ws.bLoggedIn = true;
 	sendTempPubkey(ws, objMyTempDeviceKey.pub_b64);
-	network.initWitnessesIfNecessary(ws);
+	//pow wallet modified version
+	//network.initWitnessesIfNecessary(ws);
 	resendStalledMessages();
 }
 
