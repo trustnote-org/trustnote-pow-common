@@ -42,9 +42,10 @@ function readListOfUnstableUnits(handleUnits){
 
 
 function prepareRequestForHistory(handleResult){
-	myWitnesses.readMyWitnesses(function(arrWitnesses){
-		if (arrWitnesses.length === 0) // first start, witnesses not set yet
-			return handleResult(null);
+	// myWitnesses.readMyWitnesses(function(arrWitnesses){
+	// 	if (arrWitnesses.length === 0) // first start, witnesses not set yet
+	// 		return handleResult(null);
+	    //pow wallet modified version
 		var objHistoryRequest = {witnesses: arrWitnesses};
 		walletGeneral.readMyAddresses(function(arrAddresses){
 			if (arrAddresses.length > 0)
@@ -78,7 +79,7 @@ function prepareRequestForHistory(handleResult){
 				);*/
 			});
 		});
-	}, 'wait');
+	// }, 'wait');
 }
 
 

@@ -22,18 +22,19 @@ function readBalance(wallet, handleBalance){
 					assocBalances[asset] = {stable: 0, pending: 0};
 				assocBalances[asset][row.is_stable ? 'stable' : 'pending'] = row.balance;
 			}
-			var my_addresses_join = walletIsAddress ? "" : "my_addresses CROSS JOIN";
-			var using = walletIsAddress ? "" : "USING(address)";
-			db.query(
-				"SELECT SUM(total) AS total FROM ( \n\
-				SELECT SUM(amount) AS total FROM "+my_addresses_join+" witnessing_outputs "+using+" WHERE is_spent=0 AND "+where_condition+" \n\
-				UNION ALL \n\
-				SELECT SUM(amount) AS total FROM "+my_addresses_join+" headers_commission_outputs "+using+" WHERE is_spent=0 AND "+where_condition+" ) AS t",
-				[wallet,wallet],
-				function(rows) {
-					if(rows.length){
-						assocBalances["base"]["stable"] += rows[0].total;
-					}
+			// pow del
+			// var my_addresses_join = walletIsAddress ? "" : "my_addresses CROSS JOIN";
+			// var using = walletIsAddress ? "" : "USING(address)";
+			// db.query(
+			// 	"SELECT SUM(total) AS total FROM ( \n\
+			// 	SELECT SUM(amount) AS total FROM "+my_addresses_join+" witnessing_outputs "+using+" WHERE is_spent=0 AND "+where_condition+" \n\
+			// 	UNION ALL \n\
+			// 	SELECT SUM(amount) AS total FROM "+my_addresses_join+" headers_commission_outputs "+using+" WHERE is_spent=0 AND "+where_condition+" ) AS t",
+			// 	[wallet,wallet],
+			// 	function(rows) {
+			// 		if(rows.length){
+			// 			assocBalances["base"]["stable"] += rows[0].total;
+			// 		}
 					// add 0-balance assets
 					db.query(
 						"SELECT DISTINCT outputs.asset, is_private \n\
@@ -51,8 +52,8 @@ function readBalance(wallet, handleBalance){
 							handleBalance(assocBalances);
 						}
 					);
-				}
-			);
+			// 	}
+			// );
 		}
 	);
 }
@@ -112,17 +113,23 @@ function readSharedBalance(wallet, handleBalance){
 		if (arrSharedAddresses.length === 0)
 			return handleBalance(assocBalances);
 		var strAddressList = arrSharedAddresses.map(db.escape).join(', ');
+		// pow modi 
+		// db.query(
+		// 	"SELECT asset, address, is_stable, SUM(amount) AS balance \n\
+		// 	FROM outputs CROSS JOIN units USING(unit) \n\
+		// 	WHERE is_spent=0 AND sequence='good' AND address IN("+strAddressList+") \n\
+		// 	GROUP BY asset, address, is_stable \n\
+		// 	UNION ALL \n\
+		// 	SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM witnessing_outputs \n\
+		// 	WHERE is_spent=0 AND address IN("+strAddressList+") GROUP BY address \n\
+		// 	UNION ALL \n\
+		// 	SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs \n\
+		// 	WHERE is_spent=0 AND address IN("+strAddressList+") GROUP BY address",
 		db.query(
 			"SELECT asset, address, is_stable, SUM(amount) AS balance \n\
 			FROM outputs CROSS JOIN units USING(unit) \n\
 			WHERE is_spent=0 AND sequence='good' AND address IN("+strAddressList+") \n\
-			GROUP BY asset, address, is_stable \n\
-			UNION ALL \n\
-			SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM witnessing_outputs \n\
-			WHERE is_spent=0 AND address IN("+strAddressList+") GROUP BY address \n\
-			UNION ALL \n\
-			SELECT NULL AS asset, address, 1 AS is_stable, SUM(amount) AS balance FROM headers_commission_outputs \n\
-			WHERE is_spent=0 AND address IN("+strAddressList+") GROUP BY address",
+			GROUP BY asset, address, is_stable",
 			function(rows){
 				for (var i=0; i<rows.length; i++){
 					var row = rows[i];

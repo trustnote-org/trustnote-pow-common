@@ -1363,7 +1363,7 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 }
 
 // pow add:
-function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState){	
+function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){	
 	if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
 		return callback("unknown fields in pow_equihash message");
 	if (objValidationState.bHasBasePowequihash)
