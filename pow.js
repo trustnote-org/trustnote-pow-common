@@ -46,19 +46,12 @@ let _objEquihashLibrary		= null;
  *		'address7'	: amount of coins,
  *		'address8'	: amount of coins,
  *	   ]
- *	   Note:
- *	   the address0 came from TrustNote Foundation.
+ *	   Note: the address0 came from TrustNote Foundation.
  *	2, ball address of the first TrustME unit from round (N)
  *	3, difficulty value of round (N)
  *	4, public seed of round (N)
  *	5, author address of current SuperNode.
  *
- * 	第n+2轮的挖矿输入包括：
- * 	第n轮的Coinbase交易信息排序后合并哈希（例如{address1:1000,address2:1200,...,address8:1500}）、
- * 	第n+1轮第一个主链TrustME单元的Ball、
- * 	当前难度值、
- * 	n+1轮种子、
- * 	本节点的Address。
  *
  *	////////////////////////////////////////////////////////////
  *	@examples
@@ -76,14 +69,14 @@ let _objEquihashLibrary		= null;
  *
  *	let nCallStartCalculation = startCalculationWithInput
  *	({
- *		 coinBaseList	: {
+ *		 previousCoinBaseList	: {
  *			 '4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
  *			 '2SATGZDFDXNNJRVZ52O4J6VYTTMO2EZR': 10000,
  *		 },
- *		 trustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *		 difficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
- *		 pubSeed		: 'public key',
- *		 superNode	: 'xing.supernode.trustnote.org',
+ *		 currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *		 currentDifficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+ *		 currentPubSeed		: 'public key',
+ *		 superNodeAuthor		: 'xing.supernode.trustnote.org',
  *	}, function( err )
  *	{
  * 		if ( err )
@@ -99,14 +92,14 @@ let _objEquihashLibrary		= null;
  *	let bIsValidEquihash = isValidEquihash
  *	(
  *		{
- *			coinBaseList	: {
+ *			previousCoinBaseList	: {
  *				'4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
  *				'2SATGZDFDXNNJRVZ52O4J6VYTTMO2EZR': 10000,
  *			},
- *			trustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			difficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
- *			pubSeed		: 'public key',
- *			superNode	: 'xing.supernode.trustnote.org',
+ *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			currentDifficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+ *			currentPubSeed		: 'public key',
+ *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		'00000001c570c4764aadb3f09895619f549000b8b51a789e7f58ea7500007097',
  *		'xxxxxxxxxxxx'
@@ -139,7 +132,7 @@ function startCalculation( oConn, pfnCallback )
 	let nCurrentRoundIndex		= null;
 	let nPreviousRoundIndex		= null;
 	let arrPreviousCoinBaseList	= null;
-	let sCurrentFirstBallOfTrustME	= null;
+	let sCurrentFirstTrustMEBall	= null;
 	let sCurrentDifficultyValue	= null;
 	let sCurrentPublicSeed		= null;
 
@@ -167,9 +160,10 @@ function startCalculation( oConn, pfnCallback )
 		function( pfnNext )
 		{
 			//
+			//	round (N-1)
 			//	obtain coin-base list of the previous round
 			//
-			getCoinBaseListByRoundIndexFromDb( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
+			getCoinBaseListFromDb( oConn, nPreviousRoundIndex, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -183,32 +177,44 @@ function startCalculation( oConn, pfnCallback )
 		function( pfnNext )
 		{
 			//
+			//	round (N)
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
+			getFirstTrustMEBallFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
 					return pfnNext( err );
 				}
 
-				sCurrentFirstBallOfTrustME = sBall;
+				sCurrentFirstTrustMEBall = sBall;
 				return pfnNext();
 			});
 		},
 		function( pfnNext )
 		{
 			//
+			//	round (N)
 			//	calculate difficulty value
 			//
-			sCurrentDifficultyValue	= null;
+			calculateDifficultyValue( oConn, nCurrentRoundIndex, function( err, sDifficulty )
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+
+				sCurrentDifficultyValue	= sDifficulty;
+				return pfnNext();
+			});
 		},
 		function( pfnNext )
 		{
 			//
+			//	round (N)
 			//	calculate public seed
 			//
-			calculateCurrentRoundPublicSeed( function( err, sSeed )
+			calculatePublicSeed( oConn, nCurrentRoundIndex, function( err, sSeed )
 			{
 				if ( err )
 				{
@@ -221,7 +227,7 @@ function startCalculation( oConn, pfnCallback )
 		},
 		function( pfnNext )
 		{
-			//	obtain superNode
+			//	author address of this super node
 		}
 	], function( err )
 	{
@@ -230,12 +236,73 @@ function startCalculation( oConn, pfnCallback )
 			return pfnCallback( err );
 		}
 
-		//
-		//	TODO
-		//	calculate address : amount
-		//
-		pfnCallback( null );
+		let objInput	= {
+			previousCoinBaseList	: arrPreviousCoinBaseList,
+			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
+			currentDifficulty	: sCurrentDifficultyValue,
+			currentPubSeed		: sCurrentPublicSeed,
+			superNodeAuthor		: '',
+		};
+		startCalculationWithInputs( objInput, function( err )
+		{
+			if ( err )
+			{
+				return pfnCallback( err );
+			}
+
+			//
+			//	successfully
+			//
+			pfnCallback( null );
+		});
 	});
+
+	return true;
+}
+
+
+/**
+ *	start calculation with inputs
+ *
+ * 	@param	{object}	objInput
+ *	@param	{array}		objInput.previousCoinBaseList		@see description
+ *	@param	{string}	objInput.currentFirstTrustMEBall
+ *	@param	{string}	objInput.currentDifficulty
+ *	@param	{string}	objInput.currentPubSeed
+ *	@param	{string}	objInput.superNodeAuthor
+ *	@param	{function}	pfnCallback( err )
+ *	@return	{boolean}
+ */
+function startCalculationWithInputs( objInput, pfnCallback )
+{
+	if ( 'object' !== typeof objInput )
+	{
+		throw new Error( 'call startCalculation with invalid objInput' );
+	}
+	if ( ! Array.isArray( objInput.previousCoinBaseList ) || 0 === objInput.previousCoinBaseList.length )
+	{
+		throw new Error( 'call startCalculation with invalid arrCoinBaseList' );
+	}
+	if ( 'string' !== typeof objInput.currentFirstTrustMEBall || 44 !== objInput.currentFirstTrustMEBall.length )
+	{
+		throw new Error( 'call startCalculation with invalid sTrustMEBall' );
+	}
+	if ( 'string' !== typeof objInput.currentDifficulty || 64 !== objInput.currentDifficulty.length )
+	{
+		throw new Error( 'call startCalculation with invalid sDifficulty' );
+	}
+	if ( 'string' !== typeof objInput.currentPubSeed || 0 === objInput.currentPubSeed.length )
+	{
+		throw new Error( 'call startCalculation with invalid sPubSeed' );
+	}
+	if ( 'string' !== typeof objInput.superNodeAuthor || 0 === objInput.superNodeAuthor.length )
+	{
+		throw new Error( 'call startCalculation with invalid sSuperNode' );
+	}
+	if ( 'function' !== typeof pfnCallback )
+	{
+		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
+	}
 
 	return true;
 }
@@ -257,15 +324,15 @@ function startCalculation( oConn, pfnCallback )
  * 			pubSeed(i-1) + hash( Coin-base(i-2) ) + hash( FirstStableMCUnit(i-1) )
  * 		)
  */
-function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
+function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid oConn` );
+		return pfnCallback( `call calculatePublicSeed with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 3 )
 	{
-		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid nRoundIndex` );
+		return pfnCallback( `call calculatePublicSeed with invalid nRoundIndex` );
 	}
 
 	let sPreviousPublicSeed		= null;
@@ -277,7 +344,7 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	public seed
-			getPublicSeedByRoundIndexFromDb( oConn, nRoundIndex - 1, function( err, sSeed )
+			getPublicSeedFromDb( oConn, nRoundIndex - 1, function( err, sSeed )
 			{
 				if ( err )
 				{
@@ -285,7 +352,7 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 				}
 				if ( 'string' !== typeof sSeed || 0 === sSeed.length )
 				{
-					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sSeed.` );
+					return pfnNext( `calculatePublicSeed got invalid sSeed.` );
 				}
 
 				sPreviousPublicSeed = sSeed;
@@ -295,7 +362,7 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	coin base
-			getCoinBaseListByRoundIndexFromDb( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
+			getCoinBaseListFromDb( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -317,7 +384,7 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	first ball
-			getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nRoundIndex - 1, function( err, sBall )
+			getFirstTrustMEBallFromDb( oConn, nRoundIndex - 1, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -325,7 +392,7 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 				}
 				if ( 'string' !== typeof sBall || 0 === sBall.length )
 				{
-					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sBall.` );
+					return pfnNext( `calculatePublicSeed got invalid sBall.` );
 				}
 
 				sPreviousTrustMEBall = sBall;
@@ -358,15 +425,15 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getPublicSeedByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
+function getPublicSeedFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getPublicSeedByRoundIndexFromDb with invalid oConn` );
+		return pfnCallback( `call getPublicSeedFromDb with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getPublicSeedByRoundIndexFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call getPublicSeedFromDb with invalid nRoundIndex` );
 	}
 
 	oConn.query
@@ -394,17 +461,18 @@ function getPublicSeedByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
 
 
 /**
- *	calculate current round difficulty value
+ *	calculate difficulty value
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
  * 	@param	{function}	pfnCallback( err, sSeed )
  */
-function calculateCurrentRoundDifficultyValue( oConn, pfnCallback )
+function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call calculateCurrentRoundDifficultyValue with invalid oConn` );
+		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
 	}
 
 
@@ -422,15 +490,15 @@ function calculateCurrentRoundDifficultyValue( oConn, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getCoinBaseListByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
+function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndexFromDb with invalid oConn` );
+		return pfnCallback( `call getCoinBaseListFromDb with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getCoinBaseListByRoundIndexFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call getCoinBaseListFromDb with invalid nRoundIndex` );
 	}
 
 	//
@@ -468,22 +536,22 @@ function getCoinBaseListByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
 
 
 /**
- *	obtain ball address of the first TrustME unit from current round
+ *	obtain ball address of the first TrustME unit
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nRoundIndex, pfnCallback )
+function getFirstTrustMEBallFromDb( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getBallOfFirstTrustMEByRoundIndexFromDb with invalid oConn` );
+		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getBallOfFirstTrustMEByRoundIndexFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid nRoundIndex` );
 	}
 
 	oConn.query
@@ -511,63 +579,16 @@ function getBallOfFirstTrustMEByRoundIndexFromDb( oConn, nRoundIndex, pfnCallbac
 }
 
 
-/**
- *	start calculation with inputs
- *
- * 	@param	{object}	objInput
- *	@param	{array}		objInput.coinBaseList		@see description
- *	@param	{string}	objInput.trustMEBall
- *	@param	{string}	objInput.difficulty
- *	@param	{string}	objInput.pubSeed
- *	@param	{string}	objInput.superNode
- *	@param	{function}	pfnCallback( err )
- *	@return	{boolean}
- */
-function startCalculationWithInputs( objInput, pfnCallback )
-{
-	if ( 'object' !== typeof objInput )
-	{
-		throw new Error( 'call startCalculation with invalid objInput' );
-	}
-	if ( ! Array.isArray( objInput.coinBaseList ) || 0 === objInput.coinBaseList.length )
-	{
-		throw new Error( 'call startCalculation with invalid arrCoinBaseList' );
-	}
-	if ( 'string' !== typeof objInput.trustMEBall || 44 !== objInput.trustMEBall.length )
-	{
-		throw new Error( 'call startCalculation with invalid sTrustMEBall' );
-	}
-	if ( 'string' !== typeof objInput.difficulty || 64 !== objInput.difficulty.length )
-	{
-		throw new Error( 'call startCalculation with invalid sDifficulty' );
-	}
-	if ( 'string' !== typeof objInput.pubSeed || 0 === objInput.pubSeed.length )
-	{
-		throw new Error( 'call startCalculation with invalid sPubSeed' );
-	}
-	if ( 'string' !== typeof objInput.superNode || 0 === objInput.superNode.length )
-	{
-		throw new Error( 'call startCalculation with invalid sSuperNode' );
-	}
-	if ( 'function' !== typeof pfnCallback )
-	{
-		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
-	}
-
-	return true;
-}
-
-
 
 /**
  *	verify if a hash is valid
  *
  * 	@param	{object}	objInput
- *	@param	{array}		objInput.coinBaseList		@see description
- *	@param	{string}	objInput.trustMEBall
- *	@param	{string}	objInput.difficulty
- *	@param	{string}	objInput.pubSeed
- *	@param	{string}	objInput.superNode
+ *	@param	{array}		objInput.previousCoinBaseList		@see description
+ *	@param	{string}	objInput.currentFirstTrustMEBall
+ *	@param	{string}	objInput.currentDifficulty
+ *	@param	{string}	objInput.currentPubSeed
+ *	@param	{string}	objInput.superNodeAuthor
  *	@param	{string}	sHash				'3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
  *	@param	{number}	nNonce
  *	@return	{boolean}
@@ -671,13 +692,13 @@ function _loadEquihashLibraryIfNeed()
  *	@exports
  */
 module.exports.startCalculation				= startCalculation;
-module.exports.calculatePublicSeedByRoundIndex		= calculatePublicSeedByRoundIndex;
-module.exports.calculateCurrentRoundDifficultyValue	= calculateCurrentRoundDifficultyValue;
+module.exports.calculatePublicSeed		= calculatePublicSeed;
+module.exports.calculateDifficultyValue	= calculateDifficultyValue;
 module.exports.startCalculationWithInputs		= startCalculationWithInputs;
 
-module.exports.getPublicSeedByRoundIndexFromDb		= getPublicSeedByRoundIndexFromDb;
-module.exports.getCoinBaseListByRoundIndexFromDb		= getCoinBaseListByRoundIndexFromDb;
-module.exports.getBallOfFirstTrustMEByRoundIndexFromDb	= getBallOfFirstTrustMEByRoundIndexFromDb;
+module.exports.getPublicSeedFromDb		= getPublicSeedFromDb;
+module.exports.getCoinBaseListFromDb	= getCoinBaseListFromDb;
+module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallFromDb;
 
 module.exports.isValidEquihash				= isValidEquihash;
 module.exports.createInputBufferFromObject		= createInputBufferFromObject;
