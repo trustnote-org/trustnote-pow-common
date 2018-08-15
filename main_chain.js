@@ -778,7 +778,7 @@ function markMcIndexStable(conn, mci, onDone){
 					if(min_wl)
 						return cb();
 					conn.query(
-						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
+						"SELECT witnessed_level FROM units WHERE round_index=?  \n\ 
 						AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
@@ -798,16 +798,16 @@ function markMcIndexStable(conn, mci, onDone){
 				function(cb){ // switch round
 					conn.query(
 						"SELECT distinct(address) \n\
-						FROM units JOIN unit_authors using (unit) \n\ 
-						WHERE round_index=? AND is_stable=1 AND pow_type=? ", 
+						FROM units JOIN unit_authors using (unit) \n\
+						WHERE round_index=? AND is_stable=1 AND pow_type=?", 
 						[round_index, constants.POW_TYPE_POW_EQUHASH], 
 						function(rowsPow){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
 								return cb();
 							conn.query(
-								"UPDATE round SET max_wl= \n\ 
-								(SELECT MAX(witnessed_level) FROM units \n\ 
-								WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\ 
+								"UPDATE round SET max_wl= \n\
+								(SELECT MAX(witnessed_level) FROM units \n\
+								WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\
 								WHERE round_index=?", 
 								[round_index, constants.POW_TYPE_TRUSTME, round_index], 
 								function(){
