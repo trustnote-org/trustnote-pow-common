@@ -1493,7 +1493,7 @@ exports.loadAssetWithListOfAttestedAuthors = loadAssetWithListOfAttestedAuthors;
 exports.filterNewOrUnstableUnits = filterNewOrUnstableUnits;
 
 exports.determineBestParent = determineBestParent;
-exports.determineIfHasWitnessListMutationsAlongMc = determineIfHasWitnessListMutationsAlongMc;
+// exports.determineIfHasWitnessListMutationsAlongMc = determineIfHasWitnessListMutationsAlongMc;
 
 exports.readStaticUnitProps = readStaticUnitProps;
 exports.readUnitAuthors = readUnitAuthors;
