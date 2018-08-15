@@ -552,8 +552,7 @@ function notifyMinerStartMining() {
 }
 
 function checkTrustMEAndStartMining(round_index) {
-	let lastRound = round_index;
-	var currentRound = round_index;
+	let lastRound = currentRound;
 	if (currentRound !== round_index) {
 		currentRound = round_index;
 		if (bMining) {
