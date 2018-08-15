@@ -109,7 +109,7 @@ function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find the right round index");
-            callback(rows[0]["min_wl"], rows[0]["max_wl"]);
+            callback(rows[0].min_wl, rows[0].max_wl);
 		}
 	);
 }
@@ -142,7 +142,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
                 throw Error("Can not find enough witnesses ");
             witnesses = rows.map(function(row) { return row.address; } );
-            witnesses.push(constants.FOUNDATION_ADDRESS)
+            witnesses.push(constants.FOUNDATION_ADDRESS);
             assocCachedWitnesses[roundIndex] = witnesses;
             callback(witnesses);
 		}
@@ -162,7 +162,7 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 	);
 }
 
-function checkIfTrustMeAuthorByRoundIndex(roundIndex, address, callback){
+function checkIfTrustMeAuthorByRoundIndex(conn, roundIndex, address, callback){
     getWitnessesByRoundIndex(conn, roundIndex , function(witnesses){
         if(witnesses.indexOf(address) === -1){
             return callback(false);
@@ -219,8 +219,8 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     if(roundIndex === 1) 
         throw Error("The first round have no commission ");
-    if (assocCachedRatio[roundIndex])
-        return callback(assocCachedRatio[roundIndex]);
+    if (assocCachedCoinbaseRatio[roundIndex])
+        return callback(assocCachedCoinbaseRatio[roundIndex]);
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
         if(!minWl || !maxWl)
             throw Error("Can't get commission before the round switch.");
@@ -236,25 +236,26 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     var totalCountOfTrustMe = 0;
                     var witnessRatioOfTrustMe = {};
                     var addressTrustMeWl = {};
-                    rows.forEach(function(row){
+                    for (var i=0; i<rows.length; i++){
+                        var row = rows[i];
                         if(witnesses.indexOf(row.address) === -1)
                             throw Error("wrong trustme unit exit ");
                         if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
                             continue;                            
                         
-                        addressTrustMeWl[row.address] = witnessed_level;
+                        addressTrustMeWl[row.address] = row.witnessed_level;
 
                         totalCountOfTrustMe++;
                         if(!witnessRatioOfTrustMe[row.address])
                             witnessRatioOfTrustMe[row.address]=1;
                         else
                             witnessRatioOfTrustMe[row.address]++;
-                    });
+                    }
 
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
-                    assocCachedRatio[roundIndex] = witnessRatioOfTrustMe;
+                    assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
                 }
             );    
         });        
@@ -295,8 +296,8 @@ function shrinkRoundCache(){
 	var arrTotalCommission = Object.keys(assocCachedTotalCommission);
 	var arrMaxMci = Object.keys(assocCachedMaxMci);
 	var arrCoinbaseRatio = Object.keys(assocCachedCoinbaseRatio);
-    if (arrWitnesses.length < MAX_ROUND_IN_CACHE && arrTotalCommission.length < MAX_ROUND_IN_CACHE
-        && arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE)
+    if (arrWitnesses.length < MAX_ROUND_IN_CACHE && arrTotalCommission.length < MAX_ROUND_IN_CACHE && 
+        arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE)
 		return console.log('round cache is small, will not shrink');
 	getCurrentRoundIndex(db, function(roundIndex){
         shrinkRoundCacheObj(roundIndex, arrWitnesses, assocCachedWitnesses);        
