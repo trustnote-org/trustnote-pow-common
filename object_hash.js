@@ -73,6 +73,8 @@ function getNakedUnit(objUnit){
 	delete objNakedUnit.payload_commission;
 	delete objNakedUnit.main_chain_index;
 	delete objNakedUnit.timestamp;
+	delete objNakedUnit.round_index;
+	delete objNakedUnit.pow_type;
 	//delete objNakedUnit.last_ball_unit;
 	if (objNakedUnit.messages){
 		for (var i=0; i<objNakedUnit.messages.length; i++){
@@ -98,10 +100,11 @@ function getUnitHash(objUnit) {
 		alt: objUnit.alt,
 		authors: objUnit.authors.map(function(author){ return {address: author.address}; }) // already sorted
 	};
-	if (objUnit.witness_list_unit)
-		objStrippedUnit.witness_list_unit = objUnit.witness_list_unit;
-	else
-		objStrippedUnit.witnesses = objUnit.witnesses;
+	// pow del
+	// if (objUnit.witness_list_unit)
+	// 	objStrippedUnit.witness_list_unit = objUnit.witness_list_unit;
+	// else
+	// 	objStrippedUnit.witnesses = objUnit.witnesses;
 	if (objUnit.parent_units){
 		objStrippedUnit.parent_units = objUnit.parent_units;
 		objStrippedUnit.last_ball = objUnit.last_ball;

@@ -812,7 +812,7 @@ function markMcIndexStable(conn, mci, onDone){
 								[round_index, constants.POW_TYPE_TRUSTME, round_index], 
 								function(){
 									conn.query(
-										"INSERT INTO round VALUES (?, null, null)", 
+										"INSERT INTO round ('round_index', 'min_wl', 'max_wl') VALUES (?, null, null)", 
 										[round_index+1], 
 										function(){
 											cb();
