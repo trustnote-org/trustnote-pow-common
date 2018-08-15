@@ -2930,6 +2930,21 @@ function handleRequest( ws, tag, command, params )
 				}
 			});
 			break;
+		//the old 
+		case 'light/get_parents_and_last_ball_and_witness_list_unit':
+			if (conf.bLight)
+				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
+			if (ws.bOutbound)
+				return sendErrorResponse(ws, tag, "light clients have to be inbound");
+			light.prepareParentsAndLastBallAndWitnessListUnit(params.witnesses, {
+				ifError: function(err){
+					sendErrorResponse(ws, tag, err);
+				},
+				ifOk: function(objResponse){
+					sendResponse(ws, tag, objResponse);
+				}
+			});
+			break;
 		/**
 		 *	POW ADD
 		 *	@description
