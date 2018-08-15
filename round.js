@@ -329,6 +329,7 @@ exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
+exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
 
 

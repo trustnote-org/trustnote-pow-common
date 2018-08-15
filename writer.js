@@ -309,7 +309,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 								// 	 payload.asset, is_unique, address]);
 								conn.addQuery(arrQueries, "INSERT INTO inputs \n\
 								(unit, message_index, input_index, type, \n\
-								src_unit, src_message_index, src_output_index, \n
+								src_unit, src_message_index, src_output_index, \n\
 								denomination, amount, serial_number, \n\
 								asset, is_unique, address) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
 								[objUnit.unit, i, j, type, 
@@ -387,7 +387,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			// 		conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [my_best_parent_unit, objUnit.unit], function(){ cb(); });
 			// 	}
 			// );
-			conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [objValidationState.best_parent_unit;, objUnit.unit], function(){ cb(); });
+			conn.query("UPDATE units SET best_parent_unit=? WHERE unit=?", [objValidationState.best_parent_unit, objUnit.unit], function(){ cb(); });
 		}
 		
 		function updateLevel(cb){

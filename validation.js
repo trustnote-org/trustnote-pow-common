@@ -1732,7 +1732,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 								}								
 								// check amount is valid
 								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address, 
-								function(commission)){
+								function(commission){
 									if (commission != input.amount){
 										return cb("coinbase unit amount is incorrect ");
 									}

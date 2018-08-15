@@ -710,7 +710,7 @@ exports.processHistory = processHistory;
 exports.prepareLinkProofs = prepareLinkProofs;
 exports.processLinkProofs = processLinkProofs;
 exports.determineIfHaveUnstableJoints = determineIfHaveUnstableJoints;
-exports.prepareParentsAndLastBallAndWitnessListUnit = prepareParentsAndLastBallAndWitnessListUnit;
+// exports.prepareParentsAndLastBallAndWitnessListUnit = prepareParentsAndLastBallAndWitnessListUnit;
 exports.prepareParentsAndLastBall = prepareParentsAndLastBall;
 
 

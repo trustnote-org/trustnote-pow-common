@@ -938,7 +938,7 @@ function generateQueriesToVoidJoint(conn, unit, arrQueries, cb){
 }
 
 function generateQueriesToUnspendOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb){
-	generateQueriesToUnspendTransferOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb});
+	generateQueriesToUnspendTransferOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb);
 		//function(){ //pow del
 		// generateQueriesToUnspendHeadersCommissionOutputsSpentInArchivedUnit(conn, unit, arrQueries, function(){
 		// 	generateQueriesToUnspendWitnessingOutputsSpentInArchivedUnit(conn, unit, arrQueries, cb);
@@ -1493,7 +1493,7 @@ exports.loadAssetWithListOfAttestedAuthors = loadAssetWithListOfAttestedAuthors;
 exports.filterNewOrUnstableUnits = filterNewOrUnstableUnits;
 
 exports.determineBestParent = determineBestParent;
-exports.determineIfHasWitnessListMutationsAlongMc = determineIfHasWitnessListMutationsAlongMc;
+// exports.determineIfHasWitnessListMutationsAlongMc = determineIfHasWitnessListMutationsAlongMc;
 
 exports.readStaticUnitProps = readStaticUnitProps;
 exports.readUnitAuthors = readUnitAuthors;
