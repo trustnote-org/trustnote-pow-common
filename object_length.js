@@ -43,6 +43,8 @@ function getHeadersSize(objUnit) {
 	delete objHeader.main_chain_index;
 	delete objHeader.timestamp;
 	delete objHeader.messages;
+	delete objHeader.round_index;
+	delete objHeader.pow_type;
 	delete objHeader.parent_units; // replaced with PARENT_UNITS_SIZE
 	return getLength(objHeader) + PARENT_UNITS_SIZE;
 }
