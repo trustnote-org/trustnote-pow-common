@@ -178,7 +178,7 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
       return callback(assocCachedMaxMci[roundIndex]);
     conn.query(
         "select max(main_chain_index) AS max_mci from units \n\
-        where is_on_main_chain=1 AND is_stable=1 AND pow_type=? AND round_index=?, 
+        where is_on_main_chain=1 AND is_stable=1 AND pow_type=? AND round_index=?", 
         [constants.POW_TYPE_TRUSTME, roundIndex],
         function(rows){
             if (rows.length !== 1)
