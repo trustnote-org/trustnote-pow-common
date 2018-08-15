@@ -15,7 +15,8 @@ var Bitcore = require('bitcore-lib');
 var readline = require('readline');
 var storage = require('./storage.js');
 var mail = require('./mail.js');
-var round = require('./round.js')
+var round = require('./round.js');
+var pow = require('./pow.js');
 
 var WITNESSING_COST = 600; // size of typical witnessing unit
 var my_address;
@@ -531,24 +532,42 @@ function createOptimalOutputs(handleOutputs){
 	});
 }
 
-function checkTrustMEAndStartMining() {
-	round.getCurrentRoundIndex(function(round_index) {
-		let lastRound = currentRound;
-		if (currentRound !== round_index) {
-			currentRound = round_index;
-			if (bMining) {
-				notifyMinerStopCurrentMiningAndRestart()
-			} else {
-				notifyMinerStartMining()
-				bMining = true;
-			}
-			determineIfIAmWitness(lastRound, function(bWitness){
-				if(bWitness) {
-					composer.composeCoinbaseJoint(my_address, lastRound, signer, callbacks)
-				}
-			})
+function notifyMinerStopCurrentMiningAndRestart() {
+	// TODO
+	pow.startMining(function(err) {
+		if (err) {
+			notifyAdminAboutWitnessingProblem(err)
+			setTimeout(notifyMinerStopCurrentMiningAndRestart, 10*1000);
 		}
 	})
+}
+
+function notifyMinerStartMining() {
+	pow.startMining(function(err) {
+		if (err) {
+			notifyAdminAboutWitnessingProblem(err)
+			setTimeout(notifyMinerStartMining, 10*1000);
+		}
+	})
+}
+
+function checkTrustMEAndStartMining(round_index) {
+	let lastRound = round_index;
+	var currentRound = round_index;
+	if (currentRound !== round_index) {
+		currentRound = round_index;
+		if (bMining) {
+			notifyMinerStopCurrentMiningAndRestart()
+		} else {
+			notifyMinerStartMining()
+			bMining = true;
+		}
+		determineIfIAmWitness(lastRound, function(bWitness){
+			if(bWitness) {
+				composer.composeCoinbaseJoint(my_address, lastRound, signer, callbacks)
+			}
+		})
+	}
 }
 
 exports.readKeys = readKeys;
