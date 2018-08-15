@@ -73,6 +73,8 @@ function getNakedUnit(objUnit){
 	delete objNakedUnit.payload_commission;
 	delete objNakedUnit.main_chain_index;
 	delete objNakedUnit.timestamp;
+	delete objNakedUnit.round_index;
+	delete objNakedUnit.pow_type;
 	//delete objNakedUnit.last_ball_unit;
 	if (objNakedUnit.messages){
 		for (var i=0; i<objNakedUnit.messages.length; i++){
