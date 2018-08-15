@@ -36,6 +36,7 @@ let m_oCacheRunningServers	= {};
  * 	@public
  * 	@param	{object}	oOptions
  * 	@param	{number}	oOptions.port
+ * 	@param	{function}	oOptions.onStart
  * 	@param	{function}	oOptions.onConnection
  * 	@param	{function}	oOptions.onMessage
  * 	@param	{function}	oOptions.onError
@@ -53,6 +54,10 @@ function createServer( oOptions )
 	if ( 'number' !== typeof oOptions.port )
 	{
 		throw new Error( 'call createServer with invalid oOptions.port' );
+	}
+	if ( 'function' !== typeof oOptions.onStart )
+	{
+		throw new Error( 'call createServer with invalid oOptions.onStart' );
 	}
 	if ( 'function' !== typeof oOptions.onConnection )
 	{
@@ -77,7 +82,8 @@ function createServer( oOptions )
 	sServerKey = `*.${ oOptions.port }`;
 	if ( m_oCacheRunningServers.hasOwnProperty( sServerKey ) )
 	{
-		oOptions.onConnection( `server ${ sServerKey } already running.` );
+		console.log( `server ${ sServerKey } already running.` );
+		oOptions.onStart( null, m_oCacheRunningServers[ sServerKey ] );
 		return false;
 	}
 
@@ -143,10 +149,6 @@ function createServer( oOptions )
 		oWsClient.on( 'message', ( sMessage ) =>
 		{
 			oOptions.onMessage( oWsClient, sMessage );
-			oWsServer.close( function()
-			{
-				//1000, `close you, okay?`
-			} );
 		});
 		oWsClient.on( 'close', () =>
 		{
@@ -161,6 +163,9 @@ function createServer( oOptions )
 		//	...
 		return true;
 	});
+
+	//	call onStart
+	oOptions.onStart( null, oWsServer );
 
 	//
 	//	update running server list
