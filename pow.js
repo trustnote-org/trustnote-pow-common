@@ -58,7 +58,7 @@ let _sAssocSingleWallet		= null;
  *	////////////////////////////////////////////////////////////
  *	@examples
  *
- * 	let bCallStartCalculation = startCalculation( oConn, function( err )
+ * 	let bCallStartCalculation = startMining( oConn, function( err )
  * 	{
  * 		if ( err )
  * 		{
@@ -123,7 +123,7 @@ let _sAssocSingleWallet		= null;
  * 	start successfully	pfnCallback( null );
  * 	failed to start		pfnCallback( error );
  */
-function startCalculation( oConn, pfnCallback )
+function startMining( oConn, pfnCallback )
 {
 	if ( 'function' !== typeof pfnCallback )
 	{
@@ -251,7 +251,7 @@ function startCalculation( oConn, pfnCallback )
 			currentPubSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
-		startCalculationWithInputs( objInput, function( err )
+		startMiningWithInputs( objInput, function( err )
 		{
 			if ( err )
 			{
@@ -281,31 +281,31 @@ function startCalculation( oConn, pfnCallback )
  *	@param	{function}	pfnCallback( err )
  *	@return	{boolean}
  */
-function startCalculationWithInputs( objInput, pfnCallback )
+function startMiningWithInputs( objInput, pfnCallback )
 {
 	if ( 'object' !== typeof objInput )
 	{
-		throw new Error( 'call startCalculation with invalid objInput' );
+		throw new Error( 'call startMining with invalid objInput' );
 	}
 	if ( ! Array.isArray( objInput.previousCoinBaseList ) || 0 === objInput.previousCoinBaseList.length )
 	{
-		throw new Error( 'call startCalculation with invalid arrCoinBaseList' );
+		throw new Error( 'call startMining with invalid arrCoinBaseList' );
 	}
 	if ( 'string' !== typeof objInput.currentFirstTrustMEBall || 44 !== objInput.currentFirstTrustMEBall.length )
 	{
-		throw new Error( 'call startCalculation with invalid sTrustMEBall' );
+		throw new Error( 'call startMining with invalid sTrustMEBall' );
 	}
 	if ( 'string' !== typeof objInput.currentDifficulty || 64 !== objInput.currentDifficulty.length )
 	{
-		throw new Error( 'call startCalculation with invalid sDifficulty' );
+		throw new Error( 'call startMining with invalid sDifficulty' );
 	}
 	if ( 'string' !== typeof objInput.currentPubSeed || 0 === objInput.currentPubSeed.length )
 	{
-		throw new Error( 'call startCalculation with invalid sPubSeed' );
+		throw new Error( 'call startMining with invalid sPubSeed' );
 	}
 	if ( 'string' !== typeof objInput.superNodeAuthor || 0 === objInput.superNodeAuthor.length )
 	{
-		throw new Error( 'call startCalculation with invalid sSuperNode' );
+		throw new Error( 'call startMining with invalid sSuperNode' );
 	}
 	if ( 'function' !== typeof pfnCallback )
 	{
@@ -781,10 +781,11 @@ function _readSingleWallet( pfnCallback )
 /**
  *	@exports
  */
-module.exports.startCalculation			= startCalculation;
+module.exports.startMining			= startMining;
+module.exports.startMiningWithInputs		= startMiningWithInputs;
+
 module.exports.calculatePublicSeed		= calculatePublicSeed;
 module.exports.calculateDifficultyValue		= calculateDifficultyValue;
-module.exports.startCalculationWithInputs	= startCalculationWithInputs;
 
 module.exports.getPublicSeedFromDb		= getPublicSeedFromDb;
 module.exports.getCoinBaseListFromDb		= getCoinBaseListFromDb;
