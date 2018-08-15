@@ -43,7 +43,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		}
 		if (objUnit.round_index){  // pow add
 			fields += ", round_index, pow_type";
-			values += ",?,?");
+			values += ",?,?";
 			params.push(objUnit.round_index, objUnit.pow_type);
 		}
 		conn.addQuery(arrQueries, "INSERT INTO units ("+fields+") VALUES ("+values+")", params);
