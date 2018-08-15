@@ -162,6 +162,14 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 	);
 }
 
+function checkIfTrustMeAuthorByRoundIndex(roundIndex, address, callback){
+    getWitnessesByRoundIndex(conn, roundIndex , function(witnesses){
+        if(witnesses.indexOf(address) === -1){
+            return callback(false);
+        }
+        callback(true);
+    });
+}
 
 // coinbase begin
 
