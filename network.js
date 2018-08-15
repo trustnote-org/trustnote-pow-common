@@ -2930,13 +2930,13 @@ function handleRequest( ws, tag, command, params )
 				}
 			});
 			break;
-			
-		case 'light/get_parents_and_last_ball':
+		//the old 
+		case 'light/get_parents_and_last_ball_and_witness_list_unit':
 			if (conf.bLight)
 				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
 			if (ws.bOutbound)
 				return sendErrorResponse(ws, tag, "light clients have to be inbound");
-			light.prepareParentsAndLastBall ({
+			light.prepareParentsAndLastBallAndWitnessListUnit(params.witnesses, {
 				ifError: function(err){
 					sendErrorResponse(ws, tag, err);
 				},
@@ -2945,8 +2945,6 @@ function handleRequest( ws, tag, command, params )
 				}
 			});
 			break;
-
-
 		/**
 		 *	POW ADD
 		 *	@description
