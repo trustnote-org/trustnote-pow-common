@@ -778,7 +778,7 @@ function markMcIndexStable(conn, mci, onDone){
 					if(min_wl)
 						return cb();
 					conn.query(
-						"SELECT witnessed_level FROM units WHERE round_index=?  \n\ 
+						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
 						AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
