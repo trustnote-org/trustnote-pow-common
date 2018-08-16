@@ -1503,3 +1503,5 @@ exports.setUnitIsKnown = setUnitIsKnown;
 exports.forgetUnit = forgetUnit;
 
 exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
+exports.determinewitnessedLevel = determinewitnessedLevel;
+exports.determineBestParent = determineBestParent;
