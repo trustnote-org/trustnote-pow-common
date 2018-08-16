@@ -36,11 +36,11 @@ let m_oCacheRunningServers	= {};
  * 	@public
  * 	@param	{object}	oOptions
  * 	@param	{number}	oOptions.port
- * 	@param	{function}	oOptions.onStart
- * 	@param	{function}	oOptions.onConnection
- * 	@param	{function}	oOptions.onMessage
- * 	@param	{function}	oOptions.onError
- * 	@param	{function}	oOptions.onClose
+ * 	@param	{function}	oOptions.onStart( err, oWsServer )
+ * 	@param	{function}	oOptions.onConnection( err, oWsClient )
+ * 	@param	{function}	oOptions.onMessage( oWsClient, sMessage )
+ * 	@param	{function}	oOptions.onError( oWsClient, vError )
+ * 	@param	{function}	oOptions.onClose( oWsClient, sReason )
  */
 function createServer( oOptions )
 {
@@ -183,11 +183,11 @@ function createServer( oOptions )
  *
  * 	@public
  * 	@param	{object}	oOptions
- * 	@param	{string}	oOptions.minerGateway		e.g. : wss://1.miner.trustnote.org
- * 	@param	{function}	oOptions.onOpen
- * 	@param	{function}	oOptions.onMessage
- * 	@param	{function}	oOptions.onError
- * 	@param	{function}	oOptions.onClose
+ * 	@param	{string}	oOptions.minerGateway			e.g. : wss://1.miner.trustnote.org
+ * 	@param	{function}	oOptions.onOpen( err, oWsClient )
+ * 	@param	{function}	oOptions.onMessage( oWsClient, sMessage )
+ * 	@param	{function}	oOptions.onError( oWsClient, vError )
+ * 	@param	{function}	oOptions.onClose( oWsClient, sReason )
  */
 function connectToServer( oOptions )
 {
