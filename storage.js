@@ -1298,7 +1298,7 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 			if (level === 0) // genesis
 				return handleWitnessLevel(0);
 			if(props.pow_type === constants.POW_TYPE_TRUSTME){
-				storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+				readUnitAuthors(conn, start_unit, function(arrAuthors){
 					for (var i=0; i<arrAuthors.length; i++){
 						var address = arrAuthors[i];
 						if (arrCollectedWitnesses.indexOf(address) === -1)
