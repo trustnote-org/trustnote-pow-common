@@ -1289,7 +1289,7 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 		arrCollectedWitnesses.concat(arrAuthorAddresses);
 	}
 	function addWitnessesAndGoUp(start_unit){
-		storage.readStaticUnitProps(conn, start_unit, function(props){
+		readStaticUnitProps(conn, start_unit, function(props){
 			profiler.stop('write-wl-select-bp');
 			var best_parent_unit = props.best_parent_unit;
 			var level = props.level;
