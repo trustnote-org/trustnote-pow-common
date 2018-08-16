@@ -94,7 +94,7 @@ function findLastStableMcBall(conn, onDone){
 	//  [arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
-		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND ( \n\
+		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' \n\
 		ORDER BY main_chain_index DESC LIMIT 1", 
 		[], 
 		function(rows){
