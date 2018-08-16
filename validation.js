@@ -1617,7 +1617,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							throw Error("spend proof didn't help: "+err);
 					//	if (objAsset)
 					//		profiler2.stop('checkInputDoubleSpend');
-						cbb2(err);
+						cb2(err);
 					}
 				);
 			}
