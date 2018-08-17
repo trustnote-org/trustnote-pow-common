@@ -113,15 +113,22 @@ CREATE TABLE round(
 	round_index BIGINT NOT NULL,
 	min_wl INT NULL,
 	max_wl INT NULL,
+	seed CHAR (64),
 	PRIMARY KEY (round_index)
 ) 
+
+--  new table to store round 
+CREATE TABLE round_cycle(
+	cycle_id INTEGER NOT NULL,
+	difficulty INT NULL,
+	PRIMARY KEY (cycle_id)
+) 
+
 
 --  new table to store pow units 
 CREATE TABLE pow(
 	unit CHAR(44) NOT NULL,
-    seed  CHAR(44) NULL, --- row data is 32 bytes and covrt to base 64
-	difficulty VARCHAR(64) NULL,
-	solution text  NULL,
+	solution VARCHAR(256)  NULL,
 	PRIMARY KEY (unit)
 ) 
 
