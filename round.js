@@ -37,6 +37,10 @@ function getCurrentRoundIndexByDb(callback){
 	);
 }
 
+function getCycleIdByRoundIndex(roundIndex){
+    return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
+}
+
 function getCurrentRoundInfo(conn, callback){
     conn.query(
 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 

@@ -804,22 +804,49 @@ function markMcIndexStable(conn, mci, onDone){
 						function(rowsPow){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
 								return cb();
-							conn.query(
-								"UPDATE round SET max_wl= \n\
-								(SELECT MAX(witnessed_level) FROM units \n\
-								WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\
-								WHERE round_index=?", 
-								[round_index, constants.POW_TYPE_TRUSTME, round_index], 
-								function(){
+							async.series([
+								function(cb1){     // update max_wl
 									conn.query(
-										"INSERT INTO round ('round_index', 'min_wl', 'max_wl') VALUES (?, null, null)", 
-										[round_index+1], 
+										"UPDATE round SET max_wl= \n\
+										(SELECT MAX(witnessed_level) FROM units \n\
+										WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\
+										WHERE round_index=?", 
+										[round_index, constants.POW_TYPE_TRUSTME, round_index], 
 										function(){
-											cb();
+											cb1();
 										}
 									);
+								},
+								function(cb1){    // calculate seed
+									pow.calculatePublicSeed( conn, round_index+1, function(err, newSeed){
+										if(err)
+											throw Error(" calculate new seed error !");
+										conn.query(
+											"INSERT INTO round (round_index, min_wl, max_wl, seed) VALUES (?, null, null, ?)", 
+											[round_index+1, newSeed], 
+											function(){
+												cb1();
+											}
+										);
+									});			
+								},
+								function(cb1){    // calculate difficulty
+									if(getCycleIdByRoundIndex(round_index+1) === getCycleIdByRoundIndex(round_index))
+										return cb1();
+									pow.calculateDifficultyValue( conn, getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
+										conn.query(
+											"INSERT INTO round_cycle (cycle_id, difficulty) VALUES (?, ?)", 
+											[getCycleIdByRoundIndex(round_index+1), newDifficulty], 
+											function(){
+												cb1();
+											}
+										);
+									});
 								}
-							);
+							], 
+							function(err){
+								cb();
+							});	
 						}
 					);
 				}
