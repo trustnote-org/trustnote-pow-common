@@ -37,7 +37,7 @@ exports.port = null;
 // exports.socksLocalDNS = false;
 
 // WebSocket protocol prefixed to all hosts.  Must be wss:// on livenet, ws:// is allowed on testnet
-exports.WS_PROTOCOL = "wss://";
+exports.WS_PROTOCOL = "ws://";
 //True save to joints table
 exports.bSaveJointJson = true;
 
