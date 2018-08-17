@@ -53,6 +53,18 @@ function getCurrentRoundInfo(conn, callback){
 	);
 }
 
+// function getDurationByCycleId(conn, cycleId, callback){
+//     conn.query(
+//         "SELECT 1 FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+//         WHERE address=? AND feed_name=?  \n\
+//             AND main_chain_index<=? AND main_chain_index>=? AND sequence='good' AND is_stable=1 LIMIT 1",
+//         [],
+//         function(rows){
+//             console.log(op+" "+feed_name+" "+rows.length);
+//             cb2(rows.length > 0);
+//         }
+//     );
+// }
 
 function getPowEquhashUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
@@ -140,7 +152,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 	var witnesses  = [];
 	if (roundIndex === 1){// first round
 		witnesses = witnesses.concat(conf.initialWitnesses);
-		if(witnesses.length != constants.COUNT_POW_WITNESSES)
+		if(witnesses.length != constants.COUNT_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
 		return  callback(witnesses.push(constants.FOUNDATION_ADDRESS));
     }
