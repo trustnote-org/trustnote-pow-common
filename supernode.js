@@ -29,10 +29,6 @@ var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
 var conn;
 
-db.takeConnectionFromPool(function(new_conn){
-	conn = new_conn;
-});
-
 function onError(err){
 	throw Error(err);
 }
@@ -115,6 +111,9 @@ function readKeys(onDone){
 						var xPrivKey = mnemonic.toHDPrivateKey(passphrase);
 						createWallet(xPrivKey, function(){
 							onDone(keys.mnemonic_phrase, passphrase, deviceTempPrivKey, devicePrevTempPrivKey);
+						});
+						db.takeConnectionFromPool(function(new_conn){
+							conn = new_conn;
 						});
 					}
 				});
