@@ -470,7 +470,7 @@ function witnessBeforeThreshold(){
 			return console.log('my units without mci');
 		}
 		// pow add
-		round.getCurrentRoundIndex(function(round_index){
+		round.getCurrentRoundIndexByDb(function(round_index){
 			determineIfIAmWitness(round_index, function(bWitness){
 				// pow add
 				if (!bWitness){
