@@ -41,6 +41,14 @@ function getCycleIdByRoundIndex(roundIndex){
     return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
 }
 
+function getMinRoundIndexByCycleId(cycleId){
+    return (cycleId-1)*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH+1;
+}
+
+function getMaxRoundIndexByCycleId(cycleId){
+    return cycleId*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
+}
+
 function getCurrentRoundInfo(conn, callback){
     conn.query(
 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
@@ -53,18 +61,29 @@ function getCurrentRoundInfo(conn, callback){
 	);
 }
 
-// function getDurationByCycleId(conn, cycleId, callback){
-//     conn.query(
-//         "SELECT 1 FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-//         WHERE address=? AND feed_name=?  \n\
-//             AND main_chain_index<=? AND main_chain_index>=? AND sequence='good' AND is_stable=1 LIMIT 1",
-//         [],
-//         function(rows){
-//             console.log(op+" "+feed_name+" "+rows.length);
-//             cb2(rows.length > 0);
-//         }
-//     );
-// }
+function getDurationByCycleId(conn, cycleId, callback){
+    conn.query(
+        "SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+        WHERE address=? AND feed_name='timestamp'  \n\
+            AND sequence='good' AND is_stable=1 AND round_index=?",
+        [constants.FOUNDATION_ADDRESS, getMinRoundIndexByCycleId(cycleId)],
+        function(rowsMin){
+            if (rowsMin.length !== 1)
+                throw Error("Can not find min timestamp of cycle " + cycleId);
+            conn.query(
+                "SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+                WHERE address=? AND feed_name='timestamp'  \n\
+                    AND sequence='good' AND is_stable=1 AND round_index=?",
+                [constants.FOUNDATION_ADDRESS, getMaxRoundIndexByCycleId(cycleId)],
+                function(rowsMax){
+                    if (rowsMax.length !== 1)
+                        throw Error("Can not find max timestamp of cycle " + cycleId);
+                    callback(rowsMax[0].max_timestamp - rowsMin[0].min_timestamp);
+                }
+            );            
+        }
+    );
+}
 
 function getPowEquhashUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
@@ -376,4 +395,18 @@ exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 // console.log("roundIndex:4204801-"+getCoinbaseByRoundIndex(4204801));
 // console.log("roundIndex:4212121201-"+getCoinbaseByRoundIndex(4212121201));
 
+console.log("roundIndex:1-"+getCycleIdByRoundIndex(1));
+console.log("roundIndex:9-"+getCycleIdByRoundIndex(9));
+console.log("roundIndex:10-"+getCycleIdByRoundIndex(10));
+console.log("roundIndex:11-"+getCycleIdByRoundIndex(11));
+console.log("roundIndex:12-"+getCycleIdByRoundIndex(12));
+console.log("roundIndex:128-"+getCycleIdByRoundIndex(128));
 
+console.log("cycleid min:1-"+getMinRoundIndexByCycleId(1));
+console.log("cycleid man:1-"+getMaxRoundIndexByCycleId(1));
+
+console.log("cycleid min:2-"+getMinRoundIndexByCycleId(2));
+console.log("cycleid man:2-"+getMaxRoundIndexByCycleId(2));
+
+console.log("cycleid min:12-"+getMinRoundIndexByCycleId(12));
+console.log("cycleid man:12-"+getMaxRoundIndexByCycleId(12));
