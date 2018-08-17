@@ -269,12 +269,19 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 
 										case "pow_equihash":   // pow add
 											conn.query(
-												"SELECT seed, difficulty, solution FROM pow WHERE unit=?", [unit], 
+												"SELECT round_index, seed, solution FROM pow WHERE unit=?", [unit], 
 												function(pow_rows){
 													if (pow_rows.length !== 1)
 														throw Error("no pow_equihash or too many?");
-													objMessage.payload = {seed: pow_rows[0].seed, difficulty: pow_rows[0].difficulty, solution: pow_rows[0].solution};
-													addSpendProofs();
+														conn.query(
+															"SELECT seed FROM round WHERE round_index=?", [pow_rows[0].round_index], 
+															function(round_rows){
+																if (round_rows.length !== 1 && !round_rows[0].seed)
+																	throw Error("no seed?");
+																objMessage.payload = {seed: round_rows[0].seed, difficulty: pow_rows[0].difficulty, solution: pow_rows[0].solution};
+																addSpendProofs();
+															}
+														);
 												}
 											);
 											break;
