@@ -64,17 +64,17 @@ function getCurrentRoundInfo(conn, callback){
 function getDurationByCycleId(conn, cycleId, callback){
     conn.query(
         "SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-        WHERE address=? AND feed_name='timestamp'  \n\
+        WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
             AND sequence='good' AND is_stable=1 AND round_index=?",
-        [constants.FOUNDATION_ADDRESS, getMinRoundIndexByCycleId(cycleId)],
+        [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
         function(rowsMin){
             if (rowsMin.length !== 1)
                 throw Error("Can not find min timestamp of cycle " + cycleId);
             conn.query(
                 "SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-                WHERE address=? AND feed_name='timestamp'  \n\
+                WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
                     AND sequence='good' AND is_stable=1 AND round_index=?",
-                [constants.FOUNDATION_ADDRESS, getMaxRoundIndexByCycleId(cycleId)],
+                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
                 function(rowsMax){
                     if (rowsMax.length !== 1)
                         throw Error("Can not find max timestamp of cycle " + cycleId);
