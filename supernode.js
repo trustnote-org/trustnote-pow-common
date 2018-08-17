@@ -27,6 +27,12 @@ var count_witnessings_available = 0;
 // pow add
 var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
+var conn;
+
+db.takeConnectionFromPool(function(new_conn){
+	conn = new_conn;
+	conn.query("BEGIN", function(){cb();});
+});
 
 function onError(err){
 	throw Error(err);
@@ -354,7 +360,7 @@ function checkAndWitness(){
 			return console.log('my units without mci');
 		}
 		// pow add
-		round.getCurrentRoundIndexByDb(function(round_index){
+		round.getCurrentRoundIndex(conn, function(round_index){
 			determineIfIAmWitness(round_index, function(bWitness){
 				// pow add
 				if (!bWitness){
@@ -395,7 +401,7 @@ function checkAndWitness(){
 
 // pow add
 function determineIfIAmWitness(round_index, handleResult){
-	round.getWitnessesByRoundIndex(round_index, function(arrWitnesses){
+	round.getWitnessesByRoundIndex(conn, round_index, function(arrWitnesses){
 		db.query(
 			"SELECT 1 FROM my_addresses where address IN(?)", [arrWitnesses], function(rows) {
 				if(rows.length===0) {
@@ -470,7 +476,7 @@ function witnessBeforeThreshold(){
 			return console.log('my units without mci');
 		}
 		// pow add
-		round.getCurrentRoundIndexByDb(function(round_index){
+		round.getCurrentRoundIndex(conn, function(round_index){
 			determineIfIAmWitness(round_index, function(bWitness){
 				// pow add
 				if (!bWitness){
