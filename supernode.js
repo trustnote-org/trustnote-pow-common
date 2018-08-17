@@ -110,10 +110,10 @@ function readKeys(onDone){
 						var mnemonic = new Mnemonic(keys.mnemonic_phrase);
 						var xPrivKey = mnemonic.toHDPrivateKey(passphrase);
 						createWallet(xPrivKey, function(){
-							onDone(keys.mnemonic_phrase, passphrase, deviceTempPrivKey, devicePrevTempPrivKey);
-						});
-						db.takeConnectionFromPool(function(new_conn){
-							conn = new_conn;
+							db.takeConnectionFromPool(function(new_conn){
+								conn = new_conn;
+								onDone(keys.mnemonic_phrase, passphrase, deviceTempPrivKey, devicePrevTempPrivKey);
+							});
 						});
 					}
 				});
