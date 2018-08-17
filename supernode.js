@@ -31,7 +31,6 @@ var conn;
 
 db.takeConnectionFromPool(function(new_conn){
 	conn = new_conn;
-	conn.query("BEGIN", function(){cb();});
 });
 
 function onError(err){
