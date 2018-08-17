@@ -327,6 +327,7 @@ setInterval(shrinkRoundCache, 1000*1000);
  *	@exports
  */
 exports.getCurrentRoundIndex = getCurrentRoundIndex;
+exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb
 exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
