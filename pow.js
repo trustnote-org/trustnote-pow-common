@@ -544,23 +544,20 @@ function getPublicSeedFromDb( oConn, nRoundIndex, pfnCallback )
 
 	oConn.query
 	(
-		"SELECT pow.seed AS p_seed \
-		FROM pow JOIN units USING(unit) \
-		WHERE units.round_index = ? AND units.is_stable=1 AND units.sequence='good' AND units.pow_type=? \
-		ORDER BY main_chain_index ASC \
-		LIMIT 1",
+		"SELECT seed \
+		FROM round \
+		WHERE round_index = ?",
 		[
-			nRoundIndex,
-			_constants.POW_TYPE_POW_EQUHASH
+			nRoundIndex
 		],
 		function( arrRows )
 		{
 			if ( 0 === arrRows.length )
 			{
-				return pfnCallback( `no pow unit.` );
+				return pfnCallback( `seed not found.` );
 			}
 
-			return pfnCallback( null, arrRows[ 0 ][ 'p_seed' ] );
+			return pfnCallback( null, arrRows[ 0 ][ 'seed' ] );
 		}
 	);
 }
