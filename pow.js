@@ -15,7 +15,7 @@ const _async		= require( 'async' );
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
 const _super_node	= require( './supernode.js' );
-
+const _pow_service	= require( './pow_service.js' );
 
 
 /**
@@ -134,7 +134,7 @@ function startMining( oConn, pfnCallback )
 	let nCurrentRoundIndex		= null;
 	let arrPreviousCoinBaseList	= null;
 	let sCurrentFirstTrustMEBall	= null;
-	let sCurrentDifficultyValue	= null;
+	let nCurrentDifficultyValue	= null;
 	let sCurrentPublicSeed		= null;
 	let sSuperNodeAuthorAddress	= null;
 
@@ -209,14 +209,14 @@ function startMining( oConn, pfnCallback )
 			//	round (N)
 			//	calculate difficulty value
 			//
-			calculateDifficultyValue( oConn, nCurrentRoundIndex, function( err, sDifficulty )
+			calculateDifficultyValue( oConn, nCurrentRoundIndex, function( err, nDifficulty )
 			{
 				if ( err )
 				{
 					return pfnNext( err );
 				}
 
-				sCurrentDifficultyValue	= sDifficulty;
+				nCurrentDifficultyValue	= nDifficulty;
 				return pfnNext();
 			});
 		},
@@ -245,9 +245,10 @@ function startMining( oConn, pfnCallback )
 		}
 
 		let objInput	= {
+			currentRoundIndex	: nCurrentRoundIndex,
 			previousCoinBaseList	: arrPreviousCoinBaseList,
 			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
-			currentDifficulty	: sCurrentDifficultyValue,
+			currentDifficulty	: nCurrentDifficultyValue,
 			currentPubSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
@@ -272,45 +273,142 @@ function startMining( oConn, pfnCallback )
 /**
  *	start calculation with inputs
  *
- * 	@param	{object}	objInput
- *	@param	{array}		objInput.previousCoinBaseList		@see description
- *	@param	{string}	objInput.currentFirstTrustMEBall
- *	@param	{string}	objInput.currentDifficulty
- *	@param	{string}	objInput.currentPubSeed
- *	@param	{string}	objInput.superNodeAuthor
+ * 	@param	{object}	oInput
+ *	@param	{number}	oInput.currentRoundIndex
+ *	@param	{array}		oInput.previousCoinBaseList		@see description
+ *	@param	{string}	oInput.currentFirstTrustMEBall
+ *	@param	{string}	oInput.currentDifficulty
+ *	@param	{string}	oInput.currentPubSeed
+ *	@param	{string}	oInput.superNodeAuthor
  *	@param	{function}	pfnCallback( err )
  *	@return	{boolean}
  */
-function startMiningWithInputs( objInput, pfnCallback )
+function startMiningWithInputs( oInput, pfnCallback )
 {
-	if ( 'object' !== typeof objInput )
+	if ( 'object' !== typeof oInput )
 	{
-		throw new Error( 'call startMining with invalid objInput' );
+		throw new Error( 'call startMining with invalid oInput' );
 	}
-	if ( ! Array.isArray( objInput.previousCoinBaseList ) || 0 === objInput.previousCoinBaseList.length )
+	if ( 'number' !== typeof oInput.currentRoundIndex )
 	{
-		throw new Error( 'call startMining with invalid arrCoinBaseList' );
+		throw new Error( 'call startMining with invalid oInput.currentRoundIndex' );
 	}
-	if ( 'string' !== typeof objInput.currentFirstTrustMEBall || 44 !== objInput.currentFirstTrustMEBall.length )
+	if ( ! Array.isArray( oInput.previousCoinBaseList ) || 0 === oInput.previousCoinBaseList.length )
 	{
-		throw new Error( 'call startMining with invalid sTrustMEBall' );
+		throw new Error( 'call startMining with invalid oInput.previousCoinBaseList' );
 	}
-	if ( 'string' !== typeof objInput.currentDifficulty || 64 !== objInput.currentDifficulty.length )
+	if ( 'string' !== typeof oInput.currentFirstTrustMEBall || 44 !== oInput.currentFirstTrustMEBall.length )
 	{
-		throw new Error( 'call startMining with invalid sDifficulty' );
+		throw new Error( 'call startMining with invalid oInput.currentFirstTrustMEBall' );
 	}
-	if ( 'string' !== typeof objInput.currentPubSeed || 0 === objInput.currentPubSeed.length )
+	if ( 'number' !== typeof oInput.currentDifficulty || oInput.currentDifficulty <= 0 )
 	{
-		throw new Error( 'call startMining with invalid sPubSeed' );
+		throw new Error( 'call startMining with invalid oInput.currentDifficulty' );
 	}
-	if ( 'string' !== typeof objInput.superNodeAuthor || 0 === objInput.superNodeAuthor.length )
+	if ( 'string' !== typeof oInput.currentPubSeed || 0 === oInput.currentPubSeed.length )
 	{
-		throw new Error( 'call startMining with invalid sSuperNode' );
+		throw new Error( 'call startMining with invalid oInput.currentPubSeed' );
+	}
+	if ( 'string' !== typeof oInput.superNodeAuthor || 0 === oInput.superNodeAuthor.length )
+	{
+		throw new Error( 'call startMining with invalid oInput.superNodeAuthor' );
 	}
 	if ( 'function' !== typeof pfnCallback )
 	{
 		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
 	}
+
+	//
+	//	...
+	//
+	//
+	//	pubSeed	hex string 128 chars, 256bit, 64字节
+	//
+	let sInputHex256 = createMiningInputHexFromObject( oInput );
+	let jsonSource =
+	{
+		id	: oInput.currentRoundIndex,
+		pow	: "equihash",
+		"params":
+		{
+			version		: 0,
+			roundNumber	: oInput.currentRoundIndex,
+			nonce		: 0,
+			pubSeed		: sInputHex256,
+			pubKey		: oInput.superNodeAuthor,
+			difficulty	: oInput.currentDifficulty,
+			filterList	: [],
+			times		: 0,
+			timeout		: 0
+		},
+		interrupt	: 0,
+		error		: null
+	};
+
+	//
+	//	create server and wait for the response
+	//
+	_pow_service.server.createServer
+	({
+		port		: 1302,
+		onStart		: ( err, oWs ) =>
+		{
+			if ( err )
+			{
+				return console.error( err );
+			}
+			console.log( `SERVER >> server start.` );
+
+			//
+			//	connect to server and send the message
+			//
+			_pow_service.client.connectToServer
+			({
+				minerGateway	: 'ws://127.0.0.1:1302',
+				onOpen		: ( err, oWs ) =>
+				{
+					if ( err )
+					{
+						return console.error( err );
+					}
+					console.log( `CLIENT >> we have connected to ${ oWs.host } successfully.` );
+					_pow_service.sendMessageOnce( oWs, 'pow/task', jsonSource );
+				},
+				onMessage	: ( oWs, sMessage ) =>
+				{
+					console.log( `CLIENT >> received a message : ${ sMessage }` );
+				},
+				onError		: ( oWs, vError ) =>
+				{
+					console.error( `CLIENT >> error from server: `, vError );
+				},
+				onClose		: ( oWs, sReason ) =>
+				{
+					console.log( `CLIENT >> socket was closed(${ sReason })` );
+				}
+			});
+		},
+		onConnection	: ( err, oWs ) =>
+		{
+			if ( err )
+			{
+				return console.error( err );
+			}
+			console.log( `SERVER >> a new client connected in.` );
+		},
+		onMessage	: ( oWs, sMessage ) =>
+		{
+			console.log( `SERVER >> received a message: ${ sMessage }` );
+		},
+		onError		: ( oWs, vError ) =>
+		{
+			console.error( `SERVER >> occurred an error: `, vError );
+		},
+		onClose		: ( oWs, sReason ) =>
+		{
+			console.log( `SERVER >> socket was closed(${ sReason })` );
+		}
+	});
 
 	return true;
 }
@@ -483,16 +581,44 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
 	}
 
-	let nDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
-	(
-		100,
-		100,
-		100,
-		Buffer.from( "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" )
-	);
-	console.log( `difficulty = ${ nDifficultyValue }` );
+	let nPreviousDifficulty;
+	let nTimeUsed;
+	let nTimeStandard;
 
+	_async.series
+	([
+		function( pfnNext )
+		{
+			nPreviousDifficulty = 0;
+			return pfnNext();
+		},
+		function( pfnNext )
+		{
+			nTimeUsed = 0;
+			return pfnNext();
+		},
+		function( pfnNext )
+		{
+			nTimeStandard = 0;
+			return pfnNext();
+		}
+	], function( err )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
 
+		let nNewDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
+		(
+			nPreviousDifficulty,
+			nTimeUsed,
+			nTimeStandard,
+			Buffer.from( "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" )
+		);
+
+		pfnCallback( null, nNewDifficultyValue );
+	});
 }
 
 

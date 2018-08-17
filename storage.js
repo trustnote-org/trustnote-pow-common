@@ -1289,7 +1289,7 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 		arrCollectedWitnesses.concat(arrAuthorAddresses);
 	}
 	function addWitnessesAndGoUp(start_unit){
-		storage.readStaticUnitProps(conn, start_unit, function(props){
+		readStaticUnitProps(conn, start_unit, function(props){
 			profiler.stop('write-wl-select-bp');
 			var best_parent_unit = props.best_parent_unit;
 			var level = props.level;
@@ -1298,7 +1298,7 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 			if (level === 0) // genesis
 				return handleWitnessLevel(0);
 			if(props.pow_type === constants.POW_TYPE_TRUSTME){
-				storage.readUnitAuthors(conn, start_unit, function(arrAuthors){
+				readUnitAuthors(conn, start_unit, function(arrAuthors){
 					for (var i=0; i<arrAuthors.length; i++){
 						var address = arrAuthors[i];
 						if (arrCollectedWitnesses.indexOf(address) === -1)
@@ -1503,3 +1503,5 @@ exports.setUnitIsKnown = setUnitIsKnown;
 exports.forgetUnit = forgetUnit;
 
 exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
+exports.determinewitnessedLevel = determinewitnessedLevel;
+exports.determineBestParent = determineBestParent;

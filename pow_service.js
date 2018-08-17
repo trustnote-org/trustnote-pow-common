@@ -24,6 +24,7 @@ const POW_SERVICE_MAX_INBOUND	= 1000;
  * 	variables
  */
 let m_arrCacheOutboundPeers	= [];
+let m_oCacheRunningServers	= {};
 
 
 
@@ -35,14 +36,16 @@ let m_arrCacheOutboundPeers	= [];
  * 	@public
  * 	@param	{object}	oOptions
  * 	@param	{number}	oOptions.port
- * 	@param	{function}	oOptions.onConnection
- * 	@param	{function}	oOptions.onMessage
- * 	@param	{function}	oOptions.onError
- * 	@param	{function}	oOptions.onClose
+ * 	@param	{function}	oOptions.onStart( err, oWsServer )
+ * 	@param	{function}	oOptions.onConnection( err, oWsClient )
+ * 	@param	{function}	oOptions.onMessage( oWsClient, sMessage )
+ * 	@param	{function}	oOptions.onError( oWsClient, vError )
+ * 	@param	{function}	oOptions.onClose( oWsClient, sReason )
  */
 function createServer( oOptions )
 {
-	let oWs;
+	let oWsServer;
+	let sServerKey;
 
 	if ( 'object' !== typeof oOptions )
 	{
@@ -51,6 +54,10 @@ function createServer( oOptions )
 	if ( 'number' !== typeof oOptions.port )
 	{
 		throw new Error( 'call createServer with invalid oOptions.port' );
+	}
+	if ( 'function' !== typeof oOptions.onStart )
+	{
+		throw new Error( 'call createServer with invalid oOptions.onStart' );
 	}
 	if ( 'function' !== typeof oOptions.onConnection )
 	{
@@ -70,88 +77,103 @@ function createServer( oOptions )
 	}
 
 	//
-	//	create a new web socket server
+	//	key of this server
 	//
-	//	npm ws
-	//	https://github.com/websockets/ws
+	sServerKey = `*.${ oOptions.port }`;
+	if ( m_oCacheRunningServers.hasOwnProperty( sServerKey ) )
+	{
+		console.log( `server ${ sServerKey } already running.` );
+		oOptions.onStart( null, m_oCacheRunningServers[ sServerKey ] );
+		return false;
+	}
+
 	//
-	oWs = new WebSocket.Server
+	//	create a new WebSocket server
+	//
+	oWsServer = new WebSocket.Server
 	({
 		port : oOptions.port
 	});
-	oWs.on( 'connection', ( oWs ) =>
+	oWsServer.on( 'connection', ( oWsClient ) =>
 	{
 		//
 		//	oWs	- Web Socket handle connected in from remote client
 		//
-		let sRemoteAddress;
-
-		if ( ! oWs )
+		if ( ! oWsClient )
 		{
-			oOptions.onConnection( `invalid oWs`, oWs );
+			oOptions.onConnection( `invalid oWs`, oWsClient );
 			return false;
 		}
 
 		//	...
-		sRemoteAddress = _getRemoteAddress( oWs );
+		let sRemoteAddress = _getRemoteAddress( oWsClient );
 		if ( ! sRemoteAddress )
 		{
-			oOptions.onConnection( `no ip/sRemoteAddress in accepted connection`, oWs );
-			oWs.terminate();
+			oOptions.onConnection( `no ip/sRemoteAddress in accepted connection`, oWsClient );
+			oWsClient.terminate();
 			return false;
 		}
 		if ( ! _isValidResourceAddress( sRemoteAddress ) )
 		{
-			oOptions.onConnection( `we only accept connection from intranet or loop-back.`, oWs );
-			oWs.terminate();
+			oOptions.onConnection( `we only accept connection from intranet or loop-back.`, oWsClient );
+			oWsClient.terminate();
 			return false;
 		}
-		if ( Array.isArray( oWs.clients ) &&
-			oWs.clients.length >= POW_SERVICE_MAX_INBOUND )
+		if ( Array.isArray( oWsClient.clients ) &&
+			oWsClient.clients.length >= POW_SERVICE_MAX_INBOUND )
 		{
-			oOptions.onConnection( `inbound connections maxed out, rejecting new client ${ sRemoteAddress }`, oWs );
-			oWs.close( 1000, "inbound connections maxed out" );
+			oOptions.onConnection( `inbound connections maxed out, rejecting new client ${ sRemoteAddress }`, oWsClient );
+			oWsClient.close( 1000, "inbound connections maxed out" );
 			return false;
 		}
 
 		//
 		//	okay, we accepted a new client connecting in
 		//
-		oWs.peer			= sRemoteAddress + ":" + oWs.upgradeReq.connection.remotePort;
-		oWs.host			= sRemoteAddress;
-		oWs.assocPendingRequests	= {};
-		oWs.assocInPreparingResponse	= {};
-		oWs.bInbound			= true;
-		oWs.last_ts			= Date.now();
+		oWsClient.peer		= sRemoteAddress + ":" + oWsClient.upgradeReq.connection.remotePort;
+		oWsClient.host		= sRemoteAddress;
+		oWsClient.bInbound	= true;
+		oWsClient.last_ts	= Date.now();
 
 		//	...
-		console.log( `got connection from ${ oWs.peer }, host ${ oWs.host }` );
+		console.log( `got connection from ${ oWsClient.peer }, host ${ oWsClient.host }` );
 
 		//
 		//	callback saying there was a client connected
 		//
-		oOptions.onConnection( null, oWs );
+		oOptions.onConnection( null, oWsClient );
 
 		//
 		//	handle events
 		//
-		oWs.on( 'message', ( sMessage ) =>
+		oWsClient.on( 'message', ( sMessage ) =>
 		{
-			oOptions.onMessage( oWs, sMessage );
+			oOptions.onMessage( oWsClient, sMessage );
 		});
-		oWs.on( 'close', () =>
+		oWsClient.on( 'close', () =>
 		{
-			oOptions.onClose( oWs, `client ${ oWs.peer } disconnected` );
+			oOptions.onClose( oWsClient, `client ${ oWsClient.peer } disconnected` );
 		});
-		oWs.on( 'error', ( vError ) =>
+		oWsClient.on( 'error', ( vError ) =>
 		{
-			oWs.close( 1000, "received error" );
-			oOptions.onError( oWs, vError );
+			oWsClient.close( 1000, "received error" );
+			oOptions.onError( oWsClient, vError );
 		});
 
 		//	...
 		return true;
 	});
+
+	//	call onStart
+	oOptions.onStart( null, oWsServer );
+
+	//
+	//	update running server list
+	//
+	m_oCacheRunningServers[ sServerKey ] = oWsServer;
+
+	//	...
+	console.log( `new WebSocket server(${ sServerKey }) running at port ${ oOptions.port }` );
 }
 
 
@@ -161,11 +183,11 @@ function createServer( oOptions )
  *
  * 	@public
  * 	@param	{object}	oOptions
- * 	@param	{string}	oOptions.minerGateway		e.g. : wss://1.miner.trustnote.org
- * 	@param	{function}	oOptions.onOpen
- * 	@param	{function}	oOptions.onMessage
- * 	@param	{function}	oOptions.onError
- * 	@param	{function}	oOptions.onClose
+ * 	@param	{string}	oOptions.minerGateway			e.g. : wss://1.miner.trustnote.org
+ * 	@param	{function}	oOptions.onOpen( err, oWsClient )
+ * 	@param	{function}	oOptions.onMessage( oWsClient, sMessage )
+ * 	@param	{function}	oOptions.onError( oWsClient, vError )
+ * 	@param	{function}	oOptions.onClose( oWsClient, sReason )
  */
 function connectToServer( oOptions )
 {
@@ -209,10 +231,6 @@ function connectToServer( oOptions )
 	oWs.on( 'open', () =>
 	{
 		let oAnotherWsToTheSameServer;
-
-		//	...
-		oWs.assocPendingRequests	= {};
-		oWs.assocInPreparingResponse	= {};
 
 		if ( ! oWs.url )
 		{

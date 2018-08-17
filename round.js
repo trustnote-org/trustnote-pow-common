@@ -25,6 +25,17 @@ function getCurrentRoundIndex(conn, callback){
 	);
 }
 
+function getCurrentRoundIndexByDb(callback){
+    db.query(
+		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
+        [],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round index");
+            callback(rows[0].round_index);
+		}
+	);
+}
 
 function getCurrentRoundInfo(conn, callback){
     conn.query(
