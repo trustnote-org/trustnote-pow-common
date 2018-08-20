@@ -1,7 +1,7 @@
 // const _pow	= require( '../pow.js' );
 //
 //
-// let bufInput	= _pow.createInputBufferFromObject
+// let bufInput	= _pow._createInputBufferFromObject
 // ({
 // 	coinBaseList	: {
 // 		'4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
