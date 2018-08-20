@@ -5,8 +5,10 @@
  *	@boss	XING
  */
 
+const _conf		= require( './conf.js' );
+
+const _ffi		= _conf.debug ? null : require( 'ffi' );
 const _ref		= require( 'ref' );
-const _ffi		= require( 'ffi' );
 const _fs		= require( 'fs' );
 const _crypto		= require( 'crypto' );
 const _blakejs		= require( 'blakejs' );
@@ -130,6 +132,11 @@ function startMining( oConn, pfnCallback )
 		//	arguments.callee.name
 		throw new Error( `call startCalculation with invalid pfnCallback.` );
 	}
+	if ( _conf.debug )
+	{
+		pfnCallback( null );
+		return true;
+	}
 
 	let nCurrentRoundIndex		= null;
 	let arrPreviousCoinBaseList	= null;
@@ -175,7 +182,7 @@ function startMining( oConn, pfnCallback )
 			//	round (N-1)
 			//	obtain coin-base list of the previous round
 			//
-			getCoinBaseListFromDb( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
+			queryCoinBaseListByRoundIndex( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -192,7 +199,7 @@ function startMining( oConn, pfnCallback )
 			//	round (N)
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			getFirstTrustMEBallOnMainchainFromDb( oConn, nCurrentRoundIndex, function( err, sBall )
+			queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nCurrentRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -209,7 +216,7 @@ function startMining( oConn, pfnCallback )
 			//	round (N)
 			//	calculate difficulty value
 			//
-			calculateDifficultyValue( oConn, nCurrentRoundIndex, function( err, nDifficulty )
+			calculateDifficultyValueByCycleIndex( oConn, nCurrentRoundIndex, function( err, nDifficulty )
 			{
 				if ( err )
 				{
@@ -226,7 +233,7 @@ function startMining( oConn, pfnCallback )
 			//	round (N)
 			//	calculate public seed
 			//
-			calculatePublicSeed( oConn, nCurrentRoundIndex, function( err, sSeed )
+			calculatePublicSeedByRoundIndex( oConn, nCurrentRoundIndex, function( err, sSeed )
 			{
 				if ( err )
 				{
@@ -324,7 +331,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	//
 	//	pubSeed	hex string 128 chars, 256bit, 64字节
 	//
-	let sInputHex256 = createMiningInputHexFromObject( oInput );
+	let sInputHex256 = _createMiningInputHexFromObject( oInput );
 	let jsonSource =
 	{
 		id	: oInput.currentRoundIndex,
@@ -430,15 +437,15 @@ function startMiningWithInputs( oInput, pfnCallback )
  * 			pubSeed(i-1) + hash( Coin-base(i-2) ) + hash( FirstStableMCUnit(i-1) )
  * 		)
  */
-function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
+function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call calculatePublicSeed with invalid oConn` );
+		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 3 )
 	{
-		return pfnCallback( `call calculatePublicSeed with invalid nRoundIndex` );
+		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid nRoundIndex` );
 	}
 
 	let sPreviousPublicSeed		= null;
@@ -450,7 +457,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	public seed
-			getPublicSeedFromDb( oConn, nRoundIndex - 1, function( err, sSeed )
+			queryPublicSeedByRoundIndex( oConn, nRoundIndex - 1, function( err, sSeed )
 			{
 				if ( err )
 				{
@@ -458,7 +465,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 				}
 				if ( 'string' !== typeof sSeed || 0 === sSeed.length )
 				{
-					return pfnNext( `calculatePublicSeed got invalid sSeed.` );
+					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sSeed.` );
 				}
 
 				sPreviousPublicSeed = sSeed;
@@ -468,7 +475,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	coin base
-			getCoinBaseListFromDb( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
+			queryCoinBaseListByRoundIndex( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -490,7 +497,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	first ball
-			getFirstTrustMEBallOnMainchainFromDb( oConn, nRoundIndex - 1, function( err, sBall )
+			queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex - 1, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -498,7 +505,7 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
 				}
 				if ( 'string' !== typeof sBall || 0 === sBall.length )
 				{
-					return pfnNext( `calculatePublicSeed got invalid sBall.` );
+					return pfnNext( `calculatePublicSeedByRoundIndex got invalid sBall.` );
 				}
 
 				sPreviousTrustMEBall = sBall;
@@ -531,15 +538,15 @@ function calculatePublicSeed( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getPublicSeedFromDb( oConn, nRoundIndex, pfnCallback )
+function queryPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getPublicSeedFromDb with invalid oConn` );
+		return pfnCallback( `call queryPublicSeedByRoundIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex <= 0 )
 	{
-		return pfnCallback( `call getPublicSeedFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call queryPublicSeedByRoundIndex with invalid nRoundIndex` );
 	}
 
 	oConn.query
@@ -568,14 +575,22 @@ function getPublicSeedFromDb( oConn, nRoundIndex, pfnCallback )
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
- *	@param	{number}	nRoundIndex
- * 	@param	{function}	pfnCallback( err, sSeed )
+ *	@param	{number}	nCycleIndex		- index of new round
+ * 	@param	{function}	pfnCallback( err, nNewDifficultyValue )
  */
-function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
+function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
+	}
+	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	{
+		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
+	}
+	if ( _conf.debug )
+	{
+		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
 	}
 
 	let nPreviousDifficulty;
@@ -586,17 +601,27 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 	([
 		function( pfnNext )
 		{
-			nPreviousDifficulty = 0;
+			queryDifficultyValueByCycleIndex
+			(
+				oConn,
+				nCycleIndex - 1,
+				function( err, nDifficulty )
+				{
+					nPreviousDifficulty = nDifficulty;
+				}
+			);
 			return pfnNext();
 		},
 		function( pfnNext )
 		{
+			//	in seconds
 			nTimeUsed = 0;
 			return pfnNext();
 		},
 		function( pfnNext )
 		{
-			nTimeStandard = 0;
+			//	in seconds
+			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
 			return pfnNext();
 		}
 	], function( err )
@@ -614,8 +639,47 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
 			Buffer.from( "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" )
 		);
 
-		pfnCallback( null, nNewDifficultyValue );
+		pfnCallback( null, parseInt( nNewDifficultyValue ) );
 	});
+}
+
+/**
+ *	query difficulty value by round index from database
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nCycleIndex
+ *	@param	{function}	pfnCallback( err, nDifficultyValue )
+ */
+function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call queryDifficultyValueByRoundIndex with invalid oConn` );
+	}
+	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	{
+		return pfnCallback( `call queryDifficultyValueByRoundIndex with invalid nCycleIndex` );
+	}
+
+	oConn.query
+	(
+		"SELECT difficulty \
+		FROM round_cycle \
+		WHERE cycle_id = ?",
+		[
+			_round.getCycleIdByRoundIndex( nCycleIndex )
+		],
+		function( arrRows )
+		{
+			if ( 0 === arrRows.length )
+			{
+				return pfnCallback( `difficulty not found in table [round_cycle].` );
+			}
+
+			return pfnCallback( null, parseInt( arrRows[ 0 ][ 'difficulty' ] ) );
+		}
+	);
 }
 
 
@@ -627,15 +691,15 @@ function calculateDifficultyValue( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
+function queryCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getCoinBaseListFromDb with invalid oConn` );
+		return pfnCallback( `call queryCoinBaseListByRoundIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex )
 	{
-		return pfnCallback( `call getCoinBaseListFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call queryCoinBaseListByRoundIndex with invalid nRoundIndex` );
 	}
 	if ( nRoundIndex <= 0 )
 	{
@@ -690,15 +754,15 @@ function getCoinBaseListFromDb( oConn, nRoundIndex, pfnCallback )
  *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err, arrCoinBaseList )
  */
-function getFirstTrustMEBallOnMainchainFromDb( oConn, nRoundIndex, pfnCallback )
+function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid oConn` );
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nRoundIndex )
 	{
-		return pfnCallback( `call getFirstTrustMEBallFromDb with invalid nRoundIndex` );
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex` );
 	}
 	if ( nRoundIndex <= 0 )
 	{
@@ -765,6 +829,10 @@ function isValidEquihash( objInput, sHash, nNonce )
 	{
 		throw new Error( 'call isValidEquihash with invalid sNonce' );
 	}
+	if ( _conf.debug )
+	{
+		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
+	}
 
 	let bRet;
 	let nInputLen;
@@ -774,7 +842,7 @@ function isValidEquihash( objInput, sHash, nNonce )
 	//	...
 	bRet		= false;
 	nInputLen	= 140;
-	bufInput	= createInputBufferFromObject( objInput );
+	bufInput	= _createInputBufferFromObject( objInput );
 	bufHash		= Buffer.concat( [ Buffer.from( sHash, 'utf8' ) ], 32 );
 
 	//	load library
@@ -796,7 +864,7 @@ function isValidEquihash( objInput, sHash, nNonce )
  *	@param	{object}	objInput
  *	@return	{Buffer}
  */
-function createInputBufferFromObject( objInput )
+function _createInputBufferFromObject( objInput )
 {
 	let sInput;
 	let bufSha512;
@@ -827,7 +895,7 @@ function createInputBufferFromObject( objInput )
  *	@param	{object}	objInput
  *	@return	{Buffer}
  */
-function createMiningInputHexFromObject( objInput )
+function _createMiningInputHexFromObject( objInput )
 {
 	let sInput;
 
@@ -899,21 +967,17 @@ function _readSingleWallet( pfnCallback )
 
 
 
-
-
 /**
  *	@exports
  */
-module.exports.startMining			= startMining;
-module.exports.startMiningWithInputs		= startMiningWithInputs;
+module.exports.startMining					= startMining;
+module.exports.startMiningWithInputs				= startMiningWithInputs;
 
-module.exports.calculatePublicSeed		= calculatePublicSeed;
-module.exports.calculateDifficultyValue		= calculateDifficultyValue;
+module.exports.calculatePublicSeedByRoundIndex			= calculatePublicSeedByRoundIndex;
+module.exports.calculateDifficultyValueByCycleIndex		= calculateDifficultyValueByCycleIndex;
 
-module.exports.getPublicSeedFromDb		= getPublicSeedFromDb;
-module.exports.getCoinBaseListFromDb		= getCoinBaseListFromDb;
-module.exports.getFirstTrustMEBallFromDb	= getFirstTrustMEBallOnMainchainFromDb;
+module.exports.queryPublicSeedByRoundIndex			= queryPublicSeedByRoundIndex;
+module.exports.queryCoinBaseListByRoundIndex			= queryCoinBaseListByRoundIndex;
+module.exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
 
-module.exports.isValidEquihash			= isValidEquihash;
-module.exports.createInputBufferFromObject	= createInputBufferFromObject;
-module.exports.createMiningInputHexFromObject	= createMiningInputHexFromObject;
+module.exports.isValidEquihash					= isValidEquihash;
