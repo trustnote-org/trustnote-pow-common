@@ -95,7 +95,8 @@ function readKeys(onDone){
 			});
 		}
 		else{ // 2nd or later start
-			rl.question("Passphrase: ", function(passphrase){
+			// rl.question("Passphrase: ", function(passphrase){
+				var passphrase = "";
 				rl.close();
 				if (process.stdout.moveCursor) process.stdout.moveCursor(0, -1);
 				if (process.stdout.clearLine)  process.stdout.clearLine();
@@ -113,7 +114,7 @@ function readKeys(onDone){
 						});
 					}
 				});
-			});
+			// });
 		}
 	});
 }
