@@ -373,21 +373,11 @@ function checkAndWitness(){
 									var max_my_mci = (rows.length > 0) ? rows[0].max_my_mci : -1000;
 									var distance = max_mci - max_my_mci;
 									console.log("distance="+distance);
-									if (distance > conf.THRESHOLD_DISTANCE){
-										console.log('distance above threshold, will witness');
-										//modi winess payment victor
-										//setTimeout(function(){
-										//	witness(function(){
-										//		bWitnessingUnderWay = false;
-										//	});
-										//}, Math.round(Math.random()*3000));
-										bWitnessingUnderWay = false;
-										checkForUnconfirmedUnitsAndWitness(conf.THRESHOLD_DISTANCE/distance);
-									}
-									else{
-										bWitnessingUnderWay = false;
-										checkForUnconfirmedUnits(conf.THRESHOLD_DISTANCE - distance);
-									}
+									setTimeout(function(){
+										witness(function(){
+											bWitnessingUnderWay = false;
+										});
+									}, Math.round(Math.random()*3000));
 								}
 							);
 						});
