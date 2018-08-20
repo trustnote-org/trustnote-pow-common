@@ -818,7 +818,7 @@ function markMcIndexStable(conn, mci, onDone){
 									);
 								},
 								function(cb1){    // calculate seed
-									pow.calculatePublicSeed( conn, round_index+1, function(err, newSeed){
+									pow.calculatePublicSeedByRoundIndex( conn, round_index+1, function(err, newSeed){
 										if(err)
 											throw Error(" calculate new seed error !");
 										conn.query(
