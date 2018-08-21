@@ -28,6 +28,18 @@ var count_witnessings_available = 0;
 var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
 
+eventBus.on('headless_wallet_ready', function(){
+	if (!conf.admin_email || !conf.from_email){
+		console.log("please specify admin_email and from_email in your "+desktopApp.getAppDataDir()+'/conf.json');
+		process.exit(1);
+	}
+	supernode.setupChatEventHandlers();
+	supernode.readSingleWallet(function(address){
+		my_address = address;
+		//checkAndWitness();
+	});
+});
+
 function onError(err){
 	throw Error(err);
 }
