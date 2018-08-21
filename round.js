@@ -392,7 +392,7 @@ setInterval(shrinkRoundCache, 1000*1000);
  *	@exports
  */
 exports.getCurrentRoundIndex = getCurrentRoundIndex;
-exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb
+exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
 exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
@@ -404,6 +404,7 @@ exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
+exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
