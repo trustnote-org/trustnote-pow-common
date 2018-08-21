@@ -114,6 +114,6 @@ if (exports.storage === 'mysql'){
 	exports.database.user = exports.database.user || 'trustnote';
 }
 else if (exports.storage === 'sqlite'){
-	exports.database.max_connections = exports.database.max_connections || 10;
+	exports.database.max_connections = exports.database.max_connections || 1;
 	exports.database.filename = exports.database.filename || (exports.bLight ? 'trustnote-light.sqlite' : 'trustnote.sqlite');
 }
