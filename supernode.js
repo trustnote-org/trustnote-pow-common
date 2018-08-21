@@ -306,7 +306,7 @@ function notifyAdminAboutWitnessingProblem(err){
 }
 
 
-function witness(onDone){
+function witness(round_index, onDone){
 	function onError(err){
 		notifyAdminAboutFailedWitnessing(err);
 		setTimeout(onDone, 60000); // pause after error
@@ -323,6 +323,7 @@ function witness(onDone){
 				paying_addresses: [my_address],
 				outputs: [{address: my_address, amount: 0}],
 				pow_type: constants.POW_TYPE_TRUSTME,
+				round_index: round_index,
 				signer: signer,
 				callbacks: callbacks
 			}
@@ -337,7 +338,7 @@ function witness(onDone){
 			params.messages = [objMessage];
 			return composer.composeJoint(params);
 		}
-		composer.composeTrustMEJoint(my_address, signer, callbacks);
+		composer.composeTrustMEJoint(my_address, round_index, signer, callbacks);
 	});
 }
 
@@ -372,7 +373,7 @@ function checkAndWitness(){
 							var distance = max_mci - max_my_mci;
 							console.log("distance="+distance);
 							setTimeout(function(){
-								witness(function(){
+								witness(round_index, function(){
 									bWitnessingUnderWay = false;
 								});
 							}, Math.round(Math.random()*3000));
