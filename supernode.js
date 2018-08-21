@@ -327,11 +327,11 @@ function witness(round_index, onDone){
 		console.log('not connected, skipping');
 		return onDone();
 	}
-	createOptimalOutputs(function(){
+	createOptimalOutputs(function(arrOutputs){
 		if (conf.bPostTimestamp) {
 			var params = {
 				paying_addresses: [my_address],
-				outputs: [{address: my_address, amount: 0}],
+				outputs: arrOutputs,
 				pow_type: constants.POW_TYPE_TRUSTME,
 				round_index: round_index,
 				signer: signer,
@@ -515,9 +515,10 @@ function readNumberOfWitnessingsAvailable(handleNumber){
 
 // make sure we never run out of spendable (stable) outputs. Keep the number above a threshold, and if it drops below, produce more outputs than consume.
 function createOptimalOutputs(handleOutputs){
+	var arrOutputs = [{amount: 0, address: my_address}];
 	readNumberOfWitnessingsAvailable(function(count){
 		if (count > conf.MIN_AVAILABLE_WITNESSINGS)
-			return handleOutputs();
+			return handleOutputs(arrOutputs);
 		// try to split the biggest output in two
 		db.query(
 			"SELECT amount FROM outputs JOIN units USING(unit) \n\
@@ -527,12 +528,12 @@ function createOptimalOutputs(handleOutputs){
 			function(rows){
 				if (rows.length === 0){
 					notifyAdminAboutWitnessingProblem('only '+count+" spendable outputs left, and can't add more");
-					return handleOutputs();
+					return handleOutputs(arrOutputs);
 				}
 				var amount = rows[0].amount;
 				notifyAdminAboutWitnessingProblem('only '+count+" spendable outputs left, will split an output of "+amount);
 				arrOutputs.push({amount: Math.round(amount/2), address: my_address});
-				handleOutputs();
+				handleOutputs(arrOutputs);
 			}
 		);
 	});
