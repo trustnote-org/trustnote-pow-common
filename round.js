@@ -173,7 +173,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 		witnesses = witnesses.concat(conf.initialWitnesses);
 		if(witnesses.length != constants.COUNT_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
-		return  callback(witnesses.push(constants.FOUNDATION_ADDRESS));
+		return  callback(witnesses);
     }
     
     if (assocCachedWitnesses[roundIndex])
@@ -203,7 +203,7 @@ function getWitnessesByRoundIndexByDb(roundIndex, callback){
 		witnesses = witnesses.concat(conf.initialWitnesses);
 		if(witnesses.length != constants.COUNT_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
-		return  callback(witnesses.push(constants.FOUNDATION_ADDRESS));
+		return  callback(witnesses);
     }
     
     if (assocCachedWitnesses[roundIndex])
