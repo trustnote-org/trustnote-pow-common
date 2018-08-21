@@ -29,7 +29,7 @@ var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
 
 eventBus.on('headless_wallet_ready', function(){
-	readSingleWallet(function(address){
+	readSingleAddress(function(address){
 		my_address = address;
 	});
 });
