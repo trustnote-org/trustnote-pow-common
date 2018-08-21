@@ -28,8 +28,10 @@ var count_witnessings_available = 0;
 var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
 
-readSingleWallet(function(address){
-	my_address = address;
+eventBus.on('headless_wallet_ready', function(){
+	readSingleWallet(function(address){
+		my_address = address;
+	});
 });
 
 function onError(err){
