@@ -24,13 +24,22 @@ var bWitnessingUnderWay = false;
 var forcedWitnessingTimer;
 var count_witnessings_available = 0;
 
+var appDataDir = desktopApp.getAppDataDir();
+var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
+var wallet_id;
+var xPrivKey;
+
+
 // pow add
 var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
 
 eventBus.on('headless_wallet_ready', function(){
-	readSingleAddress(function(address){
-		my_address = address;
+	readSingleWallet(function(wallet){ 
+		wallet_id = wallet;
+		readSingleAddress(function(address){
+			my_address = address;
+		});
 	});
 });
 
@@ -46,11 +55,6 @@ const callbacks = composer.getSavingCallbacks({
 		onDone();
 	}
 })
-
-var appDataDir = desktopApp.getAppDataDir();
-var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
-var wallet_id;
-var xPrivKey;
 
 function readKeys(onDone){
 	console.log('-----------------------');
