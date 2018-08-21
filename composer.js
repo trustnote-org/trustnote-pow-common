@@ -1021,3 +1021,7 @@ exports.composeAndSavePaymentJoint = composeAndSavePaymentJoint;
 exports.generateBlinding = generateBlinding;
 exports.getMessageIndexByPayloadHash = getMessageIndexByPayloadHash;
 exports.pickDivisibleCoinsForAmount = pickDivisibleCoinsForAmount;
+
+exports.composeTrustMEJoint = composeTrustMEJoint;
+exports.composeCoinbaseJoint = composeCoinbaseJoint;
+exports.composePowJoint = composePowJoint;
