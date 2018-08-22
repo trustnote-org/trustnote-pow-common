@@ -24,9 +24,24 @@ var bWitnessingUnderWay = false;
 var forcedWitnessingTimer;
 var count_witnessings_available = 0;
 
+var appDataDir = desktopApp.getAppDataDir();
+var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
+var wallet_id;
+var xPrivKey;
+
+
 // pow add
 var bMining = false; // if miner is mining
 var currentRound = 1; // to record current round index
+
+eventBus.on('headless_wallet_ready', function(){
+	readSingleWallet(function(wallet){ 
+		wallet_id = wallet;
+		readSingleAddress(function(address){
+			my_address = address;
+		});
+	});
+});
 
 function onError(err){
 	throw Error(err);
@@ -40,11 +55,6 @@ const callbacks = composer.getSavingCallbacks({
 		onDone();
 	}
 })
-
-var appDataDir = desktopApp.getAppDataDir();
-var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
-var wallet_id;
-var xPrivKey;
 
 function readKeys(onDone){
 	console.log('-----------------------');
@@ -306,7 +316,7 @@ function notifyAdminAboutWitnessingProblem(err){
 }
 
 
-function witness(onDone){
+function witness(round_index, onDone){
 	function onError(err){
 		notifyAdminAboutFailedWitnessing(err);
 		setTimeout(onDone, 60000); // pause after error
@@ -317,12 +327,13 @@ function witness(onDone){
 		console.log('not connected, skipping');
 		return onDone();
 	}
-	createOptimalOutputs(function(){
+	createOptimalOutputs(function(arrOutputs){
 		if (conf.bPostTimestamp) {
 			var params = {
 				paying_addresses: [my_address],
-				outputs: [{address: my_address, amount: 0}],
+				outputs: arrOutputs,
 				pow_type: constants.POW_TYPE_TRUSTME,
+				round_index: round_index,
 				signer: signer,
 				callbacks: callbacks
 			}
@@ -337,7 +348,7 @@ function witness(onDone){
 			params.messages = [objMessage];
 			return composer.composeJoint(params);
 		}
-		composer.composeTrustMEJoint(my_address, signer, callbacks);
+		composer.composeTrustMEJoint(my_address, round_index, signer, callbacks);
 	});
 }
 
@@ -372,7 +383,7 @@ function checkAndWitness(){
 							var distance = max_mci - max_my_mci;
 							console.log("distance="+distance);
 							setTimeout(function(){
-								witness(function(){
+								witness(round_index, function(){
 									bWitnessingUnderWay = false;
 								});
 							}, Math.round(Math.random()*3000));
@@ -504,9 +515,10 @@ function readNumberOfWitnessingsAvailable(handleNumber){
 
 // make sure we never run out of spendable (stable) outputs. Keep the number above a threshold, and if it drops below, produce more outputs than consume.
 function createOptimalOutputs(handleOutputs){
+	var arrOutputs = [{amount: 0, address: my_address}];
 	readNumberOfWitnessingsAvailable(function(count){
 		if (count > conf.MIN_AVAILABLE_WITNESSINGS)
-			return handleOutputs();
+			return handleOutputs(arrOutputs);
 		// try to split the biggest output in two
 		db.query(
 			"SELECT amount FROM outputs JOIN units USING(unit) \n\
@@ -516,12 +528,12 @@ function createOptimalOutputs(handleOutputs){
 			function(rows){
 				if (rows.length === 0){
 					notifyAdminAboutWitnessingProblem('only '+count+" spendable outputs left, and can't add more");
-					return handleOutputs();
+					return handleOutputs(arrOutputs);
 				}
 				var amount = rows[0].amount;
 				notifyAdminAboutWitnessingProblem('only '+count+" spendable outputs left, will split an output of "+amount);
 				arrOutputs.push({amount: Math.round(amount/2), address: my_address});
-				handleOutputs();
+				handleOutputs(arrOutputs);
 			}
 		);
 	});

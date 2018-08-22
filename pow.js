@@ -427,6 +427,17 @@ function startMiningWithInputs( oInput, pfnCallback )
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
  *	@param	{number}	nRoundIndex
+ *				round 1
+ *					hard code
+ *				round 2
+ *					previous seed
+ *					[]
+ *					TrustME Ball
+ *				round	3
+ *					previous seed
+ *					[]
+ *					TrustME Ball
+ *
  * 	@param	{function}	pfnCallback( err, sSeed )
  *
  * 	@documentation
@@ -443,9 +454,17 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid oConn` );
 	}
-	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 3 )
+	if ( 'number' !== typeof nRoundIndex )
 	{
 		return pfnCallback( `call calculatePublicSeedByRoundIndex with invalid nRoundIndex` );
+	}
+	if ( nRoundIndex <= 1 )
+	{
+		//
+		//	round 1
+		//		hard code
+		//
+		return pfnCallback( null, _blakejs.blake2sHex( _constants.GENESIS_UNIT ) );
 	}
 
 	let sPreviousPublicSeed		= null;
@@ -659,7 +678,7 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	}
 	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
 	{
-		return pfnCallback( `call queryDifficultyValueByRoundIndex with invalid nCycleIndex` );
+		return pfnCallback( `call queryDifficultyValueByCycleIndex with invalid nCycleIndex` );
 	}
 
 	oConn.query
@@ -693,6 +712,9 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
  */
 function queryCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
 {
+	return _round.queryCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback );
+
+
 	if ( ! oConn )
 	{
 		return pfnCallback( `call queryCoinBaseListByRoundIndex with invalid oConn` );
@@ -762,17 +784,11 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
 	}
 	if ( 'number' !== typeof nRoundIndex )
 	{
-		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex` );
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex, must be a number` );
 	}
 	if ( nRoundIndex <= 0 )
 	{
-		//
-		//	return default ball by hard coding
-		//
-		return _readSingleWallet( function( sAddress )
-		{
-			pfnCallback( null, sAddress );
-		});
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex, must be greater than zero.` );
 	}
 
 	//	...
