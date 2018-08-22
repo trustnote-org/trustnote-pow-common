@@ -14,6 +14,7 @@ var eventBus = require('./event_bus.js');
 var pow = require('./pow.js');
 var profiler = require('./profiler.js');
 var breadcrumbs = require('./breadcrumbs.js');
+var round = require('./round.js');
 
 
 
