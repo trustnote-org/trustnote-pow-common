@@ -7,6 +7,7 @@ var constants = require('./constants.js');
 var db = require('./db.js');
 var conf = require('./conf.js');
 
+var async = require('async');
 var MAX_ROUND_IN_CACHE = 10;
 var assocCachedWitnesses = {};
 var assocCachedTotalCommission = {};
@@ -266,7 +267,7 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
 }
 
 function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
-    if(roundIndex === 1) 
+    if(roundIndex <= 1) 
         throw Error("The first round have no commission ");
     if (assocCachedTotalCommission[roundIndex])
         return callback(assocCachedTotalCommission[roundIndex]);
@@ -293,7 +294,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
 }
 
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
-    if(roundIndex === 1) 
+    if(roundIndex <= 1) 
         throw Error("The first round have no commission ");
     if (assocCachedCoinbaseRatio[roundIndex])
         return callback(assocCachedCoinbaseRatio[roundIndex]);
@@ -352,6 +353,30 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
         });
     });
 }
+
+function queryCoinBaseListByRoundIndex(conn, roundIndex, callback) {
+    if(roundIndex <= 1) 
+        throw Error("The first round have no coin base ");
+    getWitnessesByRoundIndex(conn, roundIndex-1, function(witnesses){
+            var arrResult = [];
+            async.eachSeries(
+                witnesses,
+                function(witnessAddress, cb){
+                    getCoinbaseByRoundIndexAndAddress(conn, roundIndex-1, witnessAddress, function(coinbaseAmount){
+                        arrResult.push({address : witnessAddress, amount : coinbaseAmount});
+                        return cb();
+                    });                    
+                },
+                function(){
+                    if(arrResult.length != constants.COUNT_WITNESSES)
+                        throw Error("Can not find enough coinbase witness");
+                    return callback(null, arrResult);
+                }
+            );
+        }
+    );
+}
+
 
 // coinbase end
 
