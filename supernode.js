@@ -2,8 +2,6 @@
 "use strict";
 var db = require('./db.js');
 
-var wallet_id;
-
 function readSingleAddress(handleAddress){
 	readSingleWallet(function(wallet_id){
 		db.query("SELECT address FROM my_addresses WHERE wallet=?", [wallet_id], function(rows){
