@@ -1113,10 +1113,18 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 				});
 		},
 		function(cb){
+			if(!objUnit.pow_type)
+				return cb();
 			if (objUnit.pow_type){ // for only pow related units,validate wl
 				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
 					if(!min_wl){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
+						if (objUnit.round_index- === 1){//first round
+							if(unit_witenessed_level < 0)
+								return cb("unit witness level is negative in first round")
+							
+							return cb();
+						}
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
 							if (!last_round_min_wl || !last_round_max_wl){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
@@ -1131,17 +1139,18 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						if(unit_witenessed_level < min_wl){
 							return cb("unit witnessed level is less than min_wl")
 						}
+						// wl is valid 
+						return cb();
 					}
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
 						if(unit_witenessed_level < min_wl || unit_witenessed_level > max_wl){
 							return cb("unit witnessed level is incorrct which is either less than min_wl or bigger than max_wl ");
 						}
+						// wl is valid 
+						return cb();
 					}
-					// wl is valid 
-					return cb();
 				});
-			}
-			return cb();	
+			}	
 		}
 	],
 	function(err){
