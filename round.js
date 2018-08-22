@@ -425,7 +425,7 @@ exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
 exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
 exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
 exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
-
+exports.getCurrentRoundInfo = getCurrentRoundInfo;
 
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
