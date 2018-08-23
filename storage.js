@@ -269,7 +269,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 
 										case "pow_equihash":   // pow add
 											conn.query(
-												"SELECT round_index, seed, solution FROM pow WHERE unit=?", [unit], 
+												"SELECT solution FROM pow WHERE unit=?", [unit], 
 												function(pow_rows){
 													if (pow_rows.length !== 1)
 														throw Error("no pow_equihash or too many?");
