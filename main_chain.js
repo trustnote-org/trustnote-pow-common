@@ -846,6 +846,7 @@ function markMcIndexStable(conn, mci, onDone){
 								}
 							], 
 							function(err){
+								eventBus.emit("round_switch", round_index+1);
 								cb();
 							});	
 						}
