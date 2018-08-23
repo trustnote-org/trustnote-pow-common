@@ -1386,16 +1386,16 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	objValidationState.bHasBasePowequihash = true;
 	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	// Todo: to be implemented 
-    if (!pow.isValidEquihash()){
-		return callback("invalid pow equhash payload");
-	}
-	if (!pow.isValidDifficulty()){
-		return callback("invalid pow difficulty payload");
-	}
-	if (!pow.isValidseed()){
-		return callback("invalid pow seed payload");
-	}
-    callback();
+    // if (!pow.isValidEquihash()){
+	// 	return callback("invalid pow equhash payload");
+	// }
+	// if (!pow.isValidDifficulty()){
+	// 	return callback("invalid pow difficulty payload");
+	// }
+	// if (!pow.isValidseed()){
+	// 	return callback("invalid pow seed payload");
+	// }
+    return callback();
 	//return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
 	
 }
