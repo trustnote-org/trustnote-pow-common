@@ -137,9 +137,9 @@ function startMining( oConn, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		setTimeout( () =>
+		_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
 		{
-			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
+			setTimeout( () =>
 			{
 				_event_bus.emit
 				(
@@ -150,8 +150,8 @@ function startMining( oConn, pfnCallback )
 						hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
 					}
 				);
-			});
-		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+			}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+		});
 
 		pfnCallback( null );
 		return true;
