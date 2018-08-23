@@ -1113,35 +1113,44 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 				});
 		},
 		function(cb){
+			if(!objUnit.pow_type)
+				return cb();
 			if (objUnit.pow_type){ // for only pow related units,validate wl
 				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
 					if(!min_wl){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
+						if (objUnit.round_index === 1){//first round
+							if(unit_witenessed_level < 0)
+								return cb("unit witness level is negative in first round")
+							
+							return cb();
+						}
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
 							if (!last_round_min_wl || !last_round_max_wl){
-								cb("last_round_min_wl or last_round_min_wl is null ");
+							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
 							if(unit_witenessed_level <= last_round_max_wl){
-								cb("unit witnessed level is not bigger than last round max wl");
+								return cb("unit witnessed level is not bigger than last round max wl");
 							}
-							cb();
+							return cb();
 						});
 					}
 					else if(!max_wl) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
 						if(unit_witenessed_level < min_wl){
-							cb("unit witnessed level is less than min_wl")
+							return cb("unit witnessed level is less than min_wl")
 						}
+						// wl is valid 
+						return cb();
 					}
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
 						if(unit_witenessed_level < min_wl || unit_witenessed_level > max_wl){
-							cb("unit witnessed level is incorrct which is either less than min_wl or bigger than max_wl ");
+							return cb("unit witnessed level is incorrct which is either less than min_wl or bigger than max_wl ");
 						}
+						// wl is valid 
+						return cb();
 					}
-					// wl is valid 
-					cb();
 				});
-			}
-			cb();	
+			}	
 		}
 	],
 	function(err){
@@ -1377,16 +1386,16 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	objValidationState.bHasBasePowequihash = true;
 	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	// Todo: to be implemented 
-    if (!pow.isValidEquihash()){
-		return callback("invalid pow equhash payload");
-	}
-	if (!pow.isValidDifficulty()){
-		return callback("invalid pow difficulty payload");
-	}
-	if (!pow.isValidseed()){
-		return callback("invalid pow seed payload");
-	}
-    callback();
+    // if (!pow.isValidEquihash()){
+	// 	return callback("invalid pow equhash payload");
+	// }
+	// if (!pow.isValidDifficulty()){
+	// 	return callback("invalid pow difficulty payload");
+	// }
+	// if (!pow.isValidseed()){
+	// 	return callback("invalid pow seed payload");
+	// }
+    return callback();
 	//return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
 	
 }
@@ -2176,5 +2185,3 @@ exports.hasValidHashes = hasValidHashes;
 exports.validateAuthorSignaturesWithoutReferences = validateAuthorSignaturesWithoutReferences;
 exports.validatePayment = validatePayment;
 exports.initPrivatePaymentValidationState = initPrivatePaymentValidationState;
-
-

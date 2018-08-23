@@ -539,7 +539,7 @@ function composeJoint(params){
 	// 	objUnit.earned_headers_commission_recipients = [{address: arrChangeOutputs[0].address, earned_headers_commission_share: 100}];
 	
 	//pow add 
-	if(!params.round_index){
+	if(params.round_index){
 		objUnit.round_index = params.round_index;
 		objUnit.pow_type = params.pow_type;
 	}

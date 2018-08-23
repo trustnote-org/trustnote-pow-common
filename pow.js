@@ -185,7 +185,7 @@ function startMining( oConn, pfnCallback )
 			//
 			//	author address of this super node
 			//
-			_super_node.readSingleWallet( function( sAddress )
+			_super_node.readSingleAddress( function( sAddress )
 			{
 				sSuperNodeAuthorAddress = sAddress;
 				return pfnNext();
