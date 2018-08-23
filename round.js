@@ -42,6 +42,20 @@ function getCycleIdByRoundIndex(roundIndex){
     return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
 }
 
+function getDifficultydByRoundIndex(conn, roundIndex, callback){
+    var cycleId = getCycleIdByRoundIndex(roundIndex);
+    conn.query(
+		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
+        [cycleId],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round difficulty");
+            callback(rows[0].difficulty);
+		}
+	);
+}
+
+
 function getMinRoundIndexByCycleId(cycleId){
     return (cycleId-1)*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH+1;
 }
@@ -434,6 +448,8 @@ exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
+exports.getDurationByCycleId = getDurationByCycleId;
+exports.getDifficultydByRoundIndex = getDifficultydByRoundIndex;
 
 exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
 exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
