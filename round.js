@@ -57,7 +57,19 @@ function getCurrentRoundInfo(conn, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find current round index");
-            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl);
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
+		}
+	);
+}
+
+function getRoundInfoByRoundIndex(conn, roundIndex, callback){
+    conn.query(
+		"SELECT * FROM round WHERE round_index=?", 
+        [roundIndex],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find round index");
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
 		}
 	);
 }
@@ -428,6 +440,7 @@ exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
 exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
 exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
+exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
