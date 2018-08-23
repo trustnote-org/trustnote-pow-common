@@ -377,6 +377,22 @@ function startMiningWithInputs( oInput, pfnCallback )
 
 
 /**
+ *	stop mining
+ *	@param	{number}	nRoundIndex
+ *	@return	{boolean}
+ */
+function stopMining( nRoundIndex )
+{
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 1 )
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+/**
  * 	calculate public seed by round index
  *
  *	@param	{handle}	oConn
@@ -959,6 +975,7 @@ function _generateRandomInteger( nMin, nMax )
  */
 module.exports.startMining					= startMining;
 module.exports.startMiningWithInputs				= startMiningWithInputs;
+module.exports.stopMining					= stopMining;
 
 module.exports.calculatePublicSeedByRoundIndex			= calculatePublicSeedByRoundIndex;
 module.exports.calculateDifficultyValueByCycleIndex		= calculateDifficultyValueByCycleIndex;
