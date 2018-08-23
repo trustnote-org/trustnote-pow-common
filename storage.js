@@ -283,7 +283,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 																	conn.query(
 																		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", [round.getCycleIdByRoundIndex(pow_rows[round_index])], 
 																		function(difficulty_rows){
-																			if (difficulty_rows.length !== 1 && !round_rows[0].difficulty)
+																			if (difficulty_rows.length !== 1 && !difficulty_rows[0].difficulty)
 																				throw Error("no difficulty?");
 																			objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].difficulty, solution: pow_rows[0].solution};
 																			addSpendProofs();
