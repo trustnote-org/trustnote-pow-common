@@ -14,6 +14,7 @@ var eventBus = require('./event_bus.js');
 var pow = require('./pow.js');
 var profiler = require('./profiler.js');
 var breadcrumbs = require('./breadcrumbs.js');
+var round = require('./round.js');
 
 
 
@@ -787,7 +788,7 @@ function markMcIndexStable(conn, mci, onDone){
 							eventBus.emit("launch_coinbase", round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
-								[row[0].witnessed_level, round_index], 
+								[rowTrustME[0].witnessed_level, round_index], 
 								function(){
 									cb();
 								}

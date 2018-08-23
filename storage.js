@@ -1293,7 +1293,7 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 	var arrCollectedWitnesses = [];
 	var arrAuthorAddresses = objNewUnit.authors.map(function(author) { return author.address; } );
 	if (objNewUnit.pow_type === constants.POW_TYPE_TRUSTME){ // count self as wl start point
-		arrCollectedWitnesses.concat(arrAuthorAddresses);
+		arrCollectedWitnesses = arrCollectedWitnesses.concat(arrAuthorAddresses);
 	}
 	function addWitnessesAndGoUp(start_unit){
 		readStaticUnitProps(conn, start_unit, function(props){

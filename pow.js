@@ -18,6 +18,8 @@ const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
 const _super_node	= require( './supernode.js' );
 const _pow_service	= require( './pow_service.js' );
+const _event_bus	= require( './event_bus.js' );
+
 
 
 /**
@@ -113,6 +115,7 @@ let _sAssocSingleWallet		= null;
  */
 
 
+
 /**
  *	start calculation
  *
@@ -134,6 +137,18 @@ function startMining( oConn, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
+		setTimeout( () =>
+		{
+			_event_bus.emit
+			(
+				'pow_mined_gift',
+				{
+					nonce	: _generateRandomInteger( 10000, 200000 ),
+					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+				}
+			);
+		}, _generateRandomInteger( 1000, 2000 ) );
+
 		pfnCallback( null );
 		return true;
 	}
@@ -978,6 +993,22 @@ function _readSingleWallet( pfnCallback )
 		pfnCallback( sAddress );
 	});
 }
+
+
+/**
+ *	generate random integer
+ *
+ *	@private
+ *	@param	{number}	nMin
+ *	@param	{number}	nMax
+ *	@returns {*}
+ */
+function _generateRandomInteger( nMin, nMax )
+{
+	return Math.floor( Math.random() * ( nMax + 1 - nMin ) ) + nMin;
+}
+
+
 
 
 
