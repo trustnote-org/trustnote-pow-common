@@ -139,15 +139,19 @@ function startMining( oConn, pfnCallback )
 	{
 		setTimeout( () =>
 		{
-			_event_bus.emit
-			(
-				'pow_mined_gift',
-				{
-					nonce	: _generateRandomInteger( 10000, 200000 ),
-					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-				}
-			);
-		}, _generateRandomInteger( 1000, 2000 ) );
+			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
+			{
+				_event_bus.emit
+				(
+					'pow_mined_gift',
+					{
+						round	: nRoundIndex,
+						nonce	: _generateRandomInteger( 10000, 200000 ),
+						hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+					}
+				);
+			});
+		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
 
 		pfnCallback( null );
 		return true;
@@ -169,7 +173,7 @@ function startMining( oConn, pfnCallback )
 			//
 			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
 			{
-				if ( 'number' === nRoundIndex )
+				if ( 'number' === typeof( nRoundIndex ) )
 				{
 					nCurrentRoundIndex	= nRoundIndex;
 					pfnNext();
@@ -367,70 +371,22 @@ function startMiningWithInputs( oInput, pfnCallback )
 		error		: null
 	};
 
-	//
-	//	create server and wait for the response
-	//
-	_pow_service.server.createServer
-	({
-		port		: 1302,
-		onStart		: ( err, oWs ) =>
-		{
-			if ( err )
-			{
-				return console.error( err );
-			}
-			console.log( `SERVER >> server start.` );
 
-			//
-			//	connect to server and send the message
-			//
-			_pow_service.client.connectToServer
-			({
-				minerGateway	: 'ws://127.0.0.1:1302',
-				onOpen		: ( err, oWs ) =>
-				{
-					if ( err )
-					{
-						return console.error( err );
-					}
-					console.log( `CLIENT >> we have connected to ${ oWs.host } successfully.` );
-					_pow_service.sendMessageOnce( oWs, 'pow/task', jsonSource );
-				},
-				onMessage	: ( oWs, sMessage ) =>
-				{
-					console.log( `CLIENT >> received a message : ${ sMessage }` );
-				},
-				onError		: ( oWs, vError ) =>
-				{
-					console.error( `CLIENT >> error from server: `, vError );
-				},
-				onClose		: ( oWs, sReason ) =>
-				{
-					console.log( `CLIENT >> socket was closed(${ sReason })` );
-				}
-			});
-		},
-		onConnection	: ( err, oWs ) =>
-		{
-			if ( err )
-			{
-				return console.error( err );
-			}
-			console.log( `SERVER >> a new client connected in.` );
-		},
-		onMessage	: ( oWs, sMessage ) =>
-		{
-			console.log( `SERVER >> received a message: ${ sMessage }` );
-		},
-		onError		: ( oWs, vError ) =>
-		{
-			console.error( `SERVER >> occurred an error: `, vError );
-		},
-		onClose		: ( oWs, sReason ) =>
-		{
-			console.log( `SERVER >> socket was closed(${ sReason })` );
-		}
-	});
+	return true;
+}
+
+
+/**
+ *	stop mining
+ *	@param	{number}	nRoundIndex
+ *	@return	{boolean}
+ */
+function stopMining( nRoundIndex )
+{
+	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 1 )
+	{
+		return false;
+	}
 
 	return true;
 }
@@ -1019,6 +975,7 @@ function _generateRandomInteger( nMin, nMax )
  */
 module.exports.startMining					= startMining;
 module.exports.startMiningWithInputs				= startMiningWithInputs;
+module.exports.stopMining					= stopMining;
 
 module.exports.calculatePublicSeedByRoundIndex			= calculatePublicSeedByRoundIndex;
 module.exports.calculateDifficultyValueByCycleIndex		= calculateDifficultyValueByCycleIndex;
