@@ -8,6 +8,7 @@ var objectHash = require("./object_hash.js");
 var constants = require("./constants.js");
 var mutex = require('./mutex.js');
 var profiler = require('./profiler.js');
+var round = require('./round.js');
 
 var MAX_INT32 = Math.pow(2, 31) - 1;
 
@@ -269,7 +270,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 
 										case "pow_equihash":   // pow add
 											conn.query(
-												"SELECT solution FROM pow WHERE unit=?", [unit], 
+												"SELECT solution,round_index FROM pow join units using (unit) WHERE unit=?", [unit], 
 												function(pow_rows){
 													if (pow_rows.length !== 1)
 														throw Error("no pow_equihash or too many?");
@@ -278,8 +279,16 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 															function(round_rows){
 																if (round_rows.length !== 1 && !round_rows[0].seed)
 																	throw Error("no seed?");
-																objMessage.payload = {seed: round_rows[0].seed, difficulty: pow_rows[0].difficulty, solution: pow_rows[0].solution};
-																addSpendProofs();
+
+																	conn.query(
+																		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", [round.getCycleIdByRoundIndex(pow_rows[round_index])], 
+																		function(difficulty_rows){
+																			if (difficulty_rows.length !== 1 && !round_rows[0].difficulty)
+																				throw Error("no difficulty?");
+																			objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].difficulty, solution: pow_rows[0].solution};
+																			addSpendProofs();
+																		}
+																	);
 															}
 														);
 												}
