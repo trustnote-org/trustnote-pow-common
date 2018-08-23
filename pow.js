@@ -147,7 +147,7 @@ function startMining( oConn, pfnCallback )
 					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
 				}
 			);
-		}, _generateRandomInteger( 1000, 2000 ) );
+		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
 
 		pfnCallback( null );
 		return true;
