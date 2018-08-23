@@ -421,11 +421,12 @@ exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
 exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
+exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
+
 exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
 exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
 exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
 exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
-
 
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
@@ -435,34 +436,3 @@ exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByR
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
-
-
-// console.log("roundIndex:0-"+getCoinbaseByRoundIndex(0));
-// console.log("roundIndex:1-"+getCoinbaseByRoundIndex(1));
-// console.log("roundIndex:2156-"+getCoinbaseByRoundIndex(2156));
-// console.log("roundIndex:210240-"+getCoinbaseByRoundIndex(210240));
-// console.log("roundIndex:210241-"+getCoinbaseByRoundIndex(210241));
-// console.log("roundIndex:420480-"+getCoinbaseByRoundIndex(420480));
-// console.log("roundIndex:420481-"+getCoinbaseByRoundIndex(420481));
-// console.log("roundIndex:721212-"+getCoinbaseByRoundIndex(721212));
-// console.log("roundIndex:3153600-"+getCoinbaseByRoundIndex(3153600));
-// console.log("roundIndex:3153601-"+getCoinbaseByRoundIndex(3153601));
-// console.log("roundIndex:4204800-"+getCoinbaseByRoundIndex(4204800));
-// console.log("roundIndex:4204801-"+getCoinbaseByRoundIndex(4204801));
-// console.log("roundIndex:4212121201-"+getCoinbaseByRoundIndex(4212121201));
-
-console.log("roundIndex:1-"+getCycleIdByRoundIndex(1));
-console.log("roundIndex:9-"+getCycleIdByRoundIndex(9));
-console.log("roundIndex:10-"+getCycleIdByRoundIndex(10));
-console.log("roundIndex:11-"+getCycleIdByRoundIndex(11));
-console.log("roundIndex:12-"+getCycleIdByRoundIndex(12));
-console.log("roundIndex:128-"+getCycleIdByRoundIndex(128));
-
-console.log("cycleid min:1-"+getMinRoundIndexByCycleId(1));
-console.log("cycleid man:1-"+getMaxRoundIndexByCycleId(1));
-
-console.log("cycleid min:2-"+getMinRoundIndexByCycleId(2));
-console.log("cycleid man:2-"+getMaxRoundIndexByCycleId(2));
-
-console.log("cycleid min:12-"+getMinRoundIndexByCycleId(12));
-console.log("cycleid man:12-"+getMaxRoundIndexByCycleId(12));
