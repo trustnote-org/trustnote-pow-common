@@ -834,7 +834,7 @@ function markMcIndexStable(conn, mci, onDone){
 								function(cb1){    // calculate difficulty
 									if(getCycleIdByRoundIndex(round_index+1) === getCycleIdByRoundIndex(round_index))
 										return cb1();
-									pow.calculateDifficultyValue( conn, getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
+									pow.calculateDifficultyValueByCycleIndex( conn, getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
 										conn.query(
 											"INSERT INTO round_cycle (cycle_id, difficulty) VALUES (?, ?)", 
 											[getCycleIdByRoundIndex(round_index+1), newDifficulty], 
