@@ -314,8 +314,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 								asset, is_unique, address) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
 								[objUnit.unit, i, j, type, 
 								src_unit, src_message_index, src_output_index, 
-								denomination, input.amount, input.serial_number, 
-								payload.asset, is_unique, address]);
+								denomination, input.amount, input.serial_number ? input.serial_number : null, 
+								payload.asset ? payload.asset : null, is_unique, address]);
 								switch (type){
 									case "transfer":
 										conn.addQuery(arrQueries, 
