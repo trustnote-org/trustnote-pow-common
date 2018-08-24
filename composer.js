@@ -408,6 +408,7 @@ function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer
 		outputs: [{address: from_address, amount: 0}], 
 		inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
 		round_index: round_index,
+		input_amount: coinbase_amount,
 		pow_type: constants.POW_TYPE_COIN_BASE,
 		signer: signer, 
 		callbacks: callbacks
