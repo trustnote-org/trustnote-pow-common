@@ -121,6 +121,7 @@ let _sAssocSingleWallet		= null;
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
  *	@param	{function}	pfnCallback( err )
  *	@return {boolean}
  *
@@ -128,7 +129,7 @@ let _sAssocSingleWallet		= null;
  * 	start successfully	pfnCallback( null );
  * 	failed to start		pfnCallback( error );
  */
-function startMining( oConn, pfnCallback )
+function startMining( oConn, nRoundIndex, pfnCallback )
 {
 	if ( 'function' !== typeof pfnCallback )
 	{
@@ -137,21 +138,18 @@ function startMining( oConn, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
+		setTimeout( () =>
 		{
-			setTimeout( () =>
-			{
-				_event_bus.emit
-				(
-					'pow_mined_gift',
-					{
-						round	: nRoundIndex,
-						nonce	: _generateRandomInteger( 10000, 200000 ),
-						hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-					}
-				);
-			}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
-		});
+			_event_bus.emit
+			(
+				'pow_mined_gift',
+				{
+					round	: nRoundIndex,
+					nonce	: _generateRandomInteger( 10000, 200000 ),
+					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+				}
+			);
+		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
 
 		pfnCallback( null );
 		return true;
@@ -201,7 +199,7 @@ function startMining( oConn, pfnCallback )
 			//	round (N-1)
 			//	obtain coin-base list of the previous round
 			//
-			queryCoinBaseListByRoundIndex( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
+			_round.queryCoinBaseListByRoundIndex( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{
@@ -272,7 +270,6 @@ function startMining( oConn, pfnCallback )
 
 		let objInput	= {
 			currentRoundIndex	: nCurrentRoundIndex,
-			previousCoinBaseList	: arrPreviousCoinBaseList,
 			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
 			currentDifficulty	: nCurrentDifficultyValue,
 			currentPubSeed		: sCurrentPublicSeed,
@@ -465,7 +462,14 @@ function calculatePublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	coin base
-			queryCoinBaseListByRoundIndex( oConn, nRoundIndex - 2, function( err, arrCoinBaseList )
+			if ( 2 === nRoundIndex )
+			{
+				arrPrePreviousCoinBase = [];
+				return pfnNext();
+			}
+
+			//	...
+			_round.queryCoinBaseListByRoundIndex( oConn, nRoundIndex - 1, function( err, arrCoinBaseList )
 			{
 				if ( err )
 				{

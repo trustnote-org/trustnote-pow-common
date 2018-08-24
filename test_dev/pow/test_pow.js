@@ -25,3 +25,27 @@
 // }
 //
 // f();
+
+
+function _generateRandomInteger( nMin, nMax )
+{
+	return Math.floor( Math.random() * ( nMax + 1 - nMin ) ) + nMin;
+}
+
+
+setInterval( () =>
+{
+	console.log( _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+},200);
+
+
+
+//
+// const _blakejs		= require( 'blakejs' );
+// const _constants	= require( '../../constants.js' );
+//
+//
+// let sHex = _blakejs.blake2sHex( _constants.GENESIS_UNIT );
+// console.log( sHex );
+//
+
