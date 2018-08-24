@@ -480,3 +480,5 @@ exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexA
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
+exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
+
