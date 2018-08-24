@@ -1117,7 +1117,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 				return cb();
 			if (objUnit.pow_type){ // for only pow related units,validate wl
 				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
-					if(!min_wl){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
+					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
 						if (objUnit.round_index === 1){//first round
 							if(unit_witenessed_level < 0)
