@@ -374,6 +374,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
                     assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
+                    callback(witnessRatioOfTrustMe);
                 }
             );    
         });        
