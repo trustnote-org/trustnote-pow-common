@@ -776,7 +776,7 @@ function markMcIndexStable(conn, mci, onDone){
 		round.getCurrentRoundInfo(conn, function(round_index, min_wl, max_wl){
 			async.series([
 				function(cb){ // min wl
-					if(min_wl)
+					if(min_wl === null)
 						return cb();
 					conn.query(
 						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
