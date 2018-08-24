@@ -1126,7 +1126,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							return cb();
 						}
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
-							if (!last_round_min_wl || !last_round_max_wl){
+							if (last_round_min_wl < 0 || !last_round_max_wl || last_round_max_wl <= last_round_min_wl ){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
 							if(unit_witenessed_level <= last_round_max_wl){
