@@ -290,8 +290,10 @@ function checkIfTrustMeAuthorByRoundIndex(conn, roundIndex, address, callback){
 // coinbase begin
 
 function getMaxMciByRoundIndex(conn, roundIndex, callback){
+    if(roundIndex === 0)
+        return callback(0);
     if (assocCachedMaxMci[roundIndex])
-      return callback(assocCachedMaxMci[roundIndex]);
+        return callback(assocCachedMaxMci[roundIndex]);
     conn.query(
         "select max(main_chain_index) AS max_mci from units \n\
         where is_on_main_chain=1 AND is_stable=1 AND pow_type=? AND round_index=?", 
@@ -306,7 +308,7 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
 }
 
 function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
-    if(roundIndex <= 1) 
+    if(roundIndex <= 0) 
         throw Error("The first round have no commission ");
     if (assocCachedTotalCommission[roundIndex])
         return callback(assocCachedTotalCommission[roundIndex]);
