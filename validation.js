@@ -1126,7 +1126,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							return cb();
 						}
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
-							if (last_round_min_wl < 0 || !last_round_max_wl || last_round_max_wl <= last_round_min_wl ){
+							if (!last_round_min_wl || !last_round_max_wl){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
 							if(unit_witenessed_level <= last_round_max_wl){
@@ -1734,7 +1734,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						total_input += input.amount;
 						// Check author come from n-2 round pow units authors
 						if (objUnit.round_index === 1 )
-							cb("can not send coinbase unit in first round ");
+							return cb("can not send coinbase unit in first round ");
 
 						round.getWitnessesByRoundIndex(conn, objUnit.round_index -1,function (witnessesOFLastTwoRound){
 							if(witnessesOFLastTwoRound.indexOf(objUnit.authors[0].address) === -1){
