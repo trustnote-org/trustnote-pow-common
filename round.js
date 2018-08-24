@@ -200,11 +200,11 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 		witnesses = witnesses.concat(conf.initialWitnesses);
 		if(witnesses.length != constants.COUNT_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
-		return  callback(witnesses);
+		return callback(witnesses);
     }
     
     if (assocCachedWitnesses[roundIndex])
-      return callback(assocCachedWitnesses[roundIndex]);
+        return callback(assocCachedWitnesses[roundIndex]);
     conn.query(
 		"SELECT distinct(address) \n\
 		FROM units JOIN unit_authors using (unit)\n\
@@ -342,7 +342,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
         if(minWl === null || maxWl === null)
             throw Error("Can't get commission before the round switch.");
-        getWitnessesByRoundIndex(conn, roundIndex-1, function(witnesses){
+        getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
             conn.query(
                 "SELECT unit, witnessed_level, address \n\
                 FROM units JOIN unit_authors using (unit)\n\
