@@ -810,7 +810,7 @@ function markMcIndexStable(conn, mci, onDone){
 									conn.query(
 										"UPDATE round SET max_wl= \n\
 										(SELECT MAX(witnessed_level) FROM units \n\
-										WHERE round_index=? AND is_stable=1 AND pow_type=?) \n\
+										WHERE round_index=? AND pow_type=?) \n\
 										WHERE round_index=?", 
 										[round_index, constants.POW_TYPE_TRUSTME, round_index], 
 										function(){
