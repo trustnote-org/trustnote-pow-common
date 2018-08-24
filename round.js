@@ -42,6 +42,20 @@ function getCycleIdByRoundIndex(roundIndex){
     return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
 }
 
+function getDifficultydByRoundIndex(conn, roundIndex, callback){
+    var cycleId = getCycleIdByRoundIndex(roundIndex);
+    conn.query(
+		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
+        [cycleId],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current round difficulty");
+            callback(rows[0].difficulty);
+		}
+	);
+}
+
+
 function getMinRoundIndexByCycleId(cycleId){
     return (cycleId-1)*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH+1;
 }
@@ -57,7 +71,19 @@ function getCurrentRoundInfo(conn, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find current round index");
-            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl);
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
+		}
+	);
+}
+
+function getRoundInfoByRoundIndex(conn, roundIndex, callback){
+    conn.query(
+		"SELECT * FROM round WHERE round_index=?", 
+        [roundIndex],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find round index");
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
 		}
 	);
 }
@@ -233,6 +259,19 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 		FROM units JOIN unit_authors using (unit)\n\
         WHERE pow_type=? AND round_index=? AND address=? ", 
         [constants.POW_TYPE_COIN_BASE, roundIndex, address],
+		function(rows){
+			callback(rows.length > 0 );
+		}
+	);
+}
+
+function checkIfPowUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
+    // TODO ：cache the witnesses of recent rounds
+    conn.query(
+		"SELECT units.unit \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE pow_type=? AND round_index=? AND address=? ", 
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex, address],
 		function(rows){
 			callback(rows.length > 0 );
 		}
@@ -422,18 +461,24 @@ exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
+exports.getDurationByCycleId = getDurationByCycleId;
+exports.getDifficultydByRoundIndex = getDifficultydByRoundIndex;
 
 exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
 exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
 exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
 exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
+exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
 exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
+exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexAndAddressExists;
 
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
+
+exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
 
