@@ -265,6 +265,19 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 	);
 }
 
+function checkIfPowUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
+    // TODO ：cache the witnesses of recent rounds
+    conn.query(
+		"SELECT units.unit \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE pow_type=? AND round_index=? AND address=? ", 
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex, address],
+		function(rows){
+			callback(rows.length > 0 );
+		}
+	);
+}
+
 function checkIfTrustMeAuthorByRoundIndex(conn, roundIndex, address, callback){
     getWitnessesByRoundIndex(conn, roundIndex , function(witnesses){
         if(witnesses.indexOf(address) === -1){
@@ -462,6 +475,7 @@ exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundInde
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
+exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexAndAddressExists;
 
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
