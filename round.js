@@ -335,7 +335,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
 }
 
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
-    if(roundIndex <= 1) 
+    if(roundIndex <= 0) 
         throw Error("The first round have no commission ");
     if (assocCachedCoinbaseRatio[roundIndex])
         return callback(assocCachedCoinbaseRatio[roundIndex]);
