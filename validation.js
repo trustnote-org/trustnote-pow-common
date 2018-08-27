@@ -1129,13 +1129,13 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							if (last_round_min_wl === null || !last_round_max_wl){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
-							if(unit_witenessed_level < last_round_max_wl){
+							if(unit_witenessed_level <= last_round_max_wl){
 								return cb("unit witnessed level is not bigger than last round max wl");
 							}
 							return cb();
 						});
 					}
-					else if(max_wl === null) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
+					else if(max_wl === nu) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
 						if(unit_witenessed_level < min_wl){
 							return cb("unit witnessed level is less than min_wl")
 						}
@@ -1384,6 +1384,11 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	if (objValidationState.bHasBasePowequihash)
 		return callback("can have only one PowEquhash message");
 	objValidationState.bHasBasePowequihash = true;
+
+	round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
+		if(bExist) {
+			return callback("pow unit can not being sent more than once in certain round");
+		});
 	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	// Todo: to be implemented 
     // if (!pow.isValidEquihash()){
