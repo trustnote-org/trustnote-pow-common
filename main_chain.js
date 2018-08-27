@@ -782,13 +782,13 @@ function markMcIndexStable(conn, mci, onDone){
 						"SELECT min(witnessed_level) as minWl FROM units WHERE round_index=?  \n\
 						AND is_stable=1 AND is_on_main_chain=1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
-						function(rowTrustME){
-							if (rowTrustME.length === 0)
+						function(rowFirstWl){
+							if (rowFirstWl.length === 0)
 								return cb(); // next op
 							eventBus.emit("launch_coinbase", round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
-								[rowTrustME[0].minWl, round_index], 
+								[rowFirstWl[0].minWl, round_index], 
 								function(){
 									cb();
 								}
