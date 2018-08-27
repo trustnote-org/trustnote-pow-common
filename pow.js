@@ -155,8 +155,6 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		return true;
 	}
 
-	let nCurrentRoundIndex		= null;
-	let arrPreviousCoinBaseList	= null;
 	let sCurrentFirstTrustMEBall	= null;
 	let nCurrentDifficultyValue	= null;
 	let sCurrentPublicSeed		= null;
@@ -164,24 +162,6 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 
 	_async.series
 	([
-		function( pfnNext )
-		{
-			//
-			//	get round index
-			//
-			_round.getCurrentRoundIndex( oConn, function( nRoundIndex )
-			{
-				if ( 'number' === typeof( nRoundIndex ) )
-				{
-					nCurrentRoundIndex	= nRoundIndex;
-					pfnNext();
-				}
-				else
-				{
-					pfnNext( `previous round index must be great then 0` );
-				}
-			});
-		},
 		function( pfnNext )
 		{
 			//
@@ -196,27 +176,10 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//
-			//	round (N-1)
-			//	obtain coin-base list of the previous round
-			//
-			_round.queryCoinBaseListByRoundIndex( oConn, nCurrentRoundIndex - 1, function( err, arrCoinBaseList )
-			{
-				if ( err )
-				{
-					return pfnNext( err );
-				}
-
-				arrPreviousCoinBaseList = arrCoinBaseList;
-				return pfnNext();
-			});
-		},
-		function( pfnNext )
-		{
-			//
 			//	round (N)
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nCurrentRoundIndex, function( err, sBall )
+			queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -233,13 +196,8 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 			//	round (N)
 			//	calculate difficulty value
 			//
-			calculateDifficultyValueByCycleIndex( oConn, nCurrentRoundIndex, function( err, nDifficulty )
+			_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
 			{
-				if ( err )
-				{
-					return pfnNext( err );
-				}
-
 				nCurrentDifficultyValue	= nDifficulty;
 				return pfnNext();
 			});
@@ -250,13 +208,8 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 			//	round (N)
 			//	calculate public seed
 			//
-			calculatePublicSeedByRoundIndex( oConn, nCurrentRoundIndex, function( err, sSeed )
+			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
 			{
-				if ( err )
-				{
-					return pfnNext( err );
-				}
-
 				sCurrentPublicSeed = sSeed;
 				return pfnNext();
 			});
@@ -269,7 +222,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		}
 
 		let objInput	= {
-			currentRoundIndex	: nCurrentRoundIndex,
+			currentRoundIndex	: nRoundIndex,
 			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
 			currentDifficulty	: nCurrentDifficultyValue,
 			currentPubSeed		: sCurrentPublicSeed,
@@ -565,79 +518,6 @@ function queryPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 
 
 /**
- *	calculate difficulty value
- *
- *	@param	{handle}	oConn
- *	@param	{function}	oConn.query
- *	@param	{number}	nCycleIndex		- index of new round
- * 	@param	{function}	pfnCallback( err, nNewDifficultyValue )
- */
-function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
-{
-	if ( ! oConn )
-	{
-		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
-	}
-	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
-	{
-		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
-	}
-	if ( _conf.debug )
-	{
-		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
-	}
-
-	let nPreviousDifficulty;
-	let nTimeUsed;
-	let nTimeStandard;
-
-	_async.series
-	([
-		function( pfnNext )
-		{
-			queryDifficultyValueByCycleIndex
-			(
-				oConn,
-				nCycleIndex - 1,
-				function( err, nDifficulty )
-				{
-					nPreviousDifficulty = nDifficulty;
-				}
-			);
-			return pfnNext();
-		},
-		function( pfnNext )
-		{
-			//	in seconds
-			nTimeUsed = 0;
-			return pfnNext();
-		},
-		function( pfnNext )
-		{
-			//	in seconds
-			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
-			return pfnNext();
-		}
-	], function( err )
-	{
-		if ( err )
-		{
-			return pfnCallback( err );
-		}
-
-		let nNewDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
-		(
-			nPreviousDifficulty,
-			nTimeUsed,
-			nTimeStandard,
-			Buffer.from( "0007ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" )
-		);
-
-		pfnCallback( null, parseInt( nNewDifficultyValue ) );
-	});
-}
-
-/**
  *	query difficulty value by round index from database
  *
  *	@param	{handle}	oConn
@@ -675,7 +555,6 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		}
 	);
 }
-
 
 /**
  *	get coin-base list by round index
@@ -740,6 +619,82 @@ function queryCoinBaseListByRoundIndex( oConn, nRoundIndex, pfnCallback )
 			}));
 		}
 	);
+}
+
+
+/**
+ *	calculate difficulty value
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nCycleIndex		- index of new round
+ * 	@param	{function}	pfnCallback( err, nNewDifficultyValue )
+ */
+function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
+	}
+	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	{
+		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
+	}
+	if ( _conf.debug )
+	{
+		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
+	}
+
+	let nPreviousDifficulty;
+	let nTimeUsed;
+	let nTimeStandard;
+
+	_async.series
+	([
+		function( pfnNext )
+		{
+			queryDifficultyValueByCycleIndex
+			(
+				oConn,
+				nCycleIndex - 1,
+				function( err, nDifficulty )
+				{
+					nPreviousDifficulty = nDifficulty;
+					return pfnNext();
+				}
+			);
+		},
+		function( pfnNext )
+		{
+			//	in seconds
+			_round.getDurationByCycleId( oConn, nCycleIndex, function( nTimeUsedInMillisecond )
+			{
+				nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//	in seconds
+			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
+			return pfnNext();
+		}
+	], function( err )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		let nNewDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
+		(
+			nPreviousDifficulty,
+			nTimeUsed,
+			nTimeStandard
+		);
+
+		pfnCallback( null, Math.floor( nNewDifficultyValue ) );
+	});
 }
 
 
