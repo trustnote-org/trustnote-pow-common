@@ -1386,9 +1386,10 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	objValidationState.bHasBasePowequihash = true;
 
 	round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
-		if(bExist) {
+		if(bExist) 
 			return callback("pow unit can not being sent more than once in certain round");
-		});
+		return callback();
+	);
 	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	// Todo: to be implemented 
     // if (!pow.isValidEquihash()){
@@ -1400,7 +1401,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	// if (!pow.isValidseed()){
 	// 	return callback("invalid pow seed payload");
 	// }
-    return callback();
+    //return callback();
 	//return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
 	
 }
