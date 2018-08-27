@@ -779,9 +779,9 @@ function markMcIndexStable(conn, mci, onDone){
 					if(min_wl != null)
 						return cb();
 					conn.query(
-						"SELECT min(witnessed_level) as minWl FROM units WHERE round_index=?  \n\
+						"SELECT MIN(witnessed_level) AS minWl FROM units WHERE round_index=?  \n\
 						AND is_stable=1 AND is_on_main_chain=1", 
-						[round_index, constants.POW_TYPE_TRUSTME], 
+						[round_index], 
 						function(rowFirstWl){
 							if (rowFirstWl.length === 0)
 								return cb(); // next op
