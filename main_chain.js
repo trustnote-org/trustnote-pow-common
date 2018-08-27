@@ -779,16 +779,16 @@ function markMcIndexStable(conn, mci, onDone){
 					if(min_wl != null)
 						return cb();
 					conn.query(
-						"SELECT witnessed_level FROM units WHERE round_index=?  \n\
-						AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
+						"SELECT min(witnessed_level) as minWl FROM units WHERE round_index=?  \n\
+						AND is_stable=1 AND is_on_main_chain=1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
-							if (rowTrustME.length === 0)
+							if (rowTrustME[0].minWl === null)
 								return cb(); // next op
 							eventBus.emit("launch_coinbase", round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
-								[rowTrustME[0].witnessed_level, round_index], 
+								[rowTrustME[0].minWl, round_index], 
 								function(){
 									cb();
 								}
