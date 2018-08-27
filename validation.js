@@ -1389,7 +1389,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 		if(bExist) 
 			return callback("pow unit can not being sent more than once in certain round");
 		return callback();
-	);
+	});
 	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	// Todo: to be implemented 
     // if (!pow.isValidEquihash()){
