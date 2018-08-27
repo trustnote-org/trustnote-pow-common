@@ -783,7 +783,7 @@ function markMcIndexStable(conn, mci, onDone){
 						AND is_stable=1 AND is_on_main_chain=1", 
 						[round_index, constants.POW_TYPE_TRUSTME], 
 						function(rowTrustME){
-							if (rowTrustME[0].minWl === null)
+							if (rowTrustME.length === 0)
 								return cb(); // next op
 							eventBus.emit("launch_coinbase", round_index);
 							conn.query(
