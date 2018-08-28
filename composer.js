@@ -911,7 +911,9 @@ function getSavingCallbacks(callbacks){
 			validation.validate(objJoint, {
 				ifUnitError: function(err){
 					composer_unlock();
+					throw Error("validation error: "+err);
 					callbacks.ifError("Validation error: "+err);
+					
 				//	throw Error("unexpected validation error: "+err);
 				},
 				ifJointError: function(err){
