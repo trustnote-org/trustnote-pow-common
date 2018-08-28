@@ -1149,7 +1149,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
 							if(unit_witenessed_level < last_round_max_wl){
-								console.log("unit info "+ string.JSON(objUnit));
+								console.log("unit info "+ JSON.stringify(objUnit));
 								return cb("unit witnessed level is not bigger than last round max wl");
 							}
 							return cb();
@@ -1163,8 +1163,11 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						return cb();
 					}
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
-						if(unit_witenessed_level < min_wl || unit_witenessed_level > max_wl){
-							return cb("unit witnessed level is incorrct which is either less than min_wl or bigger than max_wl ");
+						if(unit_witenessed_level < min_wl){
+							return cb("unit witnessed level is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
+						}
+						if(unit_witenessed_level > max_wl){
+							return cb("unit witnessed level is bigger than max_wl, max_wl: " + max_wl + JSON.stringify(objUnit) );
 						}
 						// wl is valid 
 						return cb();
