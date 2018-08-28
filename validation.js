@@ -1122,7 +1122,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 			if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
 				// check there is no trust me unit in this round
 				conn.query("SELECT 1 FROM units WHERE round_index=? AND pow_type = ? ", [objUnit.round_index,constants.POW_TYPE_TRUSTME], function(rows){
-					if (rows.length !== 1)
+					if (rows.length !== 0)
 						return cb("the first unit is not trust me unit if round "+ objUnit.round_index );
 					return cb();
 				});
