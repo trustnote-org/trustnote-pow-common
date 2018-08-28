@@ -1148,7 +1148,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							if (last_round_min_wl === null || !last_round_max_wl){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
-							if(unit_witenessed_level <= last_round_max_wl){
+							if(unit_witenessed_level < last_round_max_wl){
 								console.log("unit info "+ string.JSON(objUnit));
 								return cb("unit witnessed level is not bigger than last round max wl");
 							}
