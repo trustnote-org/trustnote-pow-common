@@ -1115,6 +1115,20 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 					objValidationState.witnessed_level= witenessed_level;
 					cb();
 				});
+			},
+			function(cb){
+			if(!objUnit.pow_type)
+				return cb();
+			if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
+				// check there is no trust me unit in this round
+				conn.query("SELECT 1 FROM units WHERE round_index=? AND pow_type = ? ", [objUnit.round_index,constants.POW_TYPE_TRUSTME], function(rows){
+					if (rows.length !== 1)
+						return cb("the first unit is not trust me unit if round "+ objUnit.round_index );
+					return cb();
+				});
+			}else{
+				return cb();
+			}
 		},
 		function(cb){
 			if(!objUnit.pow_type)
@@ -1129,6 +1143,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							
 							return cb();
 						}
+						
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
 							if (last_round_min_wl === null || !last_round_max_wl){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
