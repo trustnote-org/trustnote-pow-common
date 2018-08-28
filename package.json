@@ -24,16 +24,15 @@
 	"dependencies": {
 		"async": "^1.5.2",
 		"blakejs": "git+https://github.com/dcposch/blakejs.git",
-		"ffi": ">=1.0",
 		"jshint": "^2.9.6",
 		"lodash": "^4.6.1",
 		"longjohn": "^0.2.11",
 		"mysql": "^2.10.2",
-		"ref": ">=1.0",
-		"secp256k1": "^3.1.0",
+		"secp256k1": "^3.5.2",
 		"socks": "1.1.10",
 		"sqlite3": "^3.1.4",
 		"thirty-two": "^1.0.1",
+		"trustnote-pow-miner": "git+https://github.com/trustnote/trustnote-pow-miner.git",
 		"ws": "^1.0.1"
 	}
 }

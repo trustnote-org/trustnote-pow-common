@@ -7,17 +7,14 @@
 
 const _conf		= require( './conf.js' );
 
-const _ffi		= _conf.debug ? null : require( 'ffi' );
-const _ref		= require( 'ref' );
-const _fs		= require( 'fs' );
 const _crypto		= require( 'crypto' );
 const _blakejs		= require( 'blakejs' );
 const _async		= require( 'async' );
+const _pow_miner	= require( 'trustnote-pow-miner' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
 const _super_node	= require( './supernode.js' );
-const _pow_service	= require( './pow_service.js' );
 const _event_bus	= require( './event_bus.js' );
 
 
@@ -26,7 +23,6 @@ const _event_bus	= require( './event_bus.js' );
  * 	@global
  *	@variables
  */
-let _objEquihashLibrary		= null;
 let _objDifficultyAdjust	= null;
 let _sAssocSingleWallet		= null;
 
@@ -294,33 +290,53 @@ function startMiningWithInputs( oInput, pfnCallback )
 		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
 	}
 
-	//
-	//	...
-	//
-	//
-	//	pubSeed	hex string 128 chars, 256bit, 64字节
-	//
-	let sInputHex256 = _createMiningInputHexFromObject( oInput );
-	let jsonSource =
-	{
-		id	: oInput.currentRoundIndex,
-		pow	: "equihash",
-		"params":
+	/**
+	 *	start here
+	 */
+	let _oOptions	=
 		{
-			version		: 0,
-			roundNumber	: oInput.currentRoundIndex,
-			nonce		: 0,
-			pubSeed		: sInputHex256,
-			pubKey		: oInput.superNodeAuthor,
+			bufInputHeader	: _createInputBufferFromObject( oInput ),
 			difficulty	: oInput.currentDifficulty,
-			filterList	: [],
-			times		: 0,
-			timeout		: 0
-		},
-		interrupt	: 0,
-		error		: null
-	};
-
+			calcTimes	: 30,
+			maxLoop		: 1000000,
+		};
+	_pow_miner.startMining( _oOptions, function( err, oData )
+	{
+		if ( null === err )
+		{
+			if ( oData )
+			{
+				if ( oData.win )
+				{
+					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
+					_event_bus.emit
+					(
+						'pow_mined_gift',
+						{
+							round	: oInput.currentRoundIndex,
+							nonce	: oData.nonce,
+							hash	: oData.hashHex
+						}
+					);
+				}
+				else if ( oData.gameOver )
+				{
+					console.log( `GAME OVER!` );
+					_event_bus.emit( 'pow_mined_gift', { err : `GAME OVER!` } );
+				}
+			}
+			else
+			{
+				console.log( `INVALID DATA!` );
+				_event_bus.emit( 'pow_mined_gift', { err : `INVALID DATA!` } );
+			}
+		}
+		else
+		{
+			console.log( `OCCURRED ERROR : `, err );
+			_event_bus.emit( 'pow_mined_gift', { err : `OCCURRED ERROR : ${ err }` } );
+		}
+	});
 
 	return true;
 }
@@ -338,6 +354,10 @@ function stopMining( nRoundIndex )
 		return false;
 	}
 
+	//	stop
+	_pow_miner.stopMining();
+
+	//	...
 	return true;
 }
 
@@ -746,8 +766,6 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
 	);
 }
 
-
-
 /**
  *	verify if a hash is valid
  *
@@ -759,9 +777,10 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
  *	@param	{string}	objInput.superNodeAuthor
  *	@param	{string}	sHash				'3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
  *	@param	{number}	nNonce
+ *	@param	{function}	pfnCallback( err, { code : 0 } )
  *	@return	{boolean}
  */
-function isValidEquihash( objInput, sHash, nNonce )
+function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 {
 	if ( 'object' !== typeof objInput )
 	{
@@ -780,27 +799,8 @@ function isValidEquihash( objInput, sHash, nNonce )
 		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
 	}
 
-	let bRet;
-	let nInputLen;
-	let bufInput;
-	let bufHash;
-
 	//	...
-	bRet		= false;
-	nInputLen	= 140;
-	bufInput	= _createInputBufferFromObject( objInput );
-	bufHash		= Buffer.concat( [ Buffer.from( sHash, 'utf8' ) ], 32 );
-
-	//	load library
-	_loadEquihashLibraryIfNeed();
-
-	let nCall       = _objEquihashLibrary.equihash( bufInput, nNonce, bufHash, nInputLen );
-
-	console.log( `call equihash = ${ nCall }` );
-
-
-
-	return true;
+	_pow_miner.checkProofOfWork( _createInputBufferFromObject( objInput ), objInput.currentDifficulty, nNonce, sHash, pfnCallback );
 }
 
 
@@ -833,61 +833,6 @@ function _createInputBufferFromObject( objInput )
 
 	return Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
 }
-
-
-/**
- *	create an 256bit hex string with length of 128 from Js plain object
- *	@public
- *	@param	{object}	objInput
- *	@return	{Buffer}
- */
-function _createMiningInputHexFromObject( objInput )
-{
-	let sInput;
-
-	if ( 'object' !== typeof objInput )
-	{
-		return null;
-	}
-
-	//	...
-	sInput = JSON.stringify( objInput );
-	return _crypto.createHash( 'sha256' ).update( sInput, 'utf8' ).digest( 'hex' );
-}
-
-
-
-
-
-/**
- *	load libequihash.so dynamically
- *	@private
- */
-function _loadEquihashLibraryIfNeed()
-{
-	if ( null === _objEquihashLibrary )
-	{
-		_objEquihashLibrary = _ffi.Library
-		(
-			`${ __dirname }/libs/libequihash.so`,
-			{
-				'equihash': [ 'int',  [ 'pointer', 'uint', 'pointer', 'int'  ] ]
-			}
-		);
-	}
-
-	if ( null === _objDifficultyAdjust )
-	{
-		_objDifficultyAdjust = _ffi.Library
-		(
-			`${ __dirname }/libs/libdiff_adjust.so`,
-			{
-				'CalculateNextWorkRequired': [ 'uint',  [ 'uint', 'uint', 'uint', 'pointer'  ] ]
-			}
-		);
-	}
-}
-
 
 /**
  *	read single wallet
@@ -943,4 +888,4 @@ module.exports.queryPublicSeedByRoundIndex			= queryPublicSeedByRoundIndex;
 module.exports.queryCoinBaseListByRoundIndex			= queryCoinBaseListByRoundIndex;
 module.exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
 
-module.exports.isValidEquihash					= isValidEquihash;
+module.exports.checkProofOfWork					= checkProofOfWork;
