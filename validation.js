@@ -129,8 +129,12 @@ function validate(objJoint, callbacks) {
 
 		if (objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
 			return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
-		if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission)
+		if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
+			console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
+			console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
+			console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
 			return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
+		}
 	}
 	
 	if (!isNonemptyArray(objUnit.authors))
