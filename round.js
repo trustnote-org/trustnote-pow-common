@@ -6,6 +6,7 @@
 var constants = require('./constants.js');
 var db = require('./db.js');
 var conf = require('./conf.js');
+var validationUtils = require('./validation_utils.js');
 
 var async = require('async');
 var MAX_ROUND_IN_CACHE = 10;
@@ -389,8 +390,15 @@ function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress
 
 function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
     var coinbase = getCoinbaseByRoundIndex(roundIndex);
+    if(!validationUtils.isInteger(coinbase))
+        throw Error("coinbase is not number ");
+    
     getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
+        if(!validationUtils.isInteger(totalCommission))
+            throw Error("totalCommission is not number ");
         getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
+            if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
+                throw Error("witnessRatioOfTrustMe is null ");
             callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
         });
     });
