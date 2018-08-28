@@ -1139,7 +1139,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							return cb();
 						});
 					}
-					else if(max_wl === nu) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
+					else if(max_wl === null) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
 						if(unit_witenessed_level < min_wl){
 							return cb("unit witnessed level is less than min_wl")
 						}
