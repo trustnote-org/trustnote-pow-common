@@ -4,13 +4,14 @@
 /**
  *	@boss	XING
  */
+const _bBrowser		= typeof window !== 'undefined' && window;
 
 const _conf		= require( './conf.js' );
 
 const _crypto		= require( 'crypto' );
 const _blakejs		= require( 'blakejs' );
 const _async		= require( 'async' );
-const _pow_miner	= require( 'trustnote-pow-miner' );
+const _pow_miner	= _bBrowser ? null : require( 'trustnote-pow-miner' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
@@ -257,6 +258,10 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
+	if ( _bBrowser )
+	{
+		throw new Error( 'I am not be able to run in a Web Browser.' );
+	}
 	if ( 'object' !== typeof oInput )
 	{
 		throw new Error( 'call startMining with invalid oInput' );
@@ -349,6 +354,10 @@ function startMiningWithInputs( oInput, pfnCallback )
  */
 function stopMining( nRoundIndex )
 {
+	if ( _bBrowser )
+	{
+		throw new Error( 'I am not be able to run in a Web Browser.' );
+	}
 	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 1 )
 	{
 		return false;
@@ -782,6 +791,10 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
  */
 function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 {
+	if ( _bBrowser )
+	{
+		throw new Error( 'I am not be able to run in a Web Browser.' );
+	}
 	if ( 'object' !== typeof objInput )
 	{
 		throw new Error( 'call isValidEquihash with invalid objInput' );
