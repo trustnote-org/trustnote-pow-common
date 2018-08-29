@@ -404,9 +404,35 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				var max_parent_last_ball_mci = rows[0].max_parent_last_ball_mci;
 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
-				callback();
+				checkPOWTypeUnitsInRightRonnd();
+				//callback();
 			}
 		);
+	}
+
+	function checkPOWTypeUnitsInRightRonnd(){
+		if (!objUnit.pow_type)
+			callback();
+
+			conn.query(
+				"SELECT distinct(address), unit \n\
+				FROM units JOIN unit_authors using (unit)\n\
+				WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+				LIMIT ?", 
+				[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
+				function(rowsPow){
+					if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
+						var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1].unit;
+						main_chain.determineIfStableInLaterUnits(conn, lastPowstableUnit, objUnit.parent_units, function(bStable){
+						  if (bStable)
+							  return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+						  
+						  callback();
+						});
+					}else{
+						callback();
+					}	
+			});
 	}
 	
 	var objUnit = objJoint.unit;
@@ -1145,31 +1171,33 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						}
 						
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
-							if (last_round_min_wl === null || !last_round_max_wl){
+							if (last_round_min_wl === null){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
-							if(unit_witenessed_level < last_round_max_wl){
-								console.log("unit info "+ JSON.stringify(objUnit));
-								return cb("unit witnessed level is not bigger than last round max wl");
-							}
+							// if(unit_witenessed_level < last_round_max_wl){
+							// 	console.log("unit info "+ JSON.stringify(objUnit));
+							// 	return cb("unit witnessed level is not bigger than last round max wl");
+							// }
 							return cb();
 						});
 					}
-					else if(max_wl === null) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
-						if(unit_witenessed_level < min_wl){
-							return cb("unit witnessed level is less than min_wl")
-						}
-						// wl is valid 
-						return cb();
-					}
+					// else if(max_wl === null) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
+					// 	if(unit_witenessed_level < min_wl){
+					// 		return cb("unit witnessed level is less than min_wl")
+					// 	}
+					// 	// wl is valid 
+					// 	return cb();
+					// }
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
 						if(unit_witenessed_level < min_wl){
 							return cb("unit witnessed level " + unit_witenessed_level + "is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
 						}
-						if(unit_witenessed_level > max_wl){
-							return cb("unit witnessed level " + unit_witenessed_level + " is bigger than max_wl, max_wl: " + max_wl + JSON.stringify(objUnit) );
-						}
+						// if(unit_witenessed_level > max_wl){
+						// 	return cb("unit witnessed level " + unit_witenessed_level + " is bigger than max_wl, max_wl: " + max_wl + JSON.stringify(objUnit) );
+						// }
 						// wl is valid 
+
+
 						return cb();
 					}
 				});
