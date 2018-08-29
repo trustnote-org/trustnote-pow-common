@@ -806,18 +806,18 @@ function markMcIndexStable(conn, mci, onDone){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
 								return cb();
 							async.series([
-								function(cb1){     // update max_wl
-									conn.query(
-										"UPDATE round SET max_wl= \n\
-										(SELECT MAX(witnessed_level) FROM units \n\
-										WHERE round_index=? AND pow_type=?) \n\
-										WHERE round_index=?", 
-										[round_index, constants.POW_TYPE_TRUSTME, round_index], 
-										function(){
-											cb1();
-										}
-									);
-								},
+								// function(cb1){     // update max_wl
+								// 	conn.query(
+								// 		"UPDATE round SET max_wl= \n\
+								// 		(SELECT MAX(witnessed_level) FROM units \n\
+								// 		WHERE round_index=? AND pow_type=?) \n\
+								// 		WHERE round_index=?", 
+								// 		[round_index, constants.POW_TYPE_TRUSTME, round_index], 
+								// 		function(){
+								// 			cb1();
+								// 		}
+								// 	);
+								// },
 								function(cb1){    // calculate seed
 									pow.calculatePublicSeedByRoundIndex( conn, round_index+1, function(err, newSeed){
 										if(err)
