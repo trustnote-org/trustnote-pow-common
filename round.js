@@ -314,7 +314,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
     if (assocCachedTotalCommission[roundIndex])
         return callback(assocCachedTotalCommission[roundIndex]);
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
-        if(minWl === null || maxWl === null)
+        if(minWl === null)
             throw Error("Can't get commission before the round switch.");
         getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
             getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
@@ -341,7 +341,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     if (assocCachedCoinbaseRatio[roundIndex])
         return callback(assocCachedCoinbaseRatio[roundIndex]);
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
-        if(minWl === null || maxWl === null)
+        if(minWl === null)
             throw Error("Can't get commission before the round switch.");
         getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
             conn.query(
