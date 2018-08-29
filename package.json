@@ -32,7 +32,6 @@
 		"socks": "1.1.10",
 		"sqlite3": "^3.1.4",
 		"thirty-two": "^1.0.1",
-		"trustnote-pow-miner": "git+https://github.com/trustnote/trustnote-pow-miner.git",
 		"ws": "^1.0.1"
 	}
 }
