@@ -433,7 +433,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 							[lastPowstableUnit.main_chain_index],
 							function(stableMCRows){
 								if(stableMCRows.length!==1 || stableMCRows[0].is_on_main_chain !==1)
-									throw error("the unit is not on main chain");
+									throw Error("the unit is not on main chain");
 								lastStableOnMainUnit = stableMCRows[0].unit;
 								main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
 									if (bStable)
