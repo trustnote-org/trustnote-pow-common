@@ -415,20 +415,42 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			return callback();
 
 		conn.query(
-			"SELECT distinct(address), unit \n\
+			"SELECT distinct(address), unit, is_on_main_chain, main_chain_index \n\
 			FROM units JOIN unit_authors using (unit)\n\
-			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? AND is_on_main_chain=1 ORDER BY main_chain_index,unit  \n\
+			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
 			LIMIT ?", 
 			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
 			function(rowsPow){
 				if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
-					var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1].unit;
-					main_chain.determineIfStableInLaterUnits(conn, lastPowstableUnit, objUnit.parent_units, function(bStable){
-						if (bStable)
-							return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
-						
-						callback();
-					});
+					var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1];
+					var lastStableOnMainUnit = lastPowstableUnit.unit;
+					if (!lastPowstableUnit.is_on_main_chain){
+						// get main chain unit with same mci
+						conn.query(
+							"SELECT unit\n\
+							FROM units \n\
+							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ", 
+							[lastPowstableUnit.main_chain_index],
+							function(stableMCRows){
+								if(stableMCRows.length!==1 || stableMCRows[0].is_on_main_chain !==1)
+									throw error("the unit is not on main chain");
+								lastStableOnMainUnit = stableMCRows[0].unit;
+								main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
+									if (bStable)
+										return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+									
+									callback();
+								});
+							});
+					}else{
+						main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
+							if (bStable)
+								return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+							
+							callback();
+						});
+					}
+					
 				}else{
 					callback();
 				}	
