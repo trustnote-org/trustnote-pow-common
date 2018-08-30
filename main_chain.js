@@ -797,15 +797,10 @@ function markMcIndexStable(conn, mci, onDone){
 					);
 				},
 				function(cb){ // switch round
-					//EQUHASHTemp
-					// conn.query(
-					// 	"SELECT distinct(address) \n\
-					// 	FROM units JOIN unit_authors using (unit) \n\
-					// 	WHERE round_index=? AND is_stable=1 AND pow_type=?", 
 					conn.query(
-							"SELECT distinct(address) \n\
-							FROM units JOIN unit_authors using (unit) \n\
-							WHERE round_index=? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=?", 
+						"SELECT distinct(address) \n\
+						FROM units JOIN unit_authors using (unit) \n\
+						WHERE round_index=? AND is_stable=1 AND pow_type=?", 
 						[round_index, constants.POW_TYPE_POW_EQUHASH], 
 						function(rowsPow){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)

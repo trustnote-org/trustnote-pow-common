@@ -206,17 +206,11 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
     
     if (assocCachedWitnesses[roundIndex])
         return callback(assocCachedWitnesses[roundIndex]);
-        // EQUHASHTemp
-        // conn.query(
-        //     "SELECT distinct(address) \n\
-        //     FROM units JOIN unit_authors using (unit)\n\
-        //     WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-        //     LIMIT ?",  
-    conn.query(
-		"SELECT distinct(address) \n\
-		FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-        LIMIT ?", 
+        conn.query(
+            "SELECT distinct(address) \n\
+            FROM units JOIN unit_authors using (unit)\n\
+            WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+            LIMIT ?",  
         [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
 		function(rows){
 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
@@ -242,16 +236,11 @@ function getWitnessesByRoundIndexByDb(roundIndex, callback){
     
     if (assocCachedWitnesses[roundIndex])
       return callback(assocCachedWitnesses[roundIndex]);
-     // EQUHASHTemp
-    // db.query(
-	// 	"SELECT distinct(address) \n\
-	// 	FROM units JOIN unit_authors using (unit)\n\
-    //     WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-    //     LIMIT ?", 
+     
     db.query(
-        "SELECT distinct(address) \n\
-        FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+		"SELECT distinct(address) \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
         LIMIT ?", 
         [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
 		function(rows){
@@ -280,15 +269,10 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 
 function checkIfPowUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
     // TODO ：cache the witnesses of recent rounds
-    // EQUHASHTemp
-    // conn.query(
-	// 	"SELECT units.unit \n\
-	// 	FROM units JOIN unit_authors using (unit)\n\
-    //     WHERE pow_type=? AND round_index=? AND address=? ", 
-        conn.query(
-            "SELECT units.unit \n\
-            FROM units JOIN unit_authors using (unit)\n\
-            WHERE is_stable=1 AND is_on_main_chain=1 AND pow_type=? AND round_index=? AND address=? ",
+    conn.query(
+		"SELECT units.unit \n\
+		FROM units JOIN unit_authors using (unit)\n\
+        WHERE pow_type=? AND round_index=? AND address=? ", 
         [constants.POW_TYPE_POW_EQUHASH, roundIndex, address],
 		function(rows){
 			callback(rows.length > 0 );
