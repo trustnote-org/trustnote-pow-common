@@ -412,27 +412,27 @@ function validateParents(conn, objJoint, objValidationState, callback){
 
 	function checkPOWTypeUnitsInRightRound(){
 		if (!objUnit.pow_type)
-			callback();
+			return callback();
 
-			conn.query(
-				"SELECT distinct(address), unit \n\
-				FROM units JOIN unit_authors using (unit)\n\
-				WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-				LIMIT ?", 
-				[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
-				function(rowsPow){
-					if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
-						var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1].unit;
-						main_chain.determineIfStableInLaterUnits(conn, lastPowstableUnit, objUnit.parent_units, function(bStable){
-						  if (bStable)
-							  return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
-						  
-						  callback();
-						});
-					}else{
+		conn.query(
+			"SELECT distinct(address), unit \n\
+			FROM units JOIN unit_authors using (unit)\n\
+			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+			LIMIT ?", 
+			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
+			function(rowsPow){
+				if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
+					var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1].unit;
+					main_chain.determineIfStableInLaterUnits(conn, lastPowstableUnit, objUnit.parent_units, function(bStable){
+						if (bStable)
+							return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+						
 						callback();
-					}	
-			});
+					});
+				}else{
+					callback();
+				}	
+		});
 	}
 	
 	var objUnit = objJoint.unit;
