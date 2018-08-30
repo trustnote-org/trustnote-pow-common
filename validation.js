@@ -427,7 +427,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 					if (!lastPowstableUnit.is_on_main_chain){
 						// get main chain unit with same mci
 						conn.query(
-							"SELECT unit\n\
+							"SELECT unit, is_on_main_chain\n\
 							FROM units \n\
 							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ", 
 							[lastPowstableUnit.main_chain_index],
