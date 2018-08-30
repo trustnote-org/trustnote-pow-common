@@ -405,7 +405,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
 					checkPOWTypeUnitsInRightRound();
-				callback();
+				//callback();
 			}
 		);
 	}
