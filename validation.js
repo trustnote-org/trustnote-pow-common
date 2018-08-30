@@ -404,7 +404,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				var max_parent_last_ball_mci = rows[0].max_parent_last_ball_mci;
 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
-					//checkPOWTypeUnitsInRightRound();
+					checkPOWTypeUnitsInRightRound();
 				callback();
 			}
 		);
@@ -417,7 +417,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 		conn.query(
 			"SELECT distinct(address), unit \n\
 			FROM units JOIN unit_authors using (unit)\n\
-			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? AND is_on_main_chain=1 ORDER BY main_chain_index,unit  \n\
 			LIMIT ?", 
 			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
 			function(rowsPow){
