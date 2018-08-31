@@ -315,6 +315,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
+	_pow_miner.stopMining();
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
 		let objSolution	= null;
