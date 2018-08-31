@@ -1397,7 +1397,7 @@ function readStaticUnitProps(conn, unit, handleProps){
 		return handleProps(props);
 	// pow modi :
 	// conn.query("SELECT level, witnessed_level, best_parent_unit, witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
-	conn.query("SELECT level, witnessed_level,pow_type, best_parent_unit, witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
+	conn.query("SELECT level, witnessed_level,pow_type,round_index, best_parent_unit, witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
 		if (rows.length !== 1)
 			throw Error("not 1 unit");
 		props = rows[0];

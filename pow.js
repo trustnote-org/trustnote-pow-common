@@ -70,46 +70,61 @@ let _sAssocSingleWallet		= null;
  * 		console.log( `start calculation successfully.` );
  * 	});
  *
- *	let nCallStartCalculation = startCalculationWithInput
- *	({
- *		 previousCoinBaseList	: {
- *			 '4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
- *			 '2SATGZDFDXNNJRVZ52O4J6VYTTMO2EZR': 10000,
- *		 },
- *		 currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *		 currentDifficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
- *		 currentPubSeed		: 'public key',
- *		 superNodeAuthor		: 'xing.supernode.trustnote.org',
- *	}, function( err )
- *	{
- * 		if ( err )
- * 		{
- * 			console.log( `failed to start calculation, `, err );
- * 			return;
- * 		}
- *
- * 		console.log( `start calculation successfully.` );
- * 	});
- *
- *
- *	let bIsValidEquihash = isValidEquihash
+ *	let nCallStartCalculation = startMiningWithInputs
  *	(
  *		{
- *			previousCoinBaseList	: {
- *				'4T57ZFLZOMUAMZTXO63XLK5YDQRF5DP2': 10000,
- *				'2SATGZDFDXNNJRVZ52O4J6VYTTMO2EZR': 10000,
- *			},
+ *			currentRoundIndex	: 111,
  *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			currentDifficulty	: '000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+ *			currentDifficulty	: 11111,
+ *			currentPubSeed		: 'public key',
+ *			superNodeAuthor		: 'xing.supernode.trustnote.org',
+ *		},
+ *		function( err )
+ *		{
+ * 			if ( err )
+ * 			{
+ * 				console.log( `failed to start calculation, `, err );
+ * 				return;
+ * 			}
+ *
+ * 			console.log( `start calculation successfully.` );
+ * 		}
+ *	);
+ *
+ *	checkProofOfWork
+ *	(
+ *		{
+ *			currentRoundIndex	: 111,
+ *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			currentDifficulty	: 11111,
  *			currentPubSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		'00000001c570c4764aadb3f09895619f549000b8b51a789e7f58ea7500007097',
- *		'xxxxxxxxxxxx'
+ *		88888,
+ *		function( err, oResult )
+ *		{
+ *			if ( null === err )
+ *			{
+ *				if ( 0 === oResult.code )
+ *				{
+ *					console.log( `correct solution` );
+ *				}
+ *				else
+ *				{
+*					console.log( `invalid solution` );
+ *				}
+ *			}
+ *			else
+ *			{
+ *				console.log( `occurred an error : `, err );
+ *			}
+ *		}
  *	);
- *	console.log( bIsValidEquihash );
  *
  */
+
+
 
 
 
@@ -248,7 +263,6 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  *
  * 	@param	{object}	oInput
  *	@param	{number}	oInput.currentRoundIndex
- *	@param	{array}		oInput.previousCoinBaseList		@see description
  *	@param	{string}	oInput.currentFirstTrustMEBall
  *	@param	{string}	oInput.currentDifficulty
  *	@param	{string}	oInput.currentPubSeed
@@ -269,10 +283,6 @@ function startMiningWithInputs( oInput, pfnCallback )
 	if ( 'number' !== typeof oInput.currentRoundIndex )
 	{
 		throw new Error( 'call startMining with invalid oInput.currentRoundIndex' );
-	}
-	if ( ! Array.isArray( oInput.previousCoinBaseList ) || 0 === oInput.previousCoinBaseList.length )
-	{
-		throw new Error( 'call startMining with invalid oInput.previousCoinBaseList' );
 	}
 	if ( 'string' !== typeof oInput.currentFirstTrustMEBall || 44 !== oInput.currentFirstTrustMEBall.length )
 	{
@@ -300,13 +310,16 @@ function startMiningWithInputs( oInput, pfnCallback )
 	 */
 	let _oOptions	=
 		{
-			bufInputHeader	: _createInputBufferFromObject( oInput ),
+			bufInputHeader	: _createMiningInputBufferFromObject( oInput ),
 			difficulty	: oInput.currentDifficulty,
-			calcTimes	: 30,
-			maxLoop		: 1000000,
+			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
+			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
+	_pow_miner.stopMining();
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
+		let objSolution	= null;
+
 		if ( null === err )
 		{
 			if ( oData )
@@ -314,38 +327,86 @@ function startMiningWithInputs( oInput, pfnCallback )
 				if ( oData.win )
 				{
 					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
-					_event_bus.emit
-					(
-						'pow_mined_gift',
-						{
-							round	: oInput.currentRoundIndex,
-							nonce	: oData.nonce,
-							hash	: oData.hashHex
-						}
-					);
+					objSolution	= {
+						round	: oInput.currentRoundIndex,
+						nonce	: oData.nonce,
+						hash	: oData.hashHex
+					};
 				}
 				else if ( oData.gameOver )
 				{
 					console.log( `GAME OVER!` );
-					_event_bus.emit( 'pow_mined_gift', { err : `GAME OVER!` } );
+					objSolution	= { err : `GAME OVER!` };
 				}
 			}
 			else
 			{
 				console.log( `INVALID DATA!` );
-				_event_bus.emit( 'pow_mined_gift', { err : `INVALID DATA!` } );
+				objSolution	= { err : `INVALID DATA!` };
 			}
 		}
 		else
 		{
-			console.log( `OCCURRED ERROR : `, err );
-			_event_bus.emit( 'pow_mined_gift', { err : `OCCURRED ERROR : ${ err }` } );
+			console.log( `OCCURRED AN ERROR : `, err );
+			objSolution	= { err : `OCCURRED AN ERROR : ${ err }` };
 		}
+
+		//	...
+		_event_bus.emit( 'pow_mined_gift', objSolution );
 	});
 
 	return true;
 }
 
+
+/**
+ *	verify if a solution( hash, nonce ) is valid
+ *
+ * 	@param	{object}	objInput
+ *	@param	{number}	objInput.currentRoundIndex
+ *	@param	{string}	objInput.currentFirstTrustMEBall
+ *	@param	{string}	objInput.currentDifficulty
+ *	@param	{string}	objInput.currentPubSeed
+ *	@param	{string}	objInput.superNodeAuthor
+ *	@param	{string}	sHash				hex string with the length of 64 bytes,
+ *								e.g.: '3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
+ *	@param	{number}	nNonce				number with the value great then or equal to 0
+ *	@param	{function}	pfnCallback( err, { code : 0 } )
+ *	@return	{boolean}
+ */
+function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
+{
+	if ( _bBrowser )
+	{
+		throw new Error( 'I am not be able to run in a Web Browser.' );
+	}
+	if ( 'object' !== typeof objInput )
+	{
+		throw new Error( 'call checkProofOfWork with invalid objInput' );
+	}
+	if ( 'string' !== typeof sHash || 64 !== sHash.length )
+	{
+		throw new Error( 'call checkProofOfWork with invalid sHash' );
+	}
+	if ( 'number' !== typeof nNonce )
+	{
+		throw new Error( 'call checkProofOfWork with invalid sNonce' );
+	}
+	if ( _conf.debug )
+	{
+		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
+	}
+
+	//	...
+	_pow_miner.checkProofOfWork
+	(
+		_createMiningInputBufferFromObject( objInput ),
+		objInput.currentDifficulty,
+		nNonce,
+		sHash,
+		pfnCallback
+	);
+}
 
 /**
  *	stop mining
@@ -775,47 +836,6 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
 	);
 }
 
-/**
- *	verify if a hash is valid
- *
- * 	@param	{object}	objInput
- *	@param	{array}		objInput.previousCoinBaseList		@see description
- *	@param	{string}	objInput.currentFirstTrustMEBall
- *	@param	{string}	objInput.currentDifficulty
- *	@param	{string}	objInput.currentPubSeed
- *	@param	{string}	objInput.superNodeAuthor
- *	@param	{string}	sHash				'3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
- *	@param	{number}	nNonce
- *	@param	{function}	pfnCallback( err, { code : 0 } )
- *	@return	{boolean}
- */
-function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
-{
-	if ( _bBrowser )
-	{
-		throw new Error( 'I am not be able to run in a Web Browser.' );
-	}
-	if ( 'object' !== typeof objInput )
-	{
-		throw new Error( 'call isValidEquihash with invalid objInput' );
-	}
-	if ( 'string' !== typeof sHash || 64 !== sHash.length )
-	{
-		throw new Error( 'call isValidEquihash with invalid sHash' );
-	}
-	if ( 'number' !== typeof nNonce )
-	{
-		throw new Error( 'call isValidEquihash with invalid sNonce' );
-	}
-	if ( _conf.debug )
-	{
-		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
-	}
-
-	//	...
-	_pow_miner.checkProofOfWork( _createInputBufferFromObject( objInput ), objInput.currentDifficulty, nNonce, sHash, pfnCallback );
-}
-
 
 /**
  *	create an input buffer with length of 140 from Js plain object
@@ -823,8 +843,9 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
  *	@param	{object}	objInput
  *	@return	{Buffer}
  */
-function _createInputBufferFromObject( objInput )
+function _createMiningInputBufferFromObject( objInput )
 {
+	let objInputCpy;
 	let sInput;
 	let bufSha512;
 	let bufMd5;
@@ -837,8 +858,14 @@ function _createInputBufferFromObject( objInput )
 	}
 
 	//	...
-	sInput		= JSON.stringify( objInput );
-
+	objInputCpy	= {
+		currentRoundIndex	: objInput.currentRoundIndex,
+		currentFirstTrustMEBall	: objInput.currentFirstTrustMEBall,
+		currentDifficulty	: objInput.currentDifficulty,
+		currentPubSeed		: objInput.currentPubSeed,
+		superNodeAuthor		: objInput.superNodeAuthor,
+	};
+	sInput		= JSON.stringify( objInputCpy );
 	bufSha512	= _crypto.createHash( 'sha512' ).update( sInput, 'utf8' ).digest();
 	bufMd5		= _crypto.createHash( 'md5' ).update( sInput, 'utf8' ).digest();
 	bufRmd160	= _crypto.createHash( 'rmd160' ).update( sInput, 'utf8' ).digest();

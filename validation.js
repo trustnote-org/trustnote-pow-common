@@ -404,11 +404,57 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				var max_parent_last_ball_mci = rows[0].max_parent_last_ball_mci;
 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
-					checkPOWTypeUnitsInRightRound();
-				//callback();
+					//checkRoundIndexDidNotRetreat();
+				callback();
 			}
 		);
 	}
+
+	function checkRoundIndexDidNotRetreat(){
+		if (!objUnit.pow_type)
+			return callback();
+		function getMaxRoundIndexForAnyTypeUnit(unit, handleMaxRound){
+			storage.readStaticUnitProps(conn, unit, function (unitPros){
+				if(unitPros.round_index)
+					return handleMaxRound(unitPros.round_index); 
+				var maxRoundIndex = 0;
+				conn.query(
+					"SELECT  parent_unit \n\
+					FROM parenthoods \n\
+					WHERE unit = ? ", 
+					[unit],
+					function(rows){
+						async.eachSeries(
+							rows, 
+							function(parent, cb){
+								getMaxRoundIndexForAnyTypeUnit(parent, function(roundIndex){
+									if (roundIndex > maxRoundIndex)
+										maxRoundIndex = roundIndex;
+									cb();
+								});
+							},
+							function(err){
+								handleMaxRound(maxRoundIndex);
+							});
+					});
+			});
+		}
+
+		async.eachSeries(
+			objUnit.parent_units, 
+			function(parent_unit, cb){
+				getMaxRoundIndexForAnyTypeUnit(parent_unit, function (roundIndex){
+					if (objUnit.round_index < roundIndex)
+						cb("round index of unit retreated ")
+				});
+			},
+			function(err){
+				if (err)
+					return callback(err);
+				callback();
+			});
+	}
+
 
 	function checkPOWTypeUnitsInRightRound(){
 		if (!objUnit.pow_type)
@@ -445,7 +491,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 					}else{
 						main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
 							if (bStable)
-								return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+								return callback("on mainchain unit round index is incorrect because the 8th pow unit already stable in its parent view");
 							
 							callback();
 						});

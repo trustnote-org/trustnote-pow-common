@@ -23,7 +23,7 @@
 	},
 	"dependencies": {
 		"async": "^1.5.2",
-		"blakejs": "git+https://github.com/dcposch/blakejs.git",
+		"blakejs": "git+https://github.com/trustnote/blakejs.git",
 		"jshint": "^2.9.6",
 		"lodash": "^4.6.1",
 		"longjohn": "^0.2.11",
