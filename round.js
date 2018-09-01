@@ -375,7 +375,8 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
-                    assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
+                    if (!assocCachedCoinbaseRatio[roundIndex])
+                        assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
                     callback(witnessRatioOfTrustMe);
                 }
             );    
@@ -385,6 +386,10 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
 
 function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
     getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
+        if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined')
+            throw Error("witnessRatioOfTrustMe is null " + JSON.stringify(witnessRatioOfTrustMe));
+        if(witnessRatioOfTrustMe[witnessAddress] === null || witnessRatioOfTrustMe[witnessAddress] ===  'undefined')
+            throw Error("witnessRatioOfTrustMe[witnessAddress] is null " + JSON.stringify(witnessRatioOfTrustMe[witnessAddress]));
         callback(witnessRatioOfTrustMe[witnessAddress]);
     });
 }
@@ -394,13 +399,18 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
     if(!validationUtils.isInteger(coinbase))
         throw Error("coinbase is not number ");
     
-    getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
-        if(!validationUtils.isInteger(totalCommission))
-            throw Error("totalCommission is not number ");
-        getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
-            if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
-                throw Error("witnessRatioOfTrustMe is null ");
-            callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
+    getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
+        console.log("rrrrrrrrrrrrrrr:" +roundIndex +"," + JSON.stringify(witnesses));
+        if(witnesses.indexOf(witnessAddress) === -1)
+            throw Error("the witness " + witnessAddress + " is not the right witness of round " + roundIndex);
+        getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
+            if(!validationUtils.isInteger(totalCommission))
+                throw Error("totalCommission is not number ");
+            getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
+                if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
+                    throw Error("witnessRatioOfTrustMe is null ");
+                callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
+            });
         });
     });
 }
