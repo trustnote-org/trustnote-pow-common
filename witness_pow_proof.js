@@ -25,7 +25,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 {
 	let arrUnstableMcJoints			= [];
 
-	let arrLastBallUnits			= []; // last ball units referenced from MC-majority-witnessed unstable MC units
+	let arrLastMajorityWitnessedBallUnits	= []; // last ball units referenced from MC-majority-witnessed unstable MC units
 	let sLastBallUnit			= null;
 	let nLastBallMci			= null;
 
@@ -64,7 +64,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 							//	( genesis lacks sLastBallUnit )
 							if ( objJoint.unit.last_ball_unit && arrFoundTrustMEAuthors.length >= _constants.MAJORITY_OF_WITNESSES )
 							{
-								arrLastBallUnits.push( objJoint.unit.last_ball_unit );
+								arrLastMajorityWitnessedBallUnits.push( objJoint.unit.last_ball_unit );
 							}
 
 							//	...
@@ -77,7 +77,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 		function( cb )
 		{
 			//	select the newest last ball unit
-			if ( arrLastBallUnits.length === 0 )
+			if ( arrLastMajorityWitnessedBallUnits.length === 0 )
 			{
 				return cb( "your witness list might be too much off, too few witness authored units" );
 			}
@@ -85,7 +85,7 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 			_db.query
 			(
 				"SELECT unit, main_chain_index FROM units WHERE unit IN(?) ORDER BY main_chain_index DESC LIMIT 1",
-				[ arrLastBallUnits ],
+				[ arrLastMajorityWitnessedBallUnits ],
 				function( rows )
 				{
 					//
@@ -123,11 +123,11 @@ function preparePowWitnessProof( last_stable_mci, handleResult )
 function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult )
 {
 	//	unstable MC joints
-	let arrParentUnits		= null;
-	let arrFoundTrustMEAuthors	= [];
-	let arrLastBallUnits		= [];
-	let assocLastBallByLastBallUnit	= {};
-	let arrTrustMEJoints		= [];
+	let arrParentUnits			= null;
+	let arrFoundTrustMEAuthors		= [];
+	let arrLastMajorityWitnessedBallUnits	= [];
+	let assocLastBallByLastBallUnit		= {};
+	let arrTrustMEJoints			= [];
 
 	//
 	//	arrUnstableMcJoints were collected by SQL below:
@@ -175,7 +175,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		arrParentUnits = objUnit.parent_units;
 		if ( objUnit.last_ball_unit && arrFoundTrustMEAuthors.length >= _constants.MAJORITY_OF_WITNESSES )
 		{
-			arrLastBallUnits.push( objUnit.last_ball_unit );
+			arrLastMajorityWitnessedBallUnits.push( objUnit.last_ball_unit );
 			assocLastBallByLastBallUnit[ objUnit.last_ball_unit ] = objUnit.last_ball;
 		}
 	}
@@ -186,7 +186,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 	{
 		return handleResult( "not enough witnesses" );
 	}
-	if ( 0 === arrLastBallUnits.length )
+	if ( 0 === arrLastMajorityWitnessedBallUnits.length )
 	{
 		throw Error( "processWitnessProof: no last ball units" );
 	}
@@ -381,7 +381,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 		},
 	], function( err )
 	{
-		err ? handleResult( err ) : handleResult( null, arrLastBallUnits, assocLastBallByLastBallUnit );
+		err ? handleResult( err ) : handleResult( null, arrLastMajorityWitnessedBallUnits, assocLastBallByLastBallUnit );
 	});
 }
 

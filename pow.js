@@ -142,7 +142,7 @@ let _sAssocSingleWallet		= null;
  * 	failed to start		pfnCallback( error );
  */
 function startMining( oConn, nRoundIndex, pfnCallback )
-{
+{ 
 	if ( 'function' !== typeof pfnCallback )
 	{
 		//	arguments.callee.name
