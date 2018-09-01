@@ -121,11 +121,22 @@ function prepareCatchupChain( catchupRequest, callbacks )
 
 			goUp( sLastBallUnit );
 
+			//
+			//	goUp means going up along its last_ball_unit
+			//
+			//	current joint -> unit.last_ball_unit
+			//
 			function goUp( unit )
 			{
 				_storage.readJointWithBall( _db, unit, function( objJoint )
 				{
+					//
+					//	push
+					//	objJoint { unit, ball }
+					//
 					objCatchupChain.stable_last_ball_joints.push( objJoint );
+
+					//	...
 					_storage.readUnitProps( _db, unit, function( objUnitProps )
 					{
 						( objUnitProps.main_chain_index <= last_stable_mci )
