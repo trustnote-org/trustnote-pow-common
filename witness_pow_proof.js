@@ -164,6 +164,11 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 					arrFoundTrustMEAuthors.push( address );
 				}
 
+				//
+				//	TODO
+				//	@20180902 17:53 by XING
+				//	move line "bAddedJoint = true;" into braces above
+				//
 				if ( ! bAddedJoint )
 				{
 					arrTrustMEJoints.push( objJoint );
