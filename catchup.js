@@ -206,7 +206,7 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	(
 		catchupChain.unstable_mc_joints,
 		true,
-		function( err, arrLastBallUnits, assocLastBallByLastBallUnit )
+		function( err, arrLastMajorityWitnessedBallUnits, assocLastBallByLastBallUnit )
 		{
 			if ( err )
 			{
@@ -215,7 +215,7 @@ function processCatchupChain( catchupChain, peer, callbacks )
 
 			let objFirstStableJoint	= catchupChain.stable_last_ball_joints[0];
 			let objFirstStableUnit	= objFirstStableJoint.unit;
-			if ( arrLastBallUnits.indexOf(objFirstStableUnit.unit) === -1 )
+			if ( arrLastMajorityWitnessedBallUnits.indexOf(objFirstStableUnit.unit) === -1 )
 			{
 				return callbacks.ifError( "first stable unit is not last ball unit of any unstable unit" );
 			}
