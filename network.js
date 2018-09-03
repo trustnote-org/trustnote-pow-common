@@ -2642,10 +2642,10 @@ function handleRequest( ws, tag, command, params )
 				//    sendFreeJoints(ws);
 				return sendErrorResponse(ws, tag, "I'm light, cannot subscribe you to updates");
 			}
-			function version2int(version){
-				var arr = version.split('.');
-				return arr[0]*10000 + arr[1]*100 + arr[2]*1;
-			}
+			// function version2int(version){
+			// 	var arr = version.split('.');
+			// 	return arr[0]*10000 + arr[1]*100 + arr[2]*1;
+			// }
 			// if (typeof ws.library_version === 'string' && version2int(ws.library_version) < version2int('0.1.0')){
 			// 	sendErrorResponse(ws, tag, "old core");
 			// 	return ws.close(1000, "old core");
