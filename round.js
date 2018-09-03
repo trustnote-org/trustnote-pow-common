@@ -371,8 +371,11 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         else
                             witnessRatioOfTrustMe[row.address]++;
                     }
-
+                    if(isNaN(totalCountOfTrustMe))
+                        throw Error("calculate coinbase radio error, wrong total count " + totalCountOfTrustMe);
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
+                        if(isNaN(witnessRatioOfTrustMe[address]))
+                            throw Error("calculate coinbase radio error, wrong TrustME count " + witnessRatioOfTrustMe[address]);
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
                     if (!assocCachedCoinbaseRatio[roundIndex])
@@ -386,10 +389,10 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
 
 function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
     getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
-        if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined')
+        if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined')
             throw Error("witnessRatioOfTrustMe is null " + JSON.stringify(witnessRatioOfTrustMe));
-        if(witnessRatioOfTrustMe[witnessAddress] === null || witnessRatioOfTrustMe[witnessAddress] ===  'undefined')
-            throw Error("witnessRatioOfTrustMe[witnessAddress] is null " + JSON.stringify(witnessRatioOfTrustMe[witnessAddress]));
+        if(witnessRatioOfTrustMe[witnessAddress] === null || typeof witnessRatioOfTrustMe[witnessAddress] ===  'undefined' || isNaN(witnessRatioOfTrustMe[witnessAddress]))
+            throw Error("witnessRatioOfTrustMe[witnessAddress] is null  or is NaN" + JSON.stringify(witnessRatioOfTrustMe[witnessAddress]));
         callback(witnessRatioOfTrustMe[witnessAddress]);
     });
 }
@@ -407,8 +410,8 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
             if(!validationUtils.isInteger(totalCommission))
                 throw Error("totalCommission is not number ");
             getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
-                if(witnessRatioOfTrustMe === null || witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
-                    throw Error("witnessRatioOfTrustMe is null ");
+                if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
+                    throw Error("witnessRatioOfTrustMe is null or is NaN" + JSON.stringify(witnessRatioOfTrustMe));
                 callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
             });
         });
