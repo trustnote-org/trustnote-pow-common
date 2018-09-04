@@ -708,9 +708,32 @@ function requestFromLightVendor( command, params, responseHandler )
 
 function printConnectionStatus()
 {
-	console.log(wss.clients.length+" incoming connections, "+arrOutboundPeers.length+" outgoing connections, "+
-		Object.keys(assocConnectingOutboundWebsockets).length+" outgoing connections being opened");
+	console.log( `${ wss.clients.length } incoming connections, 
+			${ arrOutboundPeers.length } outgoing connections, 
+			${ Object.keys(assocConnectingOutboundWebsockets).length } outgoing connections being opened` );
+
+	//	...
+	printEventBusStatus();
 }
+
+function printEventBusStatus()
+{
+	//
+	//	watching all events in eventBus.
+	//
+	console.log( `||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||` );
+	let arrAllEventNames	= eventBus.eventNames();
+	if ( Array.isArray( arrAllEventNames ) )
+	{
+		for ( let i = 0; i < arrAllEventNames.length; i ++ )
+		{
+			let sEventName  = arrAllEventNames[ i ];
+			console.log( `|||||||||| '${ sEventName }' listener count : ${ eventBus.listenerCount( sEventName ) }.` );
+		}
+	}
+	console.log( `||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||` );
+}
+
 
 function subscribe( ws )
 {
