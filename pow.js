@@ -279,6 +279,24 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  *	@param	{string}	oInput.superNodeAuthor
  *	@param	{function}	pfnCallback( err )
  *	@return	{boolean}
+ *
+ * 	@events
+ *
+ * 	'pow_mined_gift'
+ *
+ * 		will return solution object for success
+ * 		{
+ *			round		: oInput.roundIndex,
+ *			difficulty	: oInput.difficulty,
+ *			publicSeed	: oInput.publicSeed,
+ *			nonce		: oData.nonce,
+ *			hash		: oData.hashHex
+ *		};
+ *
+ *		or an error occurred
+ *		{
+ *			err : `INVALID DATA! ...`
+ *		};
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
@@ -384,6 +402,8 @@ function startMiningWithInputs( oInput, pfnCallback )
  *								e.g.: '3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
  *	@param	{number}	nNonce				number with the value great then or equal to 0
  *	@param	{function}	pfnCallback( err, { code : 0 } )
+ *				err will be null and code will be 0 if the PoW was checked as valid
+ *				otherwise, error info will be returned by err
  *	@return	{boolean}
  */
 function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
@@ -406,7 +426,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
+		return pfnCallback( null, { code : 0 } );
 	}
 
 	//	...
