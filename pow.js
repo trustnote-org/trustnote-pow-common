@@ -73,10 +73,10 @@ let _sAssocSingleWallet		= null;
  *	let nCallStartCalculation = startMiningWithInputs
  *	(
  *		{
- *			currentRoundIndex	: 111,
- *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			currentDifficulty	: 11111,
- *			currentPubSeed		: 'public key',
+ *			roundIndex		: 111,
+ *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			difficulty		: 11111,
+ *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		function( err )
@@ -94,10 +94,10 @@ let _sAssocSingleWallet		= null;
  *	checkProofOfWork
  *	(
  *		{
- *			currentRoundIndex	: 111,
- *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			currentDifficulty	: 11111,
- *			currentPubSeed		: 'public key',
+ *			roundIndex		: 111,
+ *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			difficulty		: 11111,
+ *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		'00000001c570c4764aadb3f09895619f549000b8b51a789e7f58ea7500007097',
@@ -150,20 +150,30 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		setTimeout( () =>
+		_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
 		{
-			_event_bus.emit
-			(
-				'pow_mined_gift',
+			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			{
+				setTimeout( () =>
 				{
-					round	: nRoundIndex,
-					nonce	: _generateRandomInteger( 10000, 200000 ),
-					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-				}
-			);
-		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+					_event_bus.emit
+					(
+						'pow_mined_gift',
+						{
+							round		: nRoundIndex,
+							difficulty	: nDifficulty,
+							publicSeed	: sSeed,
+							nonce		: _generateRandomInteger( 10000, 200000 ),
+							hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+						}
+					);
+				}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
 
-		pfnCallback( null );
+				//	...
+				pfnCallback( null );
+			});
+		});
+
 		return true;
 	}
 
@@ -234,10 +244,10 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		}
 
 		let objInput	= {
-			currentRoundIndex	: nRoundIndex,
-			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
-			currentDifficulty	: nCurrentDifficultyValue,
-			currentPubSeed		: sCurrentPublicSeed,
+			roundIndex		: nRoundIndex,
+			firstTrustMEBall	: sCurrentFirstTrustMEBall,
+			difficulty		: nCurrentDifficultyValue,
+			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
 		startMiningWithInputs( objInput, function( err )
@@ -262,13 +272,31 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  *	start calculation with inputs
  *
  * 	@param	{object}	oInput
- *	@param	{number}	oInput.currentRoundIndex
- *	@param	{string}	oInput.currentFirstTrustMEBall
- *	@param	{string}	oInput.currentDifficulty
- *	@param	{string}	oInput.currentPubSeed
+ *	@param	{number}	oInput.roundIndex
+ *	@param	{string}	oInput.firstTrustMEBall
+ *	@param	{string}	oInput.difficulty
+ *	@param	{string}	oInput.publicSeed
  *	@param	{string}	oInput.superNodeAuthor
  *	@param	{function}	pfnCallback( err )
  *	@return	{boolean}
+ *
+ * 	@events
+ *
+ * 	'pow_mined_gift'
+ *
+ * 		will return solution object for success
+ * 		{
+ *			round		: oInput.roundIndex,
+ *			difficulty	: oInput.difficulty,
+ *			publicSeed	: oInput.publicSeed,
+ *			nonce		: oData.nonce,
+ *			hash		: oData.hashHex
+ *		};
+ *
+ *		or an error occurred
+ *		{
+ *			err : `INVALID DATA! ...`
+ *		};
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
@@ -280,21 +308,21 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMining with invalid oInput' );
 	}
-	if ( 'number' !== typeof oInput.currentRoundIndex )
+	if ( 'number' !== typeof oInput.roundIndex )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentRoundIndex' );
+		throw new Error( 'call startMining with invalid oInput.roundIndex' );
 	}
-	if ( 'string' !== typeof oInput.currentFirstTrustMEBall || 44 !== oInput.currentFirstTrustMEBall.length )
+	if ( 'string' !== typeof oInput.firstTrustMEBall || 44 !== oInput.firstTrustMEBall.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentFirstTrustMEBall' );
+		throw new Error( 'call startMining with invalid oInput.firstTrustMEBall' );
 	}
-	if ( 'number' !== typeof oInput.currentDifficulty || oInput.currentDifficulty <= 0 )
+	if ( 'number' !== typeof oInput.difficulty || oInput.difficulty <= 0 )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentDifficulty' );
+		throw new Error( 'call startMining with invalid oInput.difficulty' );
 	}
-	if ( 'string' !== typeof oInput.currentPubSeed || 0 === oInput.currentPubSeed.length )
+	if ( 'string' !== typeof oInput.publicSeed || 0 === oInput.publicSeed.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentPubSeed' );
+		throw new Error( 'call startMining with invalid oInput.publicSeed' );
 	}
 	if ( 'string' !== typeof oInput.superNodeAuthor || 0 === oInput.superNodeAuthor.length )
 	{
@@ -311,7 +339,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	let _oOptions	=
 		{
 			bufInputHeader	: _createMiningInputBufferFromObject( oInput ),
-			difficulty	: oInput.currentDifficulty,
+			difficulty	: oInput.difficulty,
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
@@ -328,9 +356,11 @@ function startMiningWithInputs( oInput, pfnCallback )
 				{
 					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
 					objSolution	= {
-						round	: oInput.currentRoundIndex,
-						nonce	: oData.nonce,
-						hash	: oData.hashHex
+						round		: oInput.roundIndex,
+						difficulty	: oInput.difficulty,
+						publicSeed	: oInput.publicSeed,
+						nonce		: oData.nonce,
+						hash		: oData.hashHex
 					};
 				}
 				else if ( oData.gameOver )
@@ -363,15 +393,17 @@ function startMiningWithInputs( oInput, pfnCallback )
  *	verify if a solution( hash, nonce ) is valid
  *
  * 	@param	{object}	objInput
- *	@param	{number}	objInput.currentRoundIndex
- *	@param	{string}	objInput.currentFirstTrustMEBall
- *	@param	{string}	objInput.currentDifficulty
- *	@param	{string}	objInput.currentPubSeed
+ *	@param	{number}	objInput.roundIndex
+ *	@param	{string}	objInput.firstTrustMEBall
+ *	@param	{string}	objInput.difficulty
+ *	@param	{string}	objInput.publicSeed
  *	@param	{string}	objInput.superNodeAuthor
  *	@param	{string}	sHash				hex string with the length of 64 bytes,
  *								e.g.: '3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
  *	@param	{number}	nNonce				number with the value great then or equal to 0
  *	@param	{function}	pfnCallback( err, { code : 0 } )
+ *				err will be null and code will be 0 if the PoW was checked as valid
+ *				otherwise, error info will be returned by err
  *	@return	{boolean}
  */
 function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
@@ -394,14 +426,14 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		return ( ( Math.random() * ( 9999 - 1000 ) + 1000 ) > 5000 );
+		return pfnCallback( null, { code : 0 } );
 	}
 
 	//	...
 	_pow_miner.checkProofOfWork
 	(
 		_createMiningInputBufferFromObject( objInput ),
-		objInput.currentDifficulty,
+		objInput.difficulty,
 		nNonce,
 		sHash,
 		pfnCallback
@@ -859,10 +891,10 @@ function _createMiningInputBufferFromObject( objInput )
 
 	//	...
 	objInputCpy	= {
-		currentRoundIndex	: objInput.currentRoundIndex,
-		currentFirstTrustMEBall	: objInput.currentFirstTrustMEBall,
-		currentDifficulty	: objInput.currentDifficulty,
-		currentPubSeed		: objInput.currentPubSeed,
+		roundIndex		: objInput.roundIndex,
+		firstTrustMEBall	: objInput.firstTrustMEBall,
+		difficulty		: objInput.difficulty,
+		publicSeed		: objInput.publicSeed,
 		superNodeAuthor		: objInput.superNodeAuthor,
 	};
 	sInput		= JSON.stringify( objInputCpy );

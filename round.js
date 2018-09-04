@@ -214,7 +214,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
         [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
 		function(rows){
 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
-                throw Error("Can not find enough witnesses ");
+                throw Error("Can not find enough witnesses of round" + roundIndex);
             witnesses = rows.map(function(row) { return row.address; } );
             witnesses.push(constants.FOUNDATION_ADDRESS);
             assocCachedWitnesses[roundIndex] = witnesses;

@@ -672,32 +672,49 @@ function readWitnessesOnMcUnit(conn, main_chain_index, handleWitnesses){
 }*/
 
 
-// max_mci must be stable
-function readDefinitionByAddress(conn, address, max_mci, callbacks){
-	if (max_mci === null)
+//	max_mci must be stable
+function readDefinitionByAddress( conn, address, max_mci, callbacks )
+{
+	if ( max_mci === null )
+	{
 		max_mci = MAX_INT32;
-	// try to find last definition change, otherwise definition_chash=address
-	conn.query(
-		"SELECT definition_chash FROM address_definition_changes CROSS JOIN units USING(unit) \n\
+	}
+
+	//
+	//	try to find last definition change, otherwise definition_chash=address
+	//
+	conn.query
+	(
+		"SELECT definition_chash FROM address_definition_changes CROSS JOIN units USING(unit) \
 		WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? ORDER BY level DESC LIMIT 1", 
-		[address, max_mci], 
-		function(rows){
-			var definition_chash = (rows.length > 0) ? rows[0].definition_chash : address;
-			readDefinitionAtMci(conn, definition_chash, max_mci, callbacks);
+		[ address, max_mci ],
+		function( rows )
+		{
+			var definition_chash = ( rows.length > 0 ) ? rows[ 0 ].definition_chash : address;
+			readDefinitionAtMci( conn, definition_chash, max_mci, callbacks );
 		}
 	);
 }
 
-// max_mci must be stable
-function readDefinitionAtMci(conn, definition_chash, max_mci, callbacks){
-	var sql = "SELECT definition FROM definitions CROSS JOIN unit_authors USING(definition_chash) CROSS JOIN units USING(unit) \n\
+//	max_mci must be stable
+function readDefinitionAtMci( conn, definition_chash, max_mci, callbacks )
+{
+	var sql = "SELECT definition FROM definitions CROSS JOIN unit_authors USING(definition_chash) CROSS JOIN units USING(unit) \
 		WHERE definition_chash=? AND is_stable=1 AND sequence='good' AND main_chain_index<=?";
-	var params = [definition_chash, max_mci];
-	conn.query(sql, params, function(rows){
-		if (rows.length === 0)
-			return callbacks.ifDefinitionNotFound(definition_chash);
-		callbacks.ifFound(JSON.parse(rows[0].definition));
-	});
+	var params = [ definition_chash, max_mci ];
+	conn.query
+	(
+		sql,
+		params,
+		function( rows )
+		{
+			if ( rows.length === 0 )
+			{
+				return callbacks.ifDefinitionNotFound( definition_chash );
+			}
+			callbacks.ifFound( JSON.parse( rows[ 0 ].definition ) );
+		}
+	);
 }
 
 function readDefinition(conn, definition_chash, callbacks){

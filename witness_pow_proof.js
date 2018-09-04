@@ -211,8 +211,8 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			objUnit.authors,
 			function( author, cb3 )
 			{
-				let address = author.address;
-				if ( -1 === arrFoundTrustMEAuthors.indexOf( address ) )
+				let sAddress = author.address;
+				if ( -1 === arrFoundTrustMEAuthors.indexOf( sAddress ) )
 				{
 					//	not a witness - skip it
 					return cb3();
@@ -221,10 +221,10 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 				//
 				//	the latest definition chash of the witness
 				//
-				let definition_chash = assocDefinitionChashes[ address ];
+				let definition_chash = assocDefinitionChashes[ sAddress ];
 				if ( ! definition_chash )
 				{
-					throw Error( "definition chash not known for address " + address );
+					throw Error( "definition chash not known for address " + sAddress );
 				}
 				if ( author.definition )
 				{
@@ -263,10 +263,10 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 							{
 								let message = objUnit.messages[ i ];
 								if ( 'address_definition_change' === message.app
-									&& ( message.payload.address === address ||
-										1 === objUnit.authors.length && objUnit.authors[ 0 ].address === address ) )
+									&& ( message.payload.address === sAddress ||
+										1 === objUnit.authors.length && objUnit.authors[ 0 ].address === sAddress ) )
 								{
-									assocDefinitionChashes[ address ] = message.payload.definition_chash;
+									assocDefinitionChashes[ sAddress ] = message.payload.definition_chash;
 									bFound = true;
 								}
 							}
@@ -295,7 +295,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 					},
 					ifDefinitionNotFound : function( sDefinitionCHash )
 					{
-						throw Error( "definition " + definition_chash + " not found, address " + address );
+						throw Error( "definition " + definition_chash + " not found, address " + sAddress );
 					}
 				});
 			},
@@ -348,20 +348,20 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			_async.eachSeries
 			(
 				arrFoundTrustMEAuthors,
-				function( address, cb2 )
+				function( sAddress, cb2 )
 				{
-					_storage.readDefinitionByAddress( _db, address, null,
+					_storage.readDefinitionByAddress( _db, sAddress, null,
 					{
 						ifFound : function( arrDefinition )
 						{
 							let definition_chash = _object_hash.getChash160( arrDefinition );
 							assocDefinitions[ definition_chash ]	= arrDefinition;
-							assocDefinitionChashes[ address ]	= definition_chash;
+							assocDefinitionChashes[ sAddress ]	= definition_chash;
 							cb2();
 						},
 						ifDefinitionNotFound : function( definition_chash )
 						{
-							assocDefinitionChashes[ address ]	= definition_chash;
+							assocDefinitionChashes[ sAddress ]	= definition_chash;
 							cb2();
 						}
 					});

@@ -267,7 +267,7 @@ function processWitnessProof( arrUnstableMcJoints, arrWitnessChangeAndDefinition
 					function(objJoint, cb2){
 						var objUnit = objJoint.unit;
 						if (!bFromCurrent)
-							return validateUnit(objUnit, true, cb2);
+							return  validateUnit(objUnit, true, cb2);
 						db.query("SELECT 1 FROM units WHERE unit=? AND is_stable=1", [objUnit.unit], function(rows){
 							if (rows.length > 0) // already known and stable - skip it
 								return cb2();
