@@ -73,10 +73,10 @@ let _sAssocSingleWallet		= null;
  *	let nCallStartCalculation = startMiningWithInputs
  *	(
  *		{
- *			roundIndex	: 111,
- *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			currentDifficulty	: 11111,
- *			currentPubSeed		: 'public key',
+ *			roundIndex		: 111,
+ *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			difficulty		: 11111,
+ *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		function( err )
@@ -94,10 +94,10 @@ let _sAssocSingleWallet		= null;
  *	checkProofOfWork
  *	(
  *		{
- *			roundIndex	: 111,
- *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			currentDifficulty	: 11111,
- *			currentPubSeed		: 'public key',
+ *			roundIndex		: 111,
+ *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
+ *			difficulty		: 11111,
+ *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
  *		'00000001c570c4764aadb3f09895619f549000b8b51a789e7f58ea7500007097',
@@ -168,10 +168,12 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 						}
 					);
 				}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+
+				//	...
+				pfnCallback( null );
 			});
 		});
 
-		pfnCallback( null );
 		return true;
 	}
 
@@ -243,9 +245,9 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 
 		let objInput	= {
 			roundIndex		: nRoundIndex,
-			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
-			currentDifficulty	: nCurrentDifficultyValue,
-			currentPubSeed		: sCurrentPublicSeed,
+			firstTrustMEBall	: sCurrentFirstTrustMEBall,
+			difficulty		: nCurrentDifficultyValue,
+			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
 		startMiningWithInputs( objInput, function( err )
@@ -271,9 +273,9 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  *
  * 	@param	{object}	oInput
  *	@param	{number}	oInput.roundIndex
- *	@param	{string}	oInput.currentFirstTrustMEBall
- *	@param	{string}	oInput.currentDifficulty
- *	@param	{string}	oInput.currentPubSeed
+ *	@param	{string}	oInput.firstTrustMEBall
+ *	@param	{string}	oInput.difficulty
+ *	@param	{string}	oInput.publicSeed
  *	@param	{string}	oInput.superNodeAuthor
  *	@param	{function}	pfnCallback( err )
  *	@return	{boolean}
@@ -292,17 +294,17 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMining with invalid oInput.roundIndex' );
 	}
-	if ( 'string' !== typeof oInput.currentFirstTrustMEBall || 44 !== oInput.currentFirstTrustMEBall.length )
+	if ( 'string' !== typeof oInput.firstTrustMEBall || 44 !== oInput.firstTrustMEBall.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentFirstTrustMEBall' );
+		throw new Error( 'call startMining with invalid oInput.firstTrustMEBall' );
 	}
-	if ( 'number' !== typeof oInput.currentDifficulty || oInput.currentDifficulty <= 0 )
+	if ( 'number' !== typeof oInput.difficulty || oInput.difficulty <= 0 )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentDifficulty' );
+		throw new Error( 'call startMining with invalid oInput.difficulty' );
 	}
-	if ( 'string' !== typeof oInput.currentPubSeed || 0 === oInput.currentPubSeed.length )
+	if ( 'string' !== typeof oInput.publicSeed || 0 === oInput.publicSeed.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentPubSeed' );
+		throw new Error( 'call startMining with invalid oInput.publicSeed' );
 	}
 	if ( 'string' !== typeof oInput.superNodeAuthor || 0 === oInput.superNodeAuthor.length )
 	{
@@ -319,7 +321,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	let _oOptions	=
 		{
 			bufInputHeader	: _createMiningInputBufferFromObject( oInput ),
-			difficulty	: oInput.currentDifficulty,
+			difficulty	: oInput.difficulty,
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
@@ -337,8 +339,8 @@ function startMiningWithInputs( oInput, pfnCallback )
 					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
 					objSolution	= {
 						round		: oInput.roundIndex,
-						difficulty	: oInput.currentDifficulty,
-						publicSeed	: oInput.currentPubSeed,
+						difficulty	: oInput.difficulty,
+						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
 					};
@@ -374,9 +376,9 @@ function startMiningWithInputs( oInput, pfnCallback )
  *
  * 	@param	{object}	objInput
  *	@param	{number}	objInput.roundIndex
- *	@param	{string}	objInput.currentFirstTrustMEBall
- *	@param	{string}	objInput.currentDifficulty
- *	@param	{string}	objInput.currentPubSeed
+ *	@param	{string}	objInput.firstTrustMEBall
+ *	@param	{string}	objInput.difficulty
+ *	@param	{string}	objInput.publicSeed
  *	@param	{string}	objInput.superNodeAuthor
  *	@param	{string}	sHash				hex string with the length of 64 bytes,
  *								e.g.: '3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
@@ -411,7 +413,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	_pow_miner.checkProofOfWork
 	(
 		_createMiningInputBufferFromObject( objInput ),
-		objInput.currentDifficulty,
+		objInput.difficulty,
 		nNonce,
 		sHash,
 		pfnCallback
@@ -869,10 +871,10 @@ function _createMiningInputBufferFromObject( objInput )
 
 	//	...
 	objInputCpy	= {
-		roundIndex	: objInput.roundIndex,
-		currentFirstTrustMEBall	: objInput.currentFirstTrustMEBall,
-		currentDifficulty	: objInput.currentDifficulty,
-		currentPubSeed		: objInput.currentPubSeed,
+		roundIndex		: objInput.roundIndex,
+		firstTrustMEBall	: objInput.firstTrustMEBall,
+		difficulty		: objInput.difficulty,
+		publicSeed		: objInput.publicSeed,
 		superNodeAuthor		: objInput.superNodeAuthor,
 	};
 	sInput		= JSON.stringify( objInputCpy );
