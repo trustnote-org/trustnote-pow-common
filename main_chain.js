@@ -800,7 +800,7 @@ function markMcIndexStable(conn, mci, onDone){
 					conn.query(
 						"SELECT distinct(address) \n\
 						FROM units JOIN unit_authors using (unit) \n\
-						WHERE round_index=? AND is_stable=1 AND pow_type=?", 
+						WHERE round_index=? AND is_stable=1 AND pow_type=? AND sequence='good'", 
 						[round_index, constants.POW_TYPE_POW_EQUHASH], 
 						function(rowsPow){
 							if (rowsPow.length < constants.COUNT_POW_WITNESSES)
