@@ -4,7 +4,7 @@ const _trustnote_pow_miner	= require( 'trustnote-pow-miner' );
 
 
 //
-// *	@param	{number}	oInput.currentRoundIndex
+// *	@param	{number}	oInput.roundIndex
 // *	@param	{string}	oInput.currentFirstTrustMEBall
 // *	@param	{string}	oInput.currentDifficulty
 // *	@param	{string}	oInput.currentPubSeed
@@ -25,7 +25,7 @@ _event_bus.on
 _pow.startMiningWithInputs
 (
 	{
-		currentRoundIndex	: 111,
+		roundIndex	: 111,
 		currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
 		currentDifficulty	: nDifficulty,
 		currentPubSeed		: 'public key',

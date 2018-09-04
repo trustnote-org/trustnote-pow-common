@@ -73,7 +73,7 @@ let _sAssocSingleWallet		= null;
  *	let nCallStartCalculation = startMiningWithInputs
  *	(
  *		{
- *			currentRoundIndex	: 111,
+ *			roundIndex	: 111,
  *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
  *			currentDifficulty	: 11111,
  *			currentPubSeed		: 'public key',
@@ -94,7 +94,7 @@ let _sAssocSingleWallet		= null;
  *	checkProofOfWork
  *	(
  *		{
- *			currentRoundIndex	: 111,
+ *			roundIndex	: 111,
  *			currentFirstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
  *			currentDifficulty	: 11111,
  *			currentPubSeed		: 'public key',
@@ -150,18 +150,26 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		setTimeout( () =>
+		_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
 		{
-			_event_bus.emit
-			(
-				'pow_mined_gift',
+			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			{
+				setTimeout( () =>
 				{
-					round	: nRoundIndex,
-					nonce	: _generateRandomInteger( 10000, 200000 ),
-					hash	: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-				}
-			);
-		}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+					_event_bus.emit
+					(
+						'pow_mined_gift',
+						{
+							round		: nRoundIndex,
+							difficulty	: nDifficulty,
+							publicSeed	: sSeed,
+							nonce		: _generateRandomInteger( 10000, 200000 ),
+							hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+						}
+					);
+				}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+			});
+		});
 
 		pfnCallback( null );
 		return true;
@@ -234,7 +242,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		}
 
 		let objInput	= {
-			currentRoundIndex	: nRoundIndex,
+			roundIndex		: nRoundIndex,
 			currentFirstTrustMEBall	: sCurrentFirstTrustMEBall,
 			currentDifficulty	: nCurrentDifficultyValue,
 			currentPubSeed		: sCurrentPublicSeed,
@@ -262,7 +270,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
  *	start calculation with inputs
  *
  * 	@param	{object}	oInput
- *	@param	{number}	oInput.currentRoundIndex
+ *	@param	{number}	oInput.roundIndex
  *	@param	{string}	oInput.currentFirstTrustMEBall
  *	@param	{string}	oInput.currentDifficulty
  *	@param	{string}	oInput.currentPubSeed
@@ -280,9 +288,9 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMining with invalid oInput' );
 	}
-	if ( 'number' !== typeof oInput.currentRoundIndex )
+	if ( 'number' !== typeof oInput.roundIndex )
 	{
-		throw new Error( 'call startMining with invalid oInput.currentRoundIndex' );
+		throw new Error( 'call startMining with invalid oInput.roundIndex' );
 	}
 	if ( 'string' !== typeof oInput.currentFirstTrustMEBall || 44 !== oInput.currentFirstTrustMEBall.length )
 	{
@@ -328,9 +336,11 @@ function startMiningWithInputs( oInput, pfnCallback )
 				{
 					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
 					objSolution	= {
-						round	: oInput.currentRoundIndex,
-						nonce	: oData.nonce,
-						hash	: oData.hashHex
+						round		: oInput.roundIndex,
+						difficulty	: oInput.currentDifficulty,
+						publicSeed	: oInput.currentPubSeed,
+						nonce		: oData.nonce,
+						hash		: oData.hashHex
 					};
 				}
 				else if ( oData.gameOver )
@@ -363,7 +373,7 @@ function startMiningWithInputs( oInput, pfnCallback )
  *	verify if a solution( hash, nonce ) is valid
  *
  * 	@param	{object}	objInput
- *	@param	{number}	objInput.currentRoundIndex
+ *	@param	{number}	objInput.roundIndex
  *	@param	{string}	objInput.currentFirstTrustMEBall
  *	@param	{string}	objInput.currentDifficulty
  *	@param	{string}	objInput.currentPubSeed
@@ -859,7 +869,7 @@ function _createMiningInputBufferFromObject( objInput )
 
 	//	...
 	objInputCpy	= {
-		currentRoundIndex	: objInput.currentRoundIndex,
+		roundIndex	: objInput.roundIndex,
 		currentFirstTrustMEBall	: objInput.currentFirstTrustMEBall,
 		currentDifficulty	: objInput.currentDifficulty,
 		currentPubSeed		: objInput.currentPubSeed,
