@@ -1504,24 +1504,57 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 		return callback("can have only one PowEquhash message");
 	objValidationState.bHasBasePowequihash = true;
 
-	round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
-		if(bExist) 
-			return callback("pow unit can not being sent more than once in certain round");
-		return callback();
-	});
-	// Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
-	// Todo: to be implemented 
-    // if (!pow.isValidEquihash()){
-	// 	return callback("invalid pow equhash payload");
-	// }
-	// if (!pow.isValidDifficulty()){
-	// 	return callback("invalid pow difficulty payload");
-	// }
-	// if (!pow.isValidseed()){
-	// 	return callback("invalid pow seed payload");
-	// }
-    //return callback();
-	//return validatePaymentInputsAndOutputs(conn, payload, null, message_index, objUnit, objValidationState, callback);
+	var firstTrustMEBall = null;	
+	async.series(
+		[
+			function(cb){
+				round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
+					if(bExist) 
+						return cb("pow unit can not being sent more than once in certain round");
+					 cb();
+				});
+			},
+			function(cb){
+				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,max_wl,seed){
+					if (seed !== payload.seed )
+					   return cb("Wrong seed detected of round " + round_index + "expected :"+ seed +",actual :"+payload.seed);
+					cb();
+				});
+			},
+			function(cb){ 
+				round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
+					if(difficulty !== payload.difficulty)
+						return cb("Wrong difficulty detected of round " + round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
+					cb();
+				});
+			},
+			function(cb){  // find first trust me ball
+				round.queryFirstTrustMEBallOnMainChainByRoundIndex(conn,objUnit.round_index, function(err,ball){
+					if(err)
+						return cb(err);
+					firstTrustMEBall = ball;
+					cb();
+				});
+			},
+			function(cb){
+				var objPowProof={roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed, 
+					superNodeAuthor:objUnit.authors[0].address} ;
+				//check ifsolution is correct
+				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
+					if(err)
+						return cb("Wrong pow proof work: "+ err);
+					return cb();
+				});
+			}],
+			function(err){
+				if(err)
+					return callback(err)
+				callback();
+			}
+		);
+
+
+	//Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
 	
 }
 
