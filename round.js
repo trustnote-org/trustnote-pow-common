@@ -355,6 +355,9 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         throw Error("Can not find any trustme units ");
                     var totalCountOfTrustMe = 0;
                     var witnessRatioOfTrustMe = {};
+                    witnesses.forEach(function(witness){
+                        witnessRatioOfTrustMe[witness]=0;
+                    });
                     var addressTrustMeWl = {};
                     for (var i=0; i<rows.length; i++){
                         var row = rows[i];
