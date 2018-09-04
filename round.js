@@ -206,7 +206,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
     
     if (assocCachedWitnesses[roundIndex])
         return callback(assocCachedWitnesses[roundIndex]);
-        conn.query(
+    conn.query(
             "SELECT distinct(address) \n\
             FROM units JOIN unit_authors using (unit)\n\
             WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
@@ -389,6 +389,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
 
 function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
     getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
+        console.log("rrrrrrrrroundIndex : " + roundIndex + ",ratio is " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined')
             throw Error("witnessRatioOfTrustMe is null " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe[witnessAddress] === null || typeof witnessRatioOfTrustMe[witnessAddress] ===  'undefined' || isNaN(witnessRatioOfTrustMe[witnessAddress]))
