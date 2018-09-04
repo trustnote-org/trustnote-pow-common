@@ -206,7 +206,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
     
     if (assocCachedWitnesses[roundIndex])
         return callback(assocCachedWitnesses[roundIndex]);
-        conn.query(
+    conn.query(
             "SELECT distinct(address) \n\
             FROM units JOIN unit_authors using (unit)\n\
             WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
@@ -355,6 +355,9 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         throw Error("Can not find any trustme units ");
                     var totalCountOfTrustMe = 0;
                     var witnessRatioOfTrustMe = {};
+                    witnesses.forEach(function(witness){
+                        witnessRatioOfTrustMe[witness]=0;
+                    });
                     var addressTrustMeWl = {};
                     for (var i=0; i<rows.length; i++){
                         var row = rows[i];
@@ -389,6 +392,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
 
 function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
     getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
+        console.log("rrrrrrrrroundIndex : " + roundIndex + ",ratio is " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined')
             throw Error("witnessRatioOfTrustMe is null " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe[witnessAddress] === null || typeof witnessRatioOfTrustMe[witnessAddress] ===  'undefined' || isNaN(witnessRatioOfTrustMe[witnessAddress]))
@@ -440,6 +444,55 @@ function queryCoinBaseListByRoundIndex(conn, roundIndex, callback) {
         }
     );
 }
+
+/**
+ *	obtain ball address of the first TrustME unit
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err, arrCoinBaseList )
+ */
+function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid oConn` );
+	}
+	if ( 'number' !== typeof nRoundIndex )
+	{
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex, must be a number` );
+	}
+	if ( nRoundIndex <= 0 )
+	{
+		return pfnCallback( `call queryFirstTrustMEBallOnMainChainByRoundIndex with invalid nRoundIndex, must be greater than zero.` );
+	}
+
+	//	...
+	oConn.query
+	(
+		"SELECT ball \
+		FROM balls JOIN units USING(unit) \
+		WHERE units.round_index = ? AND units.is_stable=1 AND units.is_on_main_chain=1 AND units.sequence='good' AND units.pow_type=? \
+		ORDER BY units.main_chain_index ASC \
+		LIMIT 1",
+		[
+			nRoundIndex,
+			constants.POW_TYPE_TRUSTME
+		],
+		function( arrRows )
+		{
+			if ( 1 !== arrRows.length )
+			{
+				return pfnCallback( `Can not find a suitable ball for calculation pow.` );
+			}
+
+			//	...
+			return pfnCallback( null, arrRows[ 0 ][ 'ball' ] );
+		}
+	);
+}
+
 
 
 // coinbase end
@@ -506,4 +559,5 @@ exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
 exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
+exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
 
