@@ -1506,7 +1506,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	objValidationState.bHasBasePowequihash = true;
 
 	// dev branch disale real pow unit check temperorary
-	return callback();
+	//return callback();
 	
 	var firstTrustMEBall = null;	
 	async.series(
