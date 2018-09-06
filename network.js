@@ -1496,7 +1496,7 @@ function notifyWatchers( objJoint, source_ws )
 	});
 }
 
-eventBus.on('mci_became_stable', notifyWatchersAboutStableJoints);
+
 
 
 function notifyWatchersAboutStableJoints( mci )
@@ -1636,8 +1636,6 @@ function writeEvent( event, host )
 	peer_events_buffer.push({host: host, event: event, event_date: event_date});
 	flushEvents();
 }
-
-setInterval( function(){ flushEvents( true ) }, 1000 * 60 );
 
 
 
@@ -3148,10 +3146,15 @@ function startAcceptingConnections()
 
 function startRelay()
 {
-	if (process.browser || !conf.port) // no listener on mobile
-		wss = {clients: []};
+	if ( process.browser || ! conf.port )
+	{
+		//	no listener on mobile
+		wss = { clients : [] };
+	}
 	else
+	{
 		startAcceptingConnections();
+	}
 
 	//	...
 	checkCatchupLeftovers();
@@ -3211,10 +3214,29 @@ function isConnected()
 }
 
 
+/**
+ *	for unit tests
+ */
+if ( 'object' === typeof process.env && process.env.ENV_UNIT_TEST )
+{
+	//	for unit tests
+	wss = { clients : [] };
+}
+else
+{
+	eventBus.on( 'mci_became_stable', notifyWatchersAboutStableJoints );
+	setInterval
+	(
+		function()
+		{
+			flushEvents( true );
+		},
+		1000 * 60
+	);
 
+	start();
+}
 
-
-start();
 
 
 
@@ -3252,3 +3274,16 @@ exports.addLightWatchedAddress				= addLightWatchedAddress;
 
 exports.closeAllWsConnections				= closeAllWsConnections;
 exports.isConnected					= isConnected;
+
+
+/***
+ *	for debug
+ */
+if ( conf.debug )
+{
+	exports.connectToPeer		= connectToPeer;
+	exports.requestCatchup		= requestCatchup;
+}
+
+
+

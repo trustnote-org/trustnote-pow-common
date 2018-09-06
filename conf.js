@@ -7,7 +7,13 @@ function mergeExports(anotherModule){
 		exports[key] = anotherModule[key];
 }
 
-exports.debug	= true;
+
+/**
+ * 	for debug
+ */
+exports.debug		= true;
+
+
 
 // port we are listening on.  Set to null to disable accepting connections
 // recommended port for livenet: 6655
