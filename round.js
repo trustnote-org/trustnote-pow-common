@@ -377,6 +377,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     }
                     if(totalCountOfTrustMe === null || typeof totalCountOfTrustMe ===  'undefined' || isNaN(totalCountOfTrustMe))
                         throw Error("calculate coinbase radio error, wrong total count " + totalCountOfTrustMe);
+                    console.log("111111round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
                         if(witnessRatioOfTrustMe[address] === null || typeof witnessRatioOfTrustMe[address] ===  'undefined' || isNaN(witnessRatioOfTrustMe[address]))
                             throw Error("calculate coinbase radio error, wrong TrustME count " + witnessRatioOfTrustMe[address]);
@@ -384,6 +385,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     });
                     if (!assocCachedCoinbaseRatio[roundIndex])
                         assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
+                    console.log("222222round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     callback(witnessRatioOfTrustMe);
                 }
             );    
