@@ -348,7 +348,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
             conn.query(
                 "SELECT unit, witnessed_level, address \n\
                 FROM units JOIN unit_authors using (unit)\n\
-                WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=?", 
+                WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY witnessed_level, level", 
                 [constants.POW_TYPE_TRUSTME, roundIndex],
                 function(rows){
                     if (rows.length === 0 )
