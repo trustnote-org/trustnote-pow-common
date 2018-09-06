@@ -441,6 +441,7 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                 getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
                     if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
                         throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
+                    console.log("333333round index:"+roundIndex+",coinbase:"+coinbase+",totalCommission:"+totalCommission);
                     return callback(Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*witnessRatioOfTrustMe));
                 });
             }
