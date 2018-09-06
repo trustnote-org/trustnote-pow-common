@@ -427,6 +427,7 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                             if(otherWitnessRatioOfTrustMe === null || typeof otherWitnessRatioOfTrustMe ===  'undefined' || isNaN(otherWitnessRatioOfTrustMe))
                                 throw Error("otherWitnessRatioOfTrustMe is null or NaN" + JSON.stringify(otherWitnessRatioOfTrustMe));
                             sumAllOtherCoinbase += Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*otherWitnessRatioOfTrustMe);
+                            return cb2();
                         });                                           
                     },
                     function(){
