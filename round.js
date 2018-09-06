@@ -360,6 +360,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     });
                     var addressTrustMeWl = {};
                     for (var i=0; i<rows.length; i++){
+                        var row = rows[i];
                         if(witnesses.indexOf(row.address) === -1)
                             throw Error("wrong trustme unit exit ");
                         if(row.address === constants.FOUNDATION_ADDRESS)  // except foundation supernode
@@ -367,8 +368,6 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
                             continue;          
                         addressTrustMeWl[row.address] = row.witnessed_level;                  
-                        
-                        var row = rows[i];
                         
                         totalCountOfTrustMe++;
                         if(!witnessRatioOfTrustMe[row.address])
