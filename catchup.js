@@ -620,7 +620,6 @@ function processHashTree( arrBalls, callbacks )
 							);
 						}
 
-
 						if ( ! objBall.parent_balls )
 						{
 							return checkSkiplistBallsExist();
