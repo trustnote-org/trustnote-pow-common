@@ -785,7 +785,7 @@ function markMcIndexStable(conn, mci, onDone){
 						function(rowTrustME){
 							if (rowTrustME.length === 0)
 								return cb(); // next op
-							eventBus.emit("launch_coinbase", round_index);
+							eventBus.emit("launch_pow", round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
 								[rowTrustME[0].witnessed_level, round_index], 

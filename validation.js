@@ -1505,6 +1505,9 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 		return callback("can have only one PowEquhash message");
 	objValidationState.bHasBasePowequihash = true;
 
+	// dev branch disale real pow unit check temperorary
+	return callback();
+	
 	var firstTrustMEBall = null;	
 	async.series(
 		[

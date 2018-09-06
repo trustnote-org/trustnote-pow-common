@@ -346,6 +346,11 @@ function startMiningWithInputs( oInput, pfnCallback )
 	_pow_miner.stopMining();
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
 		let objSolution	= null;
 
 		if ( null === err )
@@ -383,6 +388,17 @@ function startMiningWithInputs( oInput, pfnCallback )
 
 		//	...
 		_event_bus.emit( 'pow_mined_gift', objSolution );
+
+		if ( ! objSolution.err )
+		{
+			//	successfully
+			pfnCallback( null );
+		}
+		else
+		{
+			//	failed
+			return pfnCallback( err );
+		}
 	});
 
 	return true;

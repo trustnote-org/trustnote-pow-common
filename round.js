@@ -348,7 +348,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
             conn.query(
                 "SELECT unit, witnessed_level, address \n\
                 FROM units JOIN unit_authors using (unit)\n\
-                WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=?", 
+                WHERE is_stable=1 AND is_on_main_chain=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY witnessed_level, level", 
                 [constants.POW_TYPE_TRUSTME, roundIndex],
                 function(rows){
                     if (rows.length === 0 )
@@ -363,26 +363,29 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                         var row = rows[i];
                         if(witnesses.indexOf(row.address) === -1)
                             throw Error("wrong trustme unit exit ");
+                        if(row.address === constants.FOUNDATION_ADDRESS)  // except foundation supernode
+                            continue;
                         if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
-                            continue;                            
+                            continue;          
+                        addressTrustMeWl[row.address] = row.witnessed_level;                  
                         
-                        addressTrustMeWl[row.address] = row.witnessed_level;
-
                         totalCountOfTrustMe++;
                         if(!witnessRatioOfTrustMe[row.address])
                             witnessRatioOfTrustMe[row.address]=1;
                         else
                             witnessRatioOfTrustMe[row.address]++;
                     }
-                    if(isNaN(totalCountOfTrustMe))
+                    if(totalCountOfTrustMe === null || typeof totalCountOfTrustMe ===  'undefined' || isNaN(totalCountOfTrustMe))
                         throw Error("calculate coinbase radio error, wrong total count " + totalCountOfTrustMe);
+                    console.log("111111round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
-                        if(isNaN(witnessRatioOfTrustMe[address]))
+                        if(witnessRatioOfTrustMe[address] === null || typeof witnessRatioOfTrustMe[address] ===  'undefined' || isNaN(witnessRatioOfTrustMe[address]))
                             throw Error("calculate coinbase radio error, wrong TrustME count " + witnessRatioOfTrustMe[address]);
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
                     if (!assocCachedCoinbaseRatio[roundIndex])
                         assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
+                    console.log("222222round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     callback(witnessRatioOfTrustMe);
                 }
             );    
@@ -391,8 +394,9 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
 }
 
 function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
+    if(witnessAddress === constants.FOUNDATION_ADDRESS)  // foundation supernode return 0
+        return callback(0);
     getAllCoinbaseRatioByRoundIndex(conn, roundIndex, function(witnessRatioOfTrustMe){
-        console.log("rrrrrrrrroundIndex : " + roundIndex + ",ratio is " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined')
             throw Error("witnessRatioOfTrustMe is null " + JSON.stringify(witnessRatioOfTrustMe));
         if(witnessRatioOfTrustMe[witnessAddress] === null || typeof witnessRatioOfTrustMe[witnessAddress] ===  'undefined' || isNaN(witnessRatioOfTrustMe[witnessAddress]))
@@ -413,11 +417,33 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
         getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
             if(!validationUtils.isInteger(totalCommission))
                 throw Error("totalCommission is not number ");
-            getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
-                if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
-                    throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
-                callback(Math.floor((coinbase+totalCommission)*witnessRatioOfTrustMe));
-            });
+            var totalCoinbase = coinbase + totalCommission;
+            if(witnessAddress === constants.FOUNDATION_ADDRESS) {  // foundation supernode coinbase = totalCoinbase - sumAllOtherCoinbase
+                var sumAllOtherCoinbase = 0; 
+                async.eachSeries(
+                    witnesses,
+                    function(otherWitness, cb2){
+                        if(otherWitness === constants.FOUNDATION_ADDRESS)
+                            return cb2();
+                        getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, otherWitness, function(otherWitnessRatioOfTrustMe){
+                            if(otherWitnessRatioOfTrustMe === null || typeof otherWitnessRatioOfTrustMe ===  'undefined' || isNaN(otherWitnessRatioOfTrustMe))
+                                throw Error("otherWitnessRatioOfTrustMe is null or NaN" + JSON.stringify(otherWitnessRatioOfTrustMe));
+                            sumAllOtherCoinbase += Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*otherWitnessRatioOfTrustMe);
+                            return cb2();
+                        });                                           
+                    },
+                    function(){
+                        return callback(totalCoinbase - sumAllOtherCoinbase);
+                    }
+                );
+            }
+            else {
+                getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
+                    if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
+                        throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
+                    return callback(Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*witnessRatioOfTrustMe));
+                });
+            }
         });
     });
 }
