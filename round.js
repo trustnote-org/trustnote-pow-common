@@ -427,7 +427,7 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                         getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, otherWitness, function(otherWitnessRatioOfTrustMe){
                             if(otherWitnessRatioOfTrustMe === null || typeof otherWitnessRatioOfTrustMe ===  'undefined' || isNaN(otherWitnessRatioOfTrustMe))
                                 throw Error("otherWitnessRatioOfTrustMe is null or NaN" + JSON.stringify(otherWitnessRatioOfTrustMe));
-                            sumAllOtherCoinbase += Math.floor(totalCoinbase*0.8*otherWitnessRatioOfTrustMe);
+                            sumAllOtherCoinbase += Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*otherWitnessRatioOfTrustMe);
                         });                                           
                     },
                     function(){
@@ -439,7 +439,7 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                 getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
                     if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
                         throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
-                    return callback(Math.floor(totalCoinbase*0.8*witnessRatioOfTrustMe));
+                    return callback(Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*witnessRatioOfTrustMe));
                 });
             }
         });
