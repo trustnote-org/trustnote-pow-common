@@ -366,6 +366,10 @@ function startMiningWithInputs( oInput, pfnCallback )
 				{
 					err = `pow-solution :: game over!`;
 				}
+				else
+				{
+					err = `pow-solution :: unknown error!`;
+				}
 			}
 			else
 			{
