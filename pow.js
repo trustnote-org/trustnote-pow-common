@@ -142,11 +142,19 @@ let _sAssocSingleWallet		= null;
  * 	failed to start		pfnCallback( error );
  */
 function startMining( oConn, nRoundIndex, pfnCallback )
-{ 
+{
+	if ( ! oConn )
+	{
+		throw new Error( `call startMining with invalid oConn.` );
+	}
+	if ( 'number' !== typeof nRoundIndex )
+	{
+		throw new Error( `call startMining with invalid nRoundIndex.` );
+	}
 	if ( 'function' !== typeof pfnCallback )
 	{
 		//	arguments.callee.name
-		throw new Error( `call startCalculation with invalid pfnCallback.` );
+		throw new Error( `call startMining with invalid pfnCallback.` );
 	}
 	if ( _conf.debug )
 	{
@@ -175,6 +183,61 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		});
 
 		return true;
+	}
+
+	obtainMiningInput( oConn, nRoundIndex, function( err, objInput )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		//	...
+		startMiningWithInputs( objInput, function( err )
+		{
+			if ( err )
+			{
+				return pfnCallback( err );
+			}
+
+			//
+			//	successfully
+			//
+			pfnCallback( null );
+		});
+	});
+
+	return true;
+}
+
+
+/**
+ *	obtain mining input
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err )
+ *	@return {boolean}
+ *
+ * 	@description
+ * 	start successfully	pfnCallback( null, objInput );
+ * 	failed to start		pfnCallback( error );
+ */
+function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		throw new Error( `call obtainMiningInput with invalid oConn.` );
+	}
+	if ( 'number' !== typeof nRoundIndex )
+	{
+		throw new Error( `call obtainMiningInput with invalid nRoundIndex.` );
+	}
+	if ( 'function' !== typeof pfnCallback )
+	{
+		//	arguments.callee.name
+		throw new Error( `call obtainMiningInput with invalid pfnCallback.` );
 	}
 
 	let sCurrentFirstTrustMEBall	= null;
@@ -250,18 +313,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
-		startMiningWithInputs( objInput, function( err )
-		{
-			if ( err )
-			{
-				return pfnCallback( err );
-			}
-
-			//
-			//	successfully
-			//
-			pfnCallback( null );
-		});
+		pfnCallback( null, objInput );
 	});
 
 	return true;
@@ -831,6 +883,7 @@ function _generateRandomInteger( nMin, nMax )
  *	@exports
  */
 module.exports.startMining					= startMining;
+module.exports.obtainMiningInput				= obtainMiningInput;
 module.exports.startMiningWithInputs				= startMiningWithInputs;
 module.exports.stopMining					= stopMining;
 
