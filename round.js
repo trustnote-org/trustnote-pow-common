@@ -365,12 +365,12 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                             throw Error("wrong trustme unit exit ");
                         if(row.address === constants.FOUNDATION_ADDRESS)  // except foundation supernode
                             continue;
-                        if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
+                        if(addressTrustMeWl[row.address] != null && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
                             continue;          
                         addressTrustMeWl[row.address] = row.witnessed_level;                  
                         
                         totalCountOfTrustMe++;
-                        if(!witnessRatioOfTrustMe[row.address])
+                        if(witnessRatioOfTrustMe[row.address] === null)
                             witnessRatioOfTrustMe[row.address]=1;
                         else
                             witnessRatioOfTrustMe[row.address]++;
@@ -441,6 +441,7 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                 getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
                     if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
                         throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
+                    console.log("333333round index:"+roundIndex+",coinbase:"+coinbase+",totalCommission:"+totalCommission);
                     return callback(Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*witnessRatioOfTrustMe));
                 });
             }
