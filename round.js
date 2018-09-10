@@ -365,12 +365,12 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                             throw Error("wrong trustme unit exit ");
                         if(row.address === constants.FOUNDATION_ADDRESS)  // except foundation supernode
                             continue;
-                        if(addressTrustMeWl[row.address] && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
+                        if(addressTrustMeWl[row.address] != null && row.witnessed_level - addressTrustMeWl[row.address] <= constants.MIN_INTERVAL_WL_OF_TRUSTME)
                             continue;          
                         addressTrustMeWl[row.address] = row.witnessed_level;                  
                         
                         totalCountOfTrustMe++;
-                        if(!witnessRatioOfTrustMe[row.address])
+                        if(witnessRatioOfTrustMe[row.address] === null)
                             witnessRatioOfTrustMe[row.address]=1;
                         else
                             witnessRatioOfTrustMe[row.address]++;
