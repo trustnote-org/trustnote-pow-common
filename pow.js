@@ -346,59 +346,34 @@ function startMiningWithInputs( oInput, pfnCallback )
 	_pow_miner.stopMining();
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
-		if ( err )
-		{
-			return pfnCallback( err );
-		}
-
-		let objSolution	= null;
-
 		if ( null === err )
 		{
-			if ( oData )
+			if ( 'object' === typeof oData )
 			{
 				if ( oData.win )
 				{
-					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
-					objSolution	= {
+					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
+					let objSolution	= {
 						round		: oInput.roundIndex,
 						difficulty	: oInput.difficulty,
 						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
 					};
+					_event_bus.emit( 'pow_mined_gift', objSolution );
 				}
 				else if ( oData.gameOver )
 				{
-					console.log( `GAME OVER!` );
-					objSolution	= { err : `GAME OVER!` };
+					err = `pow-solution :: game over!`;
 				}
 			}
 			else
 			{
-				console.log( `INVALID DATA!` );
-				objSolution	= { err : `INVALID DATA!` };
+				err = `pow-solution :: invalid data!`;
 			}
 		}
-		else
-		{
-			console.log( `OCCURRED AN ERROR : `, err );
-			objSolution	= { err : `OCCURRED AN ERROR : ${ err }` };
-		}
 
-		//	...
-		_event_bus.emit( 'pow_mined_gift', objSolution );
-
-		if ( ! objSolution.err )
-		{
-			//	successfully
-			pfnCallback( null );
-		}
-		else
-		{
-			//	failed
-			return pfnCallback( err );
-		}
+		return pfnCallback( err );
 	});
 
 	return true;
