@@ -714,6 +714,12 @@ function printConnectionStatus()
 
 	//	...
 	printEventBusStatus();
+	printDatabaseConnectionStatus();
+}
+
+function printDatabaseConnectionStatus()
+{
+	console.log( `SQLite getCountUsedConnections : ${ db.getCountUsedConnections() }` );
 }
 
 function printEventBusStatus()
@@ -721,17 +727,17 @@ function printEventBusStatus()
 	//
 	//	watching all events in eventBus.
 	//
-	console.log( `||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||` );
 	let arrAllEventNames	= eventBus.eventNames();
+	let arrAllListener	= [];
 	if ( Array.isArray( arrAllEventNames ) )
 	{
 		for ( let i = 0; i < arrAllEventNames.length; i ++ )
 		{
 			let sEventName  = arrAllEventNames[ i ];
-			console.log( `|||||||||| '${ sEventName }' listener count : ${ eventBus.listenerCount( sEventName ) }.` );
+			arrAllListener.push( `${ sEventName } : ${ eventBus.listenerCount( sEventName ) }` );
 		}
 	}
-	console.log( `||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||` );
+	console.log( `Event bus listeners: `, arrAllListener );
 }
 
 
