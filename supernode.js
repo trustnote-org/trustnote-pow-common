@@ -2,7 +2,7 @@
 "use strict";
 
 function readSingleAddress(conn, handleAddress){
-	readSingleWallet(function(wallet_id){
+	readSingleWallet(conn, function(wallet_id){
 		conn.query("SELECT address FROM my_addresses WHERE wallet=?", [wallet_id], function(rows){
 			if (rows.length === 0)
 				throw Error("no addresses");
