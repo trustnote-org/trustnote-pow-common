@@ -257,7 +257,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 			//
 			//	author address of this super node
 			//
-			_super_node.readSingleAddress( function( sAddress )
+			_super_node.readSingleAddress( oConn, function( sAddress )
 			{
 				sSuperNodeAuthorAddress = sAddress;
 				return pfnNext();
