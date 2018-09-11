@@ -1,10 +1,9 @@
 /*jslint node: true */
 "use strict";
-var db = require('./db.js');
 
-function readSingleAddress(handleAddress){
+function readSingleAddress(conn, handleAddress){
 	readSingleWallet(function(wallet_id){
-		db.query("SELECT address FROM my_addresses WHERE wallet=?", [wallet_id], function(rows){
+		conn.query("SELECT address FROM my_addresses WHERE wallet=?", [wallet_id], function(rows){
 			if (rows.length === 0)
 				throw Error("no addresses");
 			if (rows.length > 1)
@@ -14,8 +13,8 @@ function readSingleAddress(handleAddress){
 	})
 }
 
-function readSingleWallet(handleWallet){
-	db.query("SELECT wallet FROM wallets", function(rows){
+function readSingleWallet(conn, handleWallet){
+	conn.query("SELECT wallet FROM wallets", function(rows){
 		if (rows.length === 0)
 			throw Error("no wallets");
 		if (rows.length > 1)
