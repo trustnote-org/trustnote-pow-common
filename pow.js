@@ -158,31 +158,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 	}
 	if ( _conf.debug )
 	{
-		_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
-		{
-			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
-			{
-				setTimeout( () =>
-				{
-					_event_bus.emit
-					(
-						'pow_mined_gift',
-						{
-							round		: nRoundIndex,
-							difficulty	: nDifficulty,
-							publicSeed	: sSeed,
-							nonce		: _generateRandomInteger( 10000, 200000 ),
-							hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-						}
-					);
-				}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
-
-				//	...
-				pfnCallback( null );
-			});
-		});
-
-		return true;
+		return _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback );
 	}
 
 	obtainMiningInput( oConn, nRoundIndex, function( err, objInput )
@@ -209,6 +185,35 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 
 	return true;
 }
+function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
+{
+	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
+	{
+		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+		{
+			setTimeout( () =>
+			{
+				_event_bus.emit
+				(
+					'pow_mined_gift',
+					{
+						round		: nRoundIndex,
+						difficulty	: nDifficulty,
+						publicSeed	: sSeed,
+						nonce		: _generateRandomInteger( 10000, 200000 ),
+						hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+					}
+				);
+			}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+
+			//	...
+			pfnCallback( null );
+		});
+	});
+
+	return true;
+}
+
 
 
 /**
@@ -358,31 +363,35 @@ function startMiningWithInputs( oInput, pfnCallback )
 	}
 	if ( 'object' !== typeof oInput )
 	{
-		throw new Error( 'call startMining with invalid oInput' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput' );
 	}
 	if ( 'number' !== typeof oInput.roundIndex )
 	{
-		throw new Error( 'call startMining with invalid oInput.roundIndex' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.roundIndex' );
 	}
 	if ( 'string' !== typeof oInput.firstTrustMEBall || 44 !== oInput.firstTrustMEBall.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.firstTrustMEBall' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.firstTrustMEBall' );
 	}
 	if ( 'number' !== typeof oInput.difficulty || oInput.difficulty <= 0 )
 	{
-		throw new Error( 'call startMining with invalid oInput.difficulty' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.difficulty' );
 	}
 	if ( 'string' !== typeof oInput.publicSeed || 0 === oInput.publicSeed.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.publicSeed' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.publicSeed' );
 	}
 	if ( 'string' !== typeof oInput.superNodeAuthor || 0 === oInput.superNodeAuthor.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.superNodeAuthor' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.superNodeAuthor' );
 	}
 	if ( 'function' !== typeof pfnCallback )
 	{
-		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
+		throw new Error( `call startMiningWithInputs with invalid pfnCallback.` );
+	}
+	if ( _conf.debug )
+	{
+		return _startMiningWithInputsInDebugModel( oInput, pfnCallback );
 	}
 
 	/**
@@ -434,6 +443,29 @@ function startMiningWithInputs( oInput, pfnCallback )
 
 	return true;
 }
+function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
+{
+	setTimeout( () =>
+	{
+		_event_bus.emit
+		(
+			'pow_mined_gift',
+			{
+				round		: oInput.roundIndex,
+				difficulty	: oInput.difficulty,
+				publicSeed	: oInput.publicSeed,
+				nonce		: _generateRandomInteger( 10000, 200000 ),
+				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+			}
+		);
+	}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+
+	//	...
+	pfnCallback( null );
+	return true;
+}
+
+
 
 
 /**
