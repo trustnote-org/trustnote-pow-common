@@ -142,39 +142,107 @@ let _sAssocSingleWallet		= null;
  * 	failed to start		pfnCallback( error );
  */
 function startMining( oConn, nRoundIndex, pfnCallback )
-{ 
+{
+	if ( ! oConn )
+	{
+		throw new Error( `call startMining with invalid oConn.` );
+	}
+	if ( 'number' !== typeof nRoundIndex )
+	{
+		throw new Error( `call startMining with invalid nRoundIndex.` );
+	}
 	if ( 'function' !== typeof pfnCallback )
 	{
 		//	arguments.callee.name
-		throw new Error( `call startCalculation with invalid pfnCallback.` );
+		throw new Error( `call startMining with invalid pfnCallback.` );
 	}
 	if ( _conf.debug )
 	{
-		_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
+		return _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback );
+	}
+
+	obtainMiningInput( oConn, nRoundIndex, function( err, objInput )
+	{
+		if ( err )
 		{
-			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			return pfnCallback( err );
+		}
+
+		//	...
+		startMiningWithInputs( objInput, function( err )
+		{
+			if ( err )
 			{
-				setTimeout( () =>
-				{
-					_event_bus.emit
-					(
-						'pow_mined_gift',
-						{
-							round		: nRoundIndex,
-							difficulty	: nDifficulty,
-							publicSeed	: sSeed,
-							nonce		: _generateRandomInteger( 10000, 200000 ),
-							hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
-						}
-					);
-				}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+				return pfnCallback( err );
+			}
 
-				//	...
-				pfnCallback( null );
-			});
+			//
+			//	successfully
+			//
+			pfnCallback( null );
 		});
+	});
 
-		return true;
+	return true;
+}
+function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
+{
+	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
+	{
+		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+		{
+			setTimeout( () =>
+			{
+				_event_bus.emit
+				(
+					'pow_mined_gift',
+					{
+						round		: nRoundIndex,
+						difficulty	: nDifficulty,
+						publicSeed	: sSeed,
+						nonce		: _generateRandomInteger( 10000, 200000 ),
+						hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+					}
+				);
+			}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+
+			//	...
+			pfnCallback( null );
+		});
+	});
+
+	return true;
+}
+
+
+
+/**
+ *	obtain mining input
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	nRoundIndex
+ *	@param	{function}	pfnCallback( err )
+ *	@return {boolean}
+ *
+ * 	@description
+ * 	start successfully	pfnCallback( null, objInput );
+ * 	failed to start		pfnCallback( error );
+ */
+function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		throw new Error( `call obtainMiningInput with invalid oConn.` );
+	}
+	if ( 'number' !== typeof nRoundIndex )
+	{
+		throw new Error( `call obtainMiningInput with invalid nRoundIndex.` );
+	}
+	if ( 'function' !== typeof pfnCallback )
+	{
+		//	arguments.callee.name
+		throw new Error( `call obtainMiningInput with invalid pfnCallback.` );
 	}
 
 	let sCurrentFirstTrustMEBall	= null;
@@ -250,18 +318,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
-		startMiningWithInputs( objInput, function( err )
-		{
-			if ( err )
-			{
-				return pfnCallback( err );
-			}
-
-			//
-			//	successfully
-			//
-			pfnCallback( null );
-		});
+		pfnCallback( null, objInput );
 	});
 
 	return true;
@@ -306,31 +363,35 @@ function startMiningWithInputs( oInput, pfnCallback )
 	}
 	if ( 'object' !== typeof oInput )
 	{
-		throw new Error( 'call startMining with invalid oInput' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput' );
 	}
 	if ( 'number' !== typeof oInput.roundIndex )
 	{
-		throw new Error( 'call startMining with invalid oInput.roundIndex' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.roundIndex' );
 	}
 	if ( 'string' !== typeof oInput.firstTrustMEBall || 44 !== oInput.firstTrustMEBall.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.firstTrustMEBall' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.firstTrustMEBall' );
 	}
 	if ( 'number' !== typeof oInput.difficulty || oInput.difficulty <= 0 )
 	{
-		throw new Error( 'call startMining with invalid oInput.difficulty' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.difficulty' );
 	}
 	if ( 'string' !== typeof oInput.publicSeed || 0 === oInput.publicSeed.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.publicSeed' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.publicSeed' );
 	}
 	if ( 'string' !== typeof oInput.superNodeAuthor || 0 === oInput.superNodeAuthor.length )
 	{
-		throw new Error( 'call startMining with invalid oInput.superNodeAuthor' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.superNodeAuthor' );
 	}
 	if ( 'function' !== typeof pfnCallback )
 	{
-		throw new Error( `call startCalculationWithInputs with invalid pfnCallback.` );
+		throw new Error( `call startMiningWithInputs with invalid pfnCallback.` );
+	}
+	if ( _conf.debug )
+	{
+		return _startMiningWithInputsInDebugModel( oInput, pfnCallback );
 	}
 
 	/**
@@ -346,63 +407,65 @@ function startMiningWithInputs( oInput, pfnCallback )
 	_pow_miner.stopMining();
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
-		if ( err )
-		{
-			return pfnCallback( err );
-		}
-
-		let objSolution	= null;
-
 		if ( null === err )
 		{
-			if ( oData )
+			if ( 'object' === typeof oData )
 			{
 				if ( oData.win )
 				{
-					console.log( `WINNER WINNER, CHICKEN DINNER!`, oData );
-					objSolution	= {
+					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
+					let objSolution	= {
 						round		: oInput.roundIndex,
 						difficulty	: oInput.difficulty,
 						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
 					};
+					_event_bus.emit( 'pow_mined_gift', objSolution );
 				}
 				else if ( oData.gameOver )
 				{
-					console.log( `GAME OVER!` );
-					objSolution	= { err : `GAME OVER!` };
+					err = `pow-solution :: game over!`;
+				}
+				else
+				{
+					err = `pow-solution :: unknown error!`;
 				}
 			}
 			else
 			{
-				console.log( `INVALID DATA!` );
-				objSolution	= { err : `INVALID DATA!` };
+				err = `pow-solution :: invalid data!`;
 			}
 		}
-		else
-		{
-			console.log( `OCCURRED AN ERROR : `, err );
-			objSolution	= { err : `OCCURRED AN ERROR : ${ err }` };
-		}
 
-		//	...
-		_event_bus.emit( 'pow_mined_gift', objSolution );
-
-		if ( ! objSolution.err )
-		{
-			//	successfully
-			pfnCallback( null );
-		}
-		else
-		{
-			//	failed
-			return pfnCallback( err );
-		}
+		return pfnCallback( err );
 	});
 
 	return true;
 }
+function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
+{
+	setTimeout( () =>
+	{
+		_event_bus.emit
+		(
+			'pow_mined_gift',
+			{
+				round		: oInput.roundIndex,
+				difficulty	: oInput.difficulty,
+				publicSeed	: oInput.publicSeed,
+				nonce		: _generateRandomInteger( 10000, 200000 ),
+				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
+			}
+		);
+	}, _generateRandomInteger( 10 * 1000, 30 * 1000 ) );
+
+	//	...
+	pfnCallback( null );
+	return true;
+}
+
+
 
 
 /**
@@ -852,6 +915,7 @@ function _generateRandomInteger( nMin, nMax )
  *	@exports
  */
 module.exports.startMining					= startMining;
+module.exports.obtainMiningInput				= obtainMiningInput;
 module.exports.startMiningWithInputs				= startMiningWithInputs;
 module.exports.stopMining					= stopMining;
 
