@@ -90,6 +90,8 @@ function getRoundInfoByRoundIndex(conn, roundIndex, callback){
 }
 
 function getDurationByCycleId(conn, cycleId, callback){
+    if(cycleId <= 0) 
+        throw Error("The first cycle do not need calculate duration ");
     conn.query(
         "SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
         WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
@@ -98,6 +100,8 @@ function getDurationByCycleId(conn, cycleId, callback){
         function(rowsMin){
             if (rowsMin.length !== 1)
                 throw Error("Can not find min timestamp of cycle " + cycleId);
+            if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
+                throw Error("min timestamp of cycle " + cycleId + " is not number");
             conn.query(
                 "SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
                 WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
@@ -106,6 +110,8 @@ function getDurationByCycleId(conn, cycleId, callback){
                 function(rowsMax){
                     if (rowsMax.length !== 1)
                         throw Error("Can not find max timestamp of cycle " + cycleId);
+                    if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
+                        throw Error("max timestamp of cycle " + cycleId + " is not number");
                     callback(rowsMax[0].max_timestamp - rowsMin[0].min_timestamp);
                 }
             );            
