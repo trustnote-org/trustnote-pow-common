@@ -18,14 +18,8 @@ const _round		= require( './round.js' );
 const _super_node	= require( './supernode.js' );
 const _event_bus	= require( './event_bus.js' );
 
+const _bDebugModel	= _conf.debug && ( ! ( process.env && 'object' === typeof process.env && process.env.ENV_UNIT_TEST ) );
 
-
-/**
- * 	@global
- *	@variables
- */
-let _objDifficultyAdjust	= null;
-let _sAssocSingleWallet		= null;
 
 
 /**
@@ -156,7 +150,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		//	arguments.callee.name
 		throw new Error( `call startMining with invalid pfnCallback.` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback );
 	}
@@ -389,7 +383,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( `call startMiningWithInputs with invalid pfnCallback.` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return _startMiningWithInputsInDebugModel( oInput, pfnCallback );
 	}
@@ -442,7 +436,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 			}
 		}
 
-		return pfnCallback( err );
+		return pfnCallback( err, oData );
 	});
 
 	return true;
@@ -507,7 +501,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	{
 		throw new Error( 'call checkProofOfWork with invalid sNonce' );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return pfnCallback( null, { code : 0 } );
 	}
@@ -780,7 +774,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
 	}
@@ -826,14 +820,45 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			return pfnCallback( err );
 		}
 
-		let nNewDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
+		//
+		//	calculate next difficulty
+		//
+		_pow_miner.calculateNextDifficulty
 		(
 			nPreviousDifficulty,
 			nTimeUsed,
-			nTimeStandard
-		);
+			nTimeStandard,
+			function( err, oData )
+			{
+				//
+				//	oData
+				//	{ difficulty : uNextDifficulty }
+				//
+				if ( err )
+				{
+					return pfnCallback( err );
+				}
 
-		pfnCallback( null, Math.floor( nNewDifficultyValue ) );
+				if ( oData &&
+					'object' === typeof oData )
+				{
+					if ( oData.hasOwnProperty( 'difficulty' ) &&
+						'number' === typeof oData.difficulty &&
+						oData.difficulty > 0 )
+					{
+						pfnCallback( null, oData.difficulty );
+					}
+					else
+					{
+						pfnCallback( `calculateNextDifficulty callback :: invalid value .difficulty` );
+					}
+				}
+				else
+				{
+					pfnCallback( `calculateNextDifficulty callback :: invalid oData object` );
+				}
+			}
+		);
 	});
 }
 
@@ -873,26 +898,6 @@ function _createMiningInputBufferFromObject( objInput )
 	bufSha384	= _crypto.createHash( 'sha384' ).update( sInput, 'utf8' ).digest();
 
 	return Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
-}
-
-/**
- *	read single wallet
- *
- *	@private
- *	@param	{function}	pfnCallback( sAddress )
- *	@return {*}
- */
-function _readSingleWallet( pfnCallback )
-{
-	if ( 'string' === typeof _sAssocSingleWallet && 44 === _sAssocSingleWallet.length )
-	{
-		return pfnCallback( _sAssocSingleWallet );
-	}
-
-	return _super_node.readSingleAddress( sAddress =>
-	{
-		pfnCallback( sAddress );
-	});
 }
 
 
