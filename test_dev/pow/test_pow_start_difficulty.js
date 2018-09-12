@@ -7,13 +7,81 @@ process.env.ENV_UNIT_TEST	= true;
 /**
  * 	...
  */
-const _db			= require( '../../db.js' );
-const _pow			= require( '../../pow.js' );
+const _db	= require( '../../db.js' );
+const _pow	= require( '../../pow.js' );
+const _round	= require( '../../round.js' );
+const constants	= require( '../../constants.js' );
+
+
+// _db.takeConnectionFromPool( function( oNewConn )
+// {
+// 	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 1, function( err, nNewDifficultyValue )
+// 	{
+// 		oNewConn.release();
+// 		console.log( err, nNewDifficultyValue );
+// 	});
+// });
+
+
+function getMinRoundIndexByCycleId(cycleId)
+{
+	return (cycleId-1)*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH+1;
+}
+function getMaxRoundIndexByCycleId(cycleId)
+{
+	return cycleId*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
+}
+
+
+function getDurationByCycleId(conn, cycleId, callback){
+	if(cycleId <= 0)
+		throw Error("The first cycle do not need calculate duration ");
+	conn.query(
+		"SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+		WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
+		    AND sequence='good' AND is_stable=1 AND round_index=?",
+		['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
+		function(rowsMin){
+			if (rowsMin.length !== 1)
+				throw Error("Can not find min timestamp of cycle " + cycleId);
+			if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
+				throw Error("min timestamp of cycle " + cycleId + " is not number");
+			conn.query(
+				"SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+				WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
+				    AND sequence='good' AND is_stable=1 AND round_index=?",
+				['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
+				function(rowsMax){
+					if (rowsMax.length !== 1)
+						throw Error("Can not find max timestamp of cycle " + cycleId);
+					if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
+						throw Error("max timestamp of cycle " + cycleId + " is not number");
+					callback(rowsMax[0].max_timestamp - rowsMin[0].min_timestamp);
+				}
+			);
+		}
+	);
+}
+
+
 
 _db.takeConnectionFromPool( function( oNewConn )
 {
-	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 1, function( err, nNewDifficultyValue )
+	for ( let i = 1; i <= 4; i ++ )
 	{
-		console.log( err, nNewDifficultyValue );
-	});
+		getDurationByCycleId
+		(
+			oNewConn,
+			i,
+			function( nTimeUsedInMillisecond )
+			{
+				let nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+				console.log( `time used in cycle ${ i } : ${ nTimeUsed }.` )
+			}
+		);
+
+
+	}
 });
+
+
