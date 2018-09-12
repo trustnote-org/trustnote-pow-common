@@ -404,14 +404,18 @@ function startMiningWithInputs( oInput, pfnCallback )
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
+	console.log( `))) stopMining.` );
 	_pow_miner.stopMining();
+
+	console.log( `))) startMining with options : `, _oOptions );
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
 		if ( null === err )
 		{
-			if ( 'object' === typeof oData )
+			console.log( `))) startMining, callback data( ${ typeof oData } ) : `, oData );
+			if ( oData && 'object' === typeof oData )
 			{
-				if ( oData.win )
+				if ( oData.hasOwnProperty( 'win' ) && oData.win )
 				{
 					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
 					let objSolution	= {
@@ -423,7 +427,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 					};
 					_event_bus.emit( 'pow_mined_gift', objSolution );
 				}
-				else if ( oData.gameOver )
+				else if ( oData.hasOwnProperty( 'gameOver' ) && oData.gameOver )
 				{
 					err = `pow-solution :: game over!`;
 				}
