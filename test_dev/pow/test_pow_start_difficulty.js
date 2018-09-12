@@ -12,7 +12,7 @@ const _pow			= require( '../../pow.js' );
 
 _db.takeConnectionFromPool( function( oNewConn )
 {
-	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 2, function( err, nNewDifficultyValue )
+	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 1, function( err, nNewDifficultyValue )
 	{
 		console.log( err, nNewDifficultyValue );
 	});

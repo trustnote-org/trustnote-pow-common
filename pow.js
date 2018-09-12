@@ -770,7 +770,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
 	}
-	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 1 )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
 	}
@@ -801,11 +801,16 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	in seconds
-			_round.getDurationByCycleId( oConn, nCycleIndex, function( nTimeUsedInMillisecond )
-			{
-				nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
-				return pfnNext();
-			});
+			_round.getDurationByCycleId
+			(
+				oConn,
+				nCycleIndex - 1,
+				function( nTimeUsedInMillisecond )
+				{
+					nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+					return pfnNext();
+				}
+			);
 		},
 		function( pfnNext )
 		{
