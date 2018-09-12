@@ -194,6 +194,15 @@ function getCoinbaseByRoundIndex(roundIndex){
 	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
 }
 
+function getSumCoinbaseByEndRoundIndex(endRoundIndex){
+    var sum = 0;
+    for (var beginRound = 1; beginRound <= endRoundIndex; beginRound++){
+       sum = sum + getCoinbaseByRoundIndex(beginRound);
+    }
+    return sum;
+}
+
+
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
 	// TODO ：cache the witnesses of recent rounds
 	var witnesses  = [];
@@ -587,4 +596,5 @@ exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
 exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
 exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
+exports.getSumCoinbaseByEndRoundIndex	= getSumCoinbaseByEndRoundIndex;
 
