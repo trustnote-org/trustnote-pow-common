@@ -13,14 +13,17 @@ const _round	= require( '../../round.js' );
 const constants	= require( '../../constants.js' );
 
 
-// _db.takeConnectionFromPool( function( oNewConn )
-// {
-// 	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 1, function( err, nNewDifficultyValue )
-// 	{
-// 		oNewConn.release();
-// 		console.log( err, nNewDifficultyValue );
-// 	});
-// });
+_db.takeConnectionFromPool( function( oNewConn )
+{
+	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 2, function( err, nNewDifficultyValue )
+	{
+		oNewConn.release();
+		console.log( err, nNewDifficultyValue );
+	});
+});
+
+
+
 
 
 function getMinRoundIndexByCycleId(cycleId)
@@ -65,21 +68,21 @@ function getDurationByCycleId(conn, cycleId, callback){
 
 
 
-_db.takeConnectionFromPool( function( oNewConn )
-{
-	for ( let i = 1; i < 51; i ++ )
-	{
-		getDurationByCycleId
-		(
-			oNewConn,
-			i,
-			function( nTimeUsedInMillisecond )
-			{
-				let nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
-				console.log( `####### time used in cycle ${ i } : ${ nTimeUsed }.` )
-			}
-		);
-	}
-});
+// _db.takeConnectionFromPool( function( oNewConn )
+// {
+// 	for ( let i = 1; i < 51; i ++ )
+// 	{
+// 		getDurationByCycleId
+// 		(
+// 			oNewConn,
+// 			i,
+// 			function( nTimeUsedInMillisecond )
+// 			{
+// 				let nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+// 				console.log( `####### time used in cycle ${ i } : ${ nTimeUsed }.` )
+// 			}
+// 		);
+// 	}
+// });
 
 

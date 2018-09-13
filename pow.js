@@ -793,6 +793,12 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 				nCycleIndex - 1,
 				function( err, nDifficulty )
 				{
+					if ( err )
+					{
+						return pfnNext( err );
+					}
+
+					//	...
 					nPreviousDifficulty = nDifficulty;
 					return pfnNext();
 				}
@@ -807,14 +813,31 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 				nCycleIndex - 1,
 				function( nTimeUsedInMillisecond )
 				{
-					nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
-					return pfnNext();
+					if ( 'number' === typeof nTimeUsedInMillisecond &&
+						nTimeUsedInMillisecond > 0 )
+					{
+						//
+						//	to be continued ...
+						//
+						nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+						return pfnNext();
+					}
+					else
+					{
+						//
+						//	STOP HERE,
+						//	return difficulty value of previous cycle
+						//
+						return pfnCallback( null, nPreviousDifficulty );
+					}
 				}
 			);
 		},
 		function( pfnNext )
 		{
+			//
 			//	in seconds
+			//
 			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
 			return pfnNext();
 		}
