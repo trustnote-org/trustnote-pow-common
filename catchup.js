@@ -96,7 +96,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			{
 				if ( ! objLastStableMcUnitProps )
 				{
-					cb( `failed to read last stable mc unit.` );
+					return cb( `failed to read last stable mc unit.` );
 				}
 
 				//	...

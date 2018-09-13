@@ -18,14 +18,8 @@ const _round		= require( './round.js' );
 const _super_node	= require( './supernode.js' );
 const _event_bus	= require( './event_bus.js' );
 
+const _bDebugModel	= _conf.debug && ( ! ( process.env && 'object' === typeof process.env && process.env.ENV_UNIT_TEST ) );
 
-
-/**
- * 	@global
- *	@variables
- */
-let _objDifficultyAdjust	= null;
-let _sAssocSingleWallet		= null;
 
 
 /**
@@ -156,7 +150,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 		//	arguments.callee.name
 		throw new Error( `call startMining with invalid pfnCallback.` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback );
 	}
@@ -389,7 +383,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( `call startMiningWithInputs with invalid pfnCallback.` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return _startMiningWithInputsInDebugModel( oInput, pfnCallback );
 	}
@@ -404,14 +398,18 @@ function startMiningWithInputs( oInput, pfnCallback )
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
+	console.log( `))) stopMining.` );
 	_pow_miner.stopMining();
+
+	console.log( `))) startMining with options : `, _oOptions );
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
 		if ( null === err )
 		{
-			if ( 'object' === typeof oData )
+			console.log( `))) startMining, callback data( ${ typeof oData } ) : `, oData );
+			if ( oData && 'object' === typeof oData )
 			{
-				if ( oData.win )
+				if ( oData.hasOwnProperty( 'win' ) && oData.win )
 				{
 					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
 					let objSolution	= {
@@ -423,7 +421,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 					};
 					_event_bus.emit( 'pow_mined_gift', objSolution );
 				}
-				else if ( oData.gameOver )
+				else if ( oData.hasOwnProperty( 'gameOver' ) && oData.gameOver )
 				{
 					err = `pow-solution :: game over!`;
 				}
@@ -438,7 +436,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 			}
 		}
 
-		return pfnCallback( err );
+		return pfnCallback( err, oData );
 	});
 
 	return true;
@@ -503,7 +501,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	{
 		throw new Error( 'call checkProofOfWork with invalid sNonce' );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return pfnCallback( null, { code : 0 } );
 	}
@@ -772,11 +770,11 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
 	}
-	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 1 )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
 	}
-	if ( _conf.debug )
+	if ( _bDebugModel )
 	{
 		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
 	}
@@ -795,6 +793,12 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 				nCycleIndex - 1,
 				function( err, nDifficulty )
 				{
+					if ( err )
+					{
+						return pfnNext( err );
+					}
+
+					//	...
 					nPreviousDifficulty = nDifficulty;
 					return pfnNext();
 				}
@@ -803,15 +807,37 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//	in seconds
-			_round.getDurationByCycleId( oConn, nCycleIndex, function( nTimeUsedInMillisecond )
-			{
-				nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
-				return pfnNext();
-			});
+			_round.getDurationByCycleId
+			(
+				oConn,
+				nCycleIndex - 1,
+				function( nTimeUsedInMillisecond )
+				{
+					if ( 'number' === typeof nTimeUsedInMillisecond &&
+						nTimeUsedInMillisecond > 0 )
+					{
+						//
+						//	to be continued ...
+						//
+						nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+						return pfnNext();
+					}
+					else
+					{
+						//
+						//	STOP HERE,
+						//	return difficulty value of previous cycle
+						//
+						return pfnCallback( null, nPreviousDifficulty );
+					}
+				}
+			);
 		},
 		function( pfnNext )
 		{
+			//
 			//	in seconds
+			//
 			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
 			return pfnNext();
 		}
@@ -822,14 +848,45 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			return pfnCallback( err );
 		}
 
-		let nNewDifficultyValue = _objDifficultyAdjust.CalculateNextWorkRequired
+		//
+		//	calculate next difficulty
+		//
+		_pow_miner.calculateNextDifficulty
 		(
 			nPreviousDifficulty,
 			nTimeUsed,
-			nTimeStandard
-		);
+			nTimeStandard,
+			function( err, oData )
+			{
+				//
+				//	oData
+				//	{ difficulty : uNextDifficulty }
+				//
+				if ( err )
+				{
+					return pfnCallback( err );
+				}
 
-		pfnCallback( null, Math.floor( nNewDifficultyValue ) );
+				if ( oData &&
+					'object' === typeof oData )
+				{
+					if ( oData.hasOwnProperty( 'difficulty' ) &&
+						'number' === typeof oData.difficulty &&
+						oData.difficulty > 0 )
+					{
+						pfnCallback( null, oData.difficulty );
+					}
+					else
+					{
+						pfnCallback( `calculateNextDifficulty callback :: invalid value .difficulty` );
+					}
+				}
+				else
+				{
+					pfnCallback( `calculateNextDifficulty callback :: invalid oData object` );
+				}
+			}
+		);
 	});
 }
 
@@ -869,26 +926,6 @@ function _createMiningInputBufferFromObject( objInput )
 	bufSha384	= _crypto.createHash( 'sha384' ).update( sInput, 'utf8' ).digest();
 
 	return Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
-}
-
-/**
- *	read single wallet
- *
- *	@private
- *	@param	{function}	pfnCallback( sAddress )
- *	@return {*}
- */
-function _readSingleWallet( pfnCallback )
-{
-	if ( 'string' === typeof _sAssocSingleWallet && 44 === _sAssocSingleWallet.length )
-	{
-		return pfnCallback( _sAssocSingleWallet );
-	}
-
-	return _super_node.readSingleAddress( sAddress =>
-	{
-		pfnCallback( sAddress );
-	});
 }
 
 

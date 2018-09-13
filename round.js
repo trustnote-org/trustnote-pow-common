@@ -90,22 +90,28 @@ function getRoundInfoByRoundIndex(conn, roundIndex, callback){
 }
 
 function getDurationByCycleId(conn, cycleId, callback){
+    if(cycleId <= 0) 
+        throw Error("The first cycle do not need calculate duration ");
     conn.query(
-        "SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-        WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
-            AND sequence='good' AND is_stable=1 AND round_index=?",
+        "SELECT int_value AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+        WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+            AND sequence='good' AND is_stable=1 AND round_index>=? ORDER BY main_chain_index LIMIT 1",
         [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
         function(rowsMin){
             if (rowsMin.length !== 1)
-                throw Error("Can not find min timestamp of cycle " + cycleId);
+                callback(0);
+            if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
+                callback(0);
             conn.query(
-                "SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-                WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
-                    AND sequence='good' AND is_stable=1 AND round_index=?",
-                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
+                "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+                WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+                    AND sequence='good' AND is_stable=1 AND round_index<=? ORDER BY main_chain_index DESC LIMIT 1",
+                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)-1],
                 function(rowsMax){
                     if (rowsMax.length !== 1)
-                        throw Error("Can not find max timestamp of cycle " + cycleId);
+                        callback(0);
+                    if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
+                        callback(0);
                     callback(rowsMax[0].max_timestamp - rowsMin[0].min_timestamp);
                 }
             );            
@@ -193,6 +199,15 @@ function getCoinbaseByRoundIndex(roundIndex){
         return 0;
 	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
 }
+
+function getSumCoinbaseByEndRoundIndex(endRoundIndex){
+    var sum = 0;
+    for (var beginRound = 1; beginRound <= endRoundIndex; beginRound++){
+       sum = sum + getCoinbaseByRoundIndex(beginRound);
+    }
+    return sum;
+}
+
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
 	// TODO ：cache the witnesses of recent rounds
@@ -587,4 +602,5 @@ exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 
 exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
 exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
+exports.getSumCoinbaseByEndRoundIndex	= getSumCoinbaseByEndRoundIndex;
 
