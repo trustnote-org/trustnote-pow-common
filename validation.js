@@ -20,6 +20,7 @@ var conf = require('./conf.js');
 var profiler = require('./profiler.js');
 var breadcrumbs = require('./breadcrumbs.js');
 var round = require('./round.js');
+var pow = require('./pow.js');
 
 var MAX_INT32 = Math.pow(2, 31) - 1;
 
@@ -1505,7 +1506,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	objValidationState.bHasBasePowequihash = true;
 
 	// dev branch disale real pow unit check temperorary
-	return callback();
+	// return callback();
 	
 	var firstTrustMEBall = null;	
 	async.series(
