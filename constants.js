@@ -76,7 +76,7 @@ exports.DURATION_PER_ROUND = 150;
 // calculate payload commission coefficient
 exports.PAYLOAD_COEFFICIENT = {
 	"payment":1,
-	"pow_equihash":2,
+	"pow_equihash":5,
 	"address_definition_change":1,
 	"poll":1,
 	"vote":1,
