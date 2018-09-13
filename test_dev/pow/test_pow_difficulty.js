@@ -67,7 +67,7 @@ function getDurationByCycleId(conn, cycleId, callback){
 
 _db.takeConnectionFromPool( function( oNewConn )
 {
-	for ( let i = 1; i <= 4; i ++ )
+	for ( let i = 1; i < 51; i ++ )
 	{
 		getDurationByCycleId
 		(
@@ -76,11 +76,9 @@ _db.takeConnectionFromPool( function( oNewConn )
 			function( nTimeUsedInMillisecond )
 			{
 				let nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
-				console.log( `time used in cycle ${ i } : ${ nTimeUsed }.` )
+				console.log( `####### time used in cycle ${ i } : ${ nTimeUsed }.` )
 			}
 		);
-
-
 	}
 });
 

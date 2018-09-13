@@ -1,6 +1,7 @@
 /*jslint node: true */
 "use strict";
 var _ = require('lodash');
+var constants = require('./constants.js');
 
 var PARENT_UNITS_SIZE = 2*44;
 
@@ -49,11 +50,28 @@ function getHeadersSize(objUnit) {
 	return getLength(objHeader) + PARENT_UNITS_SIZE;
 }
 
+function getTotalPayloadSizeOld(objUnit) {
+	if (objUnit.content_hash)
+		throw Error("trying to get payload size of stripped unit");
+	return getLength(objUnit.messages);	
+}
+
 function getTotalPayloadSize(objUnit) {
 	if (objUnit.content_hash)
 		throw Error("trying to get payload size of stripped unit");
-	return getLength(objUnit.messages);
+	// pow modi
+	//return getLength(objUnit.messages);
+	var totalPayloadSize = 0;
+	objUnit.messages.forEach(function(message){
+		if(constants.PAYLOAD_COEFFICIENT[message.app] === null || isNaN(constants.PAYLOAD_COEFFICIENT[message.app]))
+			throw Error("payload coefficient is not number or null");
+		totalPayloadSize += getLength(message) * constants.PAYLOAD_COEFFICIENT[message.app];
+	});
+	return totalPayloadSize;
 }
+
+
 
 exports.getHeadersSize = getHeadersSize;
 exports.getTotalPayloadSize = getTotalPayloadSize;
+exports.getTotalPayloadSizeOld = getTotalPayloadSizeOld;
