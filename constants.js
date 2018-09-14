@@ -73,6 +73,7 @@ exports.POW_TYPE_COIN_BASE	= 3;
 exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 10;
 // average time consumimg per each round
 exports.DURATION_PER_ROUND = 150;
+
 // calculate payload commission coefficient
 exports.PAYLOAD_COEFFICIENT = {
 	"payment":1,
