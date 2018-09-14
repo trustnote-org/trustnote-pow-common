@@ -1521,14 +1521,14 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 			function(cb){
 				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,max_wl,seed){
 					if (seed !== payload.seed )
-					   return cb("Wrong seed detected of round " + round_index + "expected :"+ seed +",actual :"+payload.seed);
+					   return cb("Wrong seed detected of round " + objUnit.round_index + "expected :"+ seed +",actual :"+payload.seed);
 					cb();
 				});
 			},
 			function(cb){ 
 				round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
 					if(difficulty !== payload.difficulty)
-						return cb("Wrong difficulty detected of round " + round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
+						return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
 					cb();
 				});
 			},
