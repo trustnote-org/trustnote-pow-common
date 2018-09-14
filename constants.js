@@ -88,5 +88,5 @@ exports.PAYLOAD_COEFFICIENT = {
 	"attestation":1,
 	"data":1,
 	"definition_template":1,
-	"text":2
+	"text":1
 };
