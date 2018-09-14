@@ -774,10 +774,6 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
 	}
-	if ( _bDebugModel )
-	{
-		return pfnCallback( null, ( Math.random() * ( 9999 - 1000 ) + 1000 ) );
-	}
 
 	let nPreviousDifficulty;
 	let nTimeUsed;
