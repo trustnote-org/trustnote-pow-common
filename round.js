@@ -44,6 +44,8 @@ function getCycleIdByRoundIndex(roundIndex){
 }
 
 function getDifficultydByRoundIndex(conn, roundIndex, callback){
+    if (roundIndex <= 0)
+        throw Error("the round id can not less then 0");
     var cycleId = getCycleIdByRoundIndex(roundIndex);
     conn.query(
 		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
@@ -56,6 +58,19 @@ function getDifficultydByRoundIndex(conn, roundIndex, callback){
 	);
 }
 
+function getDifficultydByCycleID(conn, cycleId, callback){
+    if (cycleId <= 0)
+        throw Error("the cycle id can not less then 0");
+    conn.query(
+		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
+        [cycleId],
+		function(rows){
+			if (rows.length !== 1)
+                throw Error("Can not find current cycle difficulty");
+            callback(rows[0].difficulty);
+		}
+	);
+}
 
 function getMinRoundIndexByCycleId(cycleId){
     return (cycleId-1)*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH+1;
@@ -90,13 +105,17 @@ function getRoundInfoByRoundIndex(conn, roundIndex, callback){
 }
 
 function getDurationByCycleId(conn, cycleId, callback){
-    if(cycleId <= 0) 
-        throw Error("The first cycle do not need calculate duration ");
+    if(cycleId <= constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION) 
+        throw Error("The first " + constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + " cycles do not need to calculate duration");
+    var minRoundIndex = getMinRoundIndexByCycleId(cycleId-constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION);
+    var maxRoundIndex = getMaxRoundIndexByCycleId(cycleId-1)-1;
+    if(maxRoundIndex - minRoundIndex != constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH-1) 
+        throw Error("calculate duration error on minRoundIndex or maxRoundIndex");    
     conn.query(
         "SELECT int_value AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
         WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
             AND sequence='good' AND is_stable=1 AND round_index>=? ORDER BY main_chain_index LIMIT 1",
-        [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
+        [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, minRoundIndex],
         function(rowsMin){
             if (rowsMin.length !== 1)
                 callback(0);
@@ -106,15 +125,35 @@ function getDurationByCycleId(conn, cycleId, callback){
                 "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
                 WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
                     AND sequence='good' AND is_stable=1 AND round_index<=? ORDER BY main_chain_index DESC LIMIT 1",
-                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)-1],
+                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, maxRoundIndex],
                 function(rowsMax){
                     if (rowsMax.length !== 1)
                         callback(0);
                     if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
                         callback(0);
-                    callback(rowsMax[0].max_timestamp - rowsMin[0].min_timestamp);
+                    callback(Math.floor((rowsMax[0].max_timestamp - rowsMin[0].min_timestamp)/1000));
                 }
             );            
+        }
+    );
+}
+
+function getStandardDuration(){
+    return constants.DURATION_PER_ROUND*(constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH-1);
+}
+
+function getAverageDifficultyByCycleId(conn, cycleId, callback){
+    if(cycleId <= constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION) 
+        throw Error("The first " + constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + " cycles can not calculate average difficult");
+    conn.query(
+        "SELECT SUM(difficulty) AS sumAverageDifficulty FROM round_cycle WHERE cycle_id>=? AND cycle_id<=?",
+        [cycleId-constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION, cycleId-1],
+        function(rowsAverageDifficulty){
+            if (rowsAverageDifficulty.length !== 1)
+                throw Error(" calculate average difficult error");
+            if (rowsAverageDifficulty[0].sumAverageDifficulty === null || isNaN(rowsAverageDifficulty[0].sumAverageDifficulty))
+                throw Error(" calculate average is null or is not number");
+            callback(Math.floor(rowsAverageDifficulty[0].sumAverageDifficulty/constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION));
         }
     );
 }
@@ -583,6 +622,9 @@ exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
 exports.getDurationByCycleId = getDurationByCycleId;
 exports.getDifficultydByRoundIndex = getDifficultydByRoundIndex;
+exports.getDifficultydByCycleID = getDifficultydByCycleID;
+exports.getStandardDuration = getStandardDuration;
+exports.getAverageDifficultyByCycleId = getAverageDifficultyByCycleId;
 
 exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
 exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
