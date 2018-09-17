@@ -11,16 +11,63 @@ const _db	= require( '../../db.js' );
 const _pow	= require( '../../pow.js' );
 const _round	= require( '../../round.js' );
 const constants	= require( '../../constants.js' );
+const _async	= require( 'async' );
+
+
 
 
 _db.takeConnectionFromPool( function( oNewConn )
 {
-	_pow.calculateDifficultyValueByCycleIndex( oNewConn, 2, function( err, nNewDifficultyValue )
+	let arrComputeList	= [];
+	let nStart		= 2;
+	let nEnd		= 34;
+
+	for ( let i = nStart; i < nEnd; i ++ )
 	{
-		oNewConn.release();
-		console.log( err, nNewDifficultyValue );
-	});
+		arrComputeList.push
+		(
+			pfnNext =>
+			{
+				_pow.calculateDifficultyValueByCycleIndex( oNewConn, i, function( err, nNewDifficultyValue )
+				{
+					if ( null === err )
+					{
+						console.log( `@@@ new difficulty: ${ nNewDifficultyValue }` );
+					}
+					else
+					{
+						console.log( `### occurred error : ${ err }` );
+					}
+
+					//	...
+					pfnNext();
+				});
+			}
+		);
+	}
+
+	_async.series
+	(
+		arrComputeList
+		, function( err )
+		{
+			oNewConn.release();
+
+			if ( err )
+			{
+				return console.log( `||| occurred errors :`, err );
+			}
+
+			console.log( `all computer done!` );
+		}
+	);
 });
+
+
+
+
+
+
 
 
 

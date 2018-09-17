@@ -775,27 +775,44 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
 	}
 
-	let nPreviousDifficulty;
+	let nAverageDifficulty;
 	let nTimeUsed;
 	let nTimeStandard;
 
+	//
+	//	return difficulty value of cycle 1,
+	//	if nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION
+	//
+	if ( nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
+	{
+		return queryDifficultyValueByCycleIndex
+		(
+			oConn,
+			1,
+			function( err, nDifficulty )
+			{
+				if ( err )
+				{
+					return pfnCallback( err );
+				}
+
+				return pfnCallback( null, nDifficulty );
+			}
+		);
+	}
+
+	//	...
 	_async.series
 	([
 		function( pfnNext )
 		{
-			queryDifficultyValueByCycleIndex
+			_round.getAverageDifficultyByCycleId
 			(
 				oConn,
 				nCycleIndex - 1,
-				function( err, nDifficulty )
+				function( nDifficulty )
 				{
-					if ( err )
-					{
-						return pfnNext( err );
-					}
-
-					//	...
-					nPreviousDifficulty = nDifficulty;
+					nAverageDifficulty = nDifficulty;
 					return pfnNext();
 				}
 			);
@@ -807,15 +824,18 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			(
 				oConn,
 				nCycleIndex - 1,
-				function( nTimeUsedInMillisecond )
+				function( nTimeUsedInSecond )
 				{
-					if ( 'number' === typeof nTimeUsedInMillisecond &&
-						nTimeUsedInMillisecond > 0 )
+					console.log( `%%% _round.getDurationByCycleId, nTimeUsedInSecond = ${ nTimeUsedInSecond }` );
+
+					//	...
+					if ( 'number' === typeof nTimeUsedInSecond &&
+						nTimeUsedInSecond > 0 )
 					{
 						//
 						//	to be continued ...
 						//
-						nTimeUsed = Math.floor( nTimeUsedInMillisecond / 1000 );
+						nTimeUsed = nTimeUsedInSecond;
 						return pfnNext();
 					}
 					else
@@ -824,7 +844,23 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 						//	STOP HERE,
 						//	return difficulty value of previous cycle
 						//
-						return pfnCallback( null, nPreviousDifficulty );
+						return queryDifficultyValueByCycleIndex
+						(
+							oConn,
+							nCycleIndex - 1,
+							function( err, nDifficulty )
+							{
+								if ( err )
+								{
+									return pfnNext( err );
+								}
+
+								//	...
+								//	difficulty of previous cycle
+								//
+								return pfnCallback( null, nDifficulty );
+							}
+						);
 					}
 				}
 			);
@@ -834,7 +870,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			//
 			//	in seconds
 			//
-			nTimeStandard = _constants.DURATION_PER_ROUND * _constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH;
+			nTimeStandard = _round.getStandardDuration();
 			return pfnNext();
 		}
 	], function( err )
@@ -849,7 +885,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		//
 		_pow_miner.calculateNextDifficulty
 		(
-			nPreviousDifficulty,
+			nAverageDifficulty,
 			nTimeUsed,
 			nTimeStandard,
 			function( err, oData )
