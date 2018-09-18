@@ -109,7 +109,7 @@ function getDurationByCycleId(conn, cycleId, callback){
         throw Error("The first " + constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + " cycles do not need to calculate duration");
     var minRoundIndex = getMinRoundIndexByCycleId(cycleId-constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION);
     var maxRoundIndex = getMaxRoundIndexByCycleId(cycleId-1)-1;
-    if(maxRoundIndex - minRoundIndex != constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH-1) 
+    if(maxRoundIndex - minRoundIndex + 1 != constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH-1) 
         throw Error("calculate duration error on minRoundIndex or maxRoundIndex");    
     conn.query(
         "SELECT int_value AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
