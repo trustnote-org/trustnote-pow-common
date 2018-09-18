@@ -64,7 +64,7 @@ function getTotalPayloadSize(objUnit) {
 	var totalPayloadSize = 0;
 	objUnit.messages.forEach(function(message){
 		if(constants.PAYLOAD_COEFFICIENT[message.app] === null || isNaN(constants.PAYLOAD_COEFFICIENT[message.app]))
-			throw Error("payload coefficient is not number or null");
+			throw Error("payload coefficient is not number or null " + message.app);
 		totalPayloadSize += getLength(message) * constants.PAYLOAD_COEFFICIENT[message.app];
 	});
 	return totalPayloadSize;

@@ -30,7 +30,7 @@ var saveTempKeys; // function that saves temp keys
 var bScheduledTempDeviceKeyRotation = false;
 var loginHubTimeoutCount = 0;
 var loginHubTimeoutDoneCount = 0;
-var stableHub = "test.mainchain.pow.trustnote.org:9191";
+var stableHub = "dev.mainchain.pow.trustnote.org:9191";
 
 
 function getMyDevicePubKey(){
