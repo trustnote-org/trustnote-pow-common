@@ -73,7 +73,8 @@ function validate(objJoint, callbacks) {
 	else if ("ball" in objJoint){
 		if (!isStringOfLength(objJoint.ball, constants.HASH_LENGTH))
 			return callbacks.ifJointError("wrong ball length");
-		if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units", "arrShareDefinition"])) // Victor ShareAddress add arrShareDefinition field
+		//if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units", "arrShareDefinition"])) // Victor ShareAddress add arrShareDefinition field
+		if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units"])) // Victor ShareAddress add arrShareDefinition field
 			return callbacks.ifJointError("unknown fields in ball-joint");
 		if ("skiplist_units" in objJoint){
 			if (!isNonemptyArray(objJoint.skiplist_units))
@@ -83,7 +84,8 @@ function validate(objJoint, callbacks) {
 		}
 	}
 	else{
-		if (hasFieldsExcept(objJoint, ["unit","arrShareDefinition"]))   // Victor ShareAddress add arrShareDefinition field
+		//if (hasFieldsExcept(objJoint, ["unit","arrShareDefinition"]))   // Victor ShareAddress add arrShareDefinition field
+		if (hasFieldsExcept(objJoint, ["unit"]))   // Victor ShareAddress add arrShareDefinition field
 			return callbacks.ifJointError("unknown fields in unit-joint");
 	}
 	
@@ -92,7 +94,9 @@ function validate(objJoint, callbacks) {
 			return callbacks.ifUnitError("wrong content_hash length");
 		// Pow modi
 		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
+		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
+		// Victor ShareAddress add arrShareDefinition field
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit", "arrShareDefinition"]))
 		return callbacks.ifUnitError("unknown fields in nonserial unit");
 		if (!objJoint.ball)
 			return callbacks.ifJointError("content_hash allowed only in finished ball");
@@ -100,7 +104,9 @@ function validate(objJoint, callbacks) {
 	else{ // serial
 		// Pow modi
 		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
+		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
+		// Victor ShareAddress add arrShareDefinition field
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
 			return callbacks.ifUnitError("unknown fields in unit");
 
 		if (typeof objUnit.headers_commission !== "number")

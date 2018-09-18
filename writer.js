@@ -471,10 +471,12 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 		
 		// Victor ShareAddress 
 		function insertShareAddress(cb){
-			if (!objJoint.arrShareDefinition || objJoint.arrShareDefinition.length == 0)
+			//if (!objJoint.arrShareDefinition || objJoint.arrShareDefinition.length == 0)
+			if (!objUnit.arrShareDefinition || objUnit.arrShareDefinition.length == 0)
 				return cb();
 
-			async.forEachOfSeries(objJoint.arrShareDefinition,
+			//async.forEachOfSeries(objJoint.arrShareDefinition,
+			async.forEachOfSeries(objUnit.arrShareDefinition,
 				function(shareDefinition, i, cb2){
 					var arrDefinition = shareDefinition.arrDefinition;
 					var assocSignersByPath = shareDefinition.assocSignersByPath;

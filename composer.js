@@ -545,6 +545,9 @@ function composeJoint(params){
 		objUnit.round_index = params.round_index;
 		objUnit.pow_type = params.pow_type;
 	}
+	// Victor ShareAddress 
+	if (params.arrShareDefinition)
+		objUnit.arrShareDefinition = params.arrShareDefinition;
 
 	var total_input;
 	var last_ball_mci;
@@ -819,9 +822,9 @@ function composeJoint(params){
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					if (Object.keys(assocPrivatePayloads).length === 0)
 						assocPrivatePayloads = null;
-					// Victor ShareAddress 
-					if (params.arrShareDefinition)
-						objJoint.arrShareDefinition = params.arrShareDefinition;
+					// // Victor ShareAddress 
+					// if (params.arrShareDefinition)
+					// 	objJoint.arrShareDefinition = params.arrShareDefinition;
 					//profiler.stop('compose');
 					callbacks.ifOk(objJoint, assocPrivatePayloads, unlock_callback);
 				}
