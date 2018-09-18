@@ -521,7 +521,8 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 								function(shared_addresses){									
 									if (shared_addresses.length == 0)
 										return callback();
-									objJoint.arrShareDefinition = [];
+									//objJoint.arrShareDefinition = [];
+									objUnit.arrShareDefinition = [];
 									async.eachSeries(shared_addresses,
 										function(shared_address, callback1){
 											var arrDefinition = JSON.parse(shared_address.definition);
@@ -540,7 +541,8 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 															member_signing_path: signing_path_row.member_signing_path
 														};
 													});
-													objJoint.arrShareDefinition.push({"arrDefinition":arrDefinition, "assocSignersByPath":assocSignersByPath});
+													//objJoint.arrShareDefinition.push({"arrDefinition":arrDefinition, "assocSignersByPath":assocSignersByPath});
+													objUnit.arrShareDefinition.push({"arrDefinition":arrDefinition, "assocSignersByPath":assocSignersByPath});
 													callback1();
 												}
 											);
