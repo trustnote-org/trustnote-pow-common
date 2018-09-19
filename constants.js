@@ -12,7 +12,7 @@ exports.COUNT_MC_BALLS_FOR_PAID_WITNESSING = 100;
 exports.version = '1.0';
 exports.alt = '1';
 
-exports.GENESIS_UNIT = 'aUAEQUZ4pL7D/amRLMBAwEM/W4PcvPa0cXnxKeaBuDo=';
+exports.GENESIS_UNIT = 'BgfoqxIYq/+vbCKVSMwvcKbXaBmntU/r7kJB6ElKzUA=';
 exports.BLACKBYTES_ASSET = '9qQId3BlWRQHvVy+STWyLKFb3lUd0xfQhX6mPVEHC2c=';
 // Pow add
 exports.FOUNDATION_ADDRESS = "72FZXZMFPESCMUHUPWTZJ2F57YV32JCI";
