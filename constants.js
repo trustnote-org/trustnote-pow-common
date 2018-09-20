@@ -70,7 +70,7 @@ exports.POW_TYPE_POW_EQUHASH	= 1;
 exports.POW_TYPE_TRUSTME	= 2;
 exports.POW_TYPE_COIN_BASE	= 3;
 
-exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 10;
+exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 1;
 exports.COUNT_CYCLES_FOR_DIFFICULTY_DURATION = 17;
 // average time consumimg per each round
 exports.DURATION_PER_ROUND = 150;
