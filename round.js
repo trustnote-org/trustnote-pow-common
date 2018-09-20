@@ -209,16 +209,16 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
 // }
 
 
-function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
-    conn.query(
-		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
-		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
-        [round_index, constants.POW_TYPE_TRUSTME],
-		function(rows){
-            callback(rows.length === 1);
-		}
-	);
-}
+// function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
+//     conn.query(
+// 		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
+// 		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
+//         [round_index, constants.POW_TYPE_TRUSTME],
+// 		function(rows){
+//             callback(rows.length === 1);
+// 		}
+// 	);
+// }
 
 // the MinWl and MaxWl maybe null
 function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
@@ -633,7 +633,7 @@ exports.getAverageDifficultyByCycleId = getAverageDifficultyByCycleId;
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
 exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
-exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
+// exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
