@@ -12,7 +12,7 @@ exports.COUNT_MC_BALLS_FOR_PAID_WITNESSING = 100;
 exports.version = '1.0';
 exports.alt = '1';
 
-exports.GENESIS_UNIT = 'plWz2a9aLp+7fQ21ODAqh4FY87jf+MVnsgPhSsAr/Ls=';
+exports.GENESIS_UNIT = '/2JXOmTkFL2w0HBKMyMylwwLZg+fyhYX3wKLYqE7PL8=';
 exports.BLACKBYTES_ASSET = '9qQId3BlWRQHvVy+STWyLKFb3lUd0xfQhX6mPVEHC2c=';
 // Pow add
 exports.FOUNDATION_ADDRESS = "JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET";
@@ -70,7 +70,7 @@ exports.POW_TYPE_POW_EQUHASH	= 1;
 exports.POW_TYPE_TRUSTME	= 2;
 exports.POW_TYPE_COIN_BASE	= 3;
 
-exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 10;
+exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 1;
 exports.COUNT_CYCLES_FOR_DIFFICULTY_DURATION = 17;
 // average time consumimg per each round
 exports.DURATION_PER_ROUND = 150;
