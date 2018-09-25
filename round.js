@@ -118,9 +118,9 @@ function getDurationByCycleId(conn, cycleId, callback){
         [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, minRoundIndex],
         function(rowsMin){
             if (rowsMin.length !== 1)
-                callback(0);
+                return callback(0);
             if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
-                callback(0);
+                return callback(0);
             conn.query(
                 "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
                 WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
@@ -128,9 +128,9 @@ function getDurationByCycleId(conn, cycleId, callback){
                 [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, maxRoundIndex],
                 function(rowsMax){
                     if (rowsMax.length !== 1)
-                        callback(0);
+                        return callback(0);
                     if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
-                        callback(0);
+                        return callback(0);
                     callback(Math.floor((rowsMax[0].max_timestamp - rowsMin[0].min_timestamp)/1000));
                 }
             );            
