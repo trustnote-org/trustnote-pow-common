@@ -4,14 +4,16 @@
 /**
  *	@boss	XING
  */
-const _bBrowser		= typeof window !== 'undefined' && window;
 
 const _conf		= require( './conf.js' );
+const _bBrowser		= typeof window !== 'undefined' && window;
+const _bLight		= _conf.bLight;
+const _bWallet		= _conf.bWallet;
 
 const _crypto		= require( 'crypto' );
 const _blakejs		= require( 'blakejs' );
 const _async		= require( 'async' );
-const _pow_miner	= _bBrowser ? null : require( 'trustnote-pow-miner' );
+const _pow_miner	= (_bWallet && _bLight && _bBrowser) ? null : require( 'trustnote-pow-miner' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
