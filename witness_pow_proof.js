@@ -184,6 +184,7 @@ function processPowWitnessProof( arrUnstableMcJoints, bFromCurrent, handleResult
 			assocLastBallByLastBallUnit[ objUnit.last_ball_unit ] = objUnit.last_ball;
 		}
 	}
+	return handleResult(null, null, assocLastBallByLastBallUnit);
 	//	end of forEach arrUnstableMcJoints
 
 

@@ -438,8 +438,8 @@ function composeJoint(params){
 		network.requestFromLightVendor(
 			// 'light/get_parents_and_last_ball_and_witness_list_unit', 
 			'light/get_parents_and_last_ball', 
-			//{witnesses: arrWitnesses}, 
-			{}, 
+			{witnesses: ""}, 
+			// {}, 
 			function(ws, request, response){
 				if (response.error)
 					return params.callbacks.ifError(response.error);

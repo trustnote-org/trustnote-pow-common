@@ -2167,7 +2167,8 @@ function requestProofsOfJoints( arrUnits, onDone )
 
 	myWitnesses.readMyWitnesses( function( arrWitnesses )
 	{
-		var objHistoryRequest = {witnesses: arrWitnesses, requested_joints: arrUnits};
+		// var objHistoryRequest = {witnesses: arrWitnesses, requested_joints: arrUnits};
+		var objHistoryRequest = {requested_joints: arrUnits};
 		requestFromLightVendor( 'light/get_history', objHistoryRequest, function( ws, request, response )
 		{
 			if (response.error){
@@ -2284,6 +2285,7 @@ function updateLinkProofsOfPrivateChain( arrPrivateElements, unit, message_index
 function initWitnessesIfNecessary( ws, onDone )
 {
 	onDone = onDone || function(){};
+	return onDone();
 	myWitnesses.readMyWitnesses( function( arrWitnesses )
 	{
 		if (arrWitnesses.length > 0) // already have witnesses
