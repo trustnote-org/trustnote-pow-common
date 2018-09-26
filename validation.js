@@ -119,7 +119,7 @@ function validate(objJoint, callbacks) {
 				return callbacks.ifJointError("no round index");
 			if (typeof objUnit.pow_type !== "number")
 				return callbacks.ifJointError("no unit type");
-			
+
 			// unity type should be in range of [1,3]
 			if ( objUnit.pow_type < 1 || objUnit.pow_type > 3)
 				return callbacks.ifJointError("invalid unit type");
@@ -127,7 +127,7 @@ function validate(objJoint, callbacks) {
 			if ( objUnit.round_index < 1 || objUnit.round_index > 4204800)
 				return callbacks.ifJointError("invalid unit round index");
 		}
-	
+
 
 		if (!isNonemptyArray(objUnit.messages))
 			return callbacks.ifUnitError("missing or empty messages array");
@@ -423,16 +423,16 @@ function validateParents(conn, objJoint, objValidationState, callback){
 		function getMaxRoundIndexForAnyTypeUnit(unit, handleMaxRound){
 			storage.readStaticUnitProps(conn, unit, function (unitPros){
 				if(unitPros.round_index)
-					return handleMaxRound(unitPros.round_index); 
+					return handleMaxRound(unitPros.round_index);
 				var maxRoundIndex = 0;
 				conn.query(
 					"SELECT  parent_unit \n\
 					FROM parenthoods \n\
-					WHERE unit = ? ", 
+					WHERE unit = ? ",
 					[unit],
 					function(rows){
 						async.eachSeries(
-							rows, 
+							rows,
 							function(parent, cb){
 								getMaxRoundIndexForAnyTypeUnit(parent, function(roundIndex){
 									if (roundIndex > maxRoundIndex)
@@ -448,7 +448,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 		}
 
 		async.eachSeries(
-			objUnit.parent_units, 
+			objUnit.parent_units,
 			function(parent_unit, cb){
 				getMaxRoundIndexForAnyTypeUnit(parent_unit, function (roundIndex){
 					if (objUnit.round_index < roundIndex)
@@ -471,7 +471,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			"SELECT distinct(address), unit, is_on_main_chain, main_chain_index \n\
 			FROM units JOIN unit_authors using (unit)\n\
 			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-			LIMIT ?", 
+			LIMIT ?",
 			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
 			function(rowsPow){
 				if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
@@ -482,7 +482,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 						conn.query(
 							"SELECT unit, is_on_main_chain\n\
 							FROM units \n\
-							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ", 
+							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ",
 							[lastPowstableUnit.main_chain_index],
 							function(stableMCRows){
 								if(stableMCRows.length!==1 || stableMCRows[0].is_on_main_chain !==1)
@@ -491,7 +491,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 								main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
 									if (bStable)
 										return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
-									
+
 									callback();
 								});
 							});
@@ -499,17 +499,17 @@ function validateParents(conn, objJoint, objValidationState, callback){
 						main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
 							if (bStable)
 								return callback("on mainchain unit round index is incorrect because the 8th pow unit already stable in its parent view");
-							
+
 							callback();
 						});
 					}
-					
+
 				}else{
 					callback();
-				}	
+				}
 		});
 	}
-	
+
 	var objUnit = objJoint.unit;
 	if (objUnit.parent_units.length > constants.MAX_PARENTS_PER_UNIT) // anti-spam
 		return callback("too many parents: "+objUnit.parent_units.length);
@@ -838,7 +838,7 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 			}
 		);
 	}
-	
+
 	//pow add: check trust me author must come from pow unit authors of last round
 	function checkTrustMeAuthor(){
 		if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
@@ -848,7 +848,7 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 				}
 				checkSerialAddressUse();
 			});
-		
+
 		}else{
 			checkSerialAddressUse();
 		}
@@ -1082,7 +1082,7 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		return callback("wrong payload hash size");
 	if (typeof objMessage.payload_location !== "string")
 		return callback("no payload_location");
-	// Pow modi  
+	// Pow modi
 	//if (hasFieldsExcept(objMessage, ["app", "payload_hash", "payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
 	if (hasFieldsExcept(objMessage, ["app", "payload_hash", "pow_equihash","payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
 		return callback("unknown fields in message");
@@ -1198,7 +1198,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 		objValidationState.best_parent_unit = null;
 		objValidationState.witnessed_level = 0;
 		return callback();
-	} 
+	}
 	var unit_best_parent;
 	var unit_witenessed_level;
 	async.series(
@@ -1241,10 +1241,10 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						if (objUnit.round_index === 1){//first round
 							if(unit_witenessed_level < 0)
 								return cb("unit witness level is negative in first round")
-							
+
 							return cb();
 						}
-						
+
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
 							if (last_round_min_wl === null){
 							    return cb("last_round_min_wl or last_round_min_wl is null ");
@@ -1260,7 +1260,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 					// 	if(unit_witenessed_level < min_wl){
 					// 		return cb("unit witnessed level is less than min_wl")
 					// 	}
-					// 	// wl is valid 
+					// 	// wl is valid
 					// 	return cb();
 					// }
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
@@ -1270,13 +1270,13 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						// if(unit_witenessed_level > max_wl){
 						// 	return cb("unit witnessed level " + unit_witenessed_level + " is bigger than max_wl, max_wl: " + max_wl + JSON.stringify(objUnit) );
 						// }
-						// wl is valid 
+						// wl is valid
 
 
 						return cb();
 					}
 				});
-			}	
+			}
 		}
 	],
 	function(err){
@@ -1504,7 +1504,7 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 }
 
 // pow add:
-function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){	
+function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){
 	if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
 		return callback("unknown fields in pow_equihash message");
 	if (objValidationState.bHasBasePowequihash)
@@ -1513,13 +1513,13 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 
 	// dev branch disale real pow unit check temperorary
 	// return callback();
-	
-	var firstTrustMEBall = null;	
+
+	var firstTrustMEBall = null;
 	async.series(
 		[
 			function(cb){
 				round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
-					if(bExist) 
+					if(bExist)
 						return cb("pow unit can not being sent more than once in certain round");
 					 cb();
 				});
@@ -1531,7 +1531,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 					cb();
 				});
 			},
-			function(cb){ 
+			function(cb){
 				round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
 					if(difficulty !== payload.difficulty)
 						return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
@@ -1547,7 +1547,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				var objPowProof={roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed, 
+				var objPowProof={roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed,
 					superNodeAuthor:objUnit.authors[0].address} ;
 				//check ifsolution is correct
 				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
@@ -1565,7 +1565,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 
 
 	//Check pow_equihash payload is correct .var payload = {seed: seed, difficulty: difficulty, solution: solution}
-	
+
 }
 
 // used for both public and private payments
@@ -1646,7 +1646,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 	if (payload.inputs.length > constants.MAX_INPUTS_PER_PAYMENT_MESSAGE)
 		return callback("too many inputs");
 	if (payload.outputs.length > constants.MAX_OUTPUTS_PER_PAYMENT_MESSAGE)
-		return callback("too many outputs"); 
+		return callback("too many outputs");
 	
 	if (objAsset && objAsset.fixed_denominations && payload.inputs.length !== 1)
 		return callback("fixed denominations payment must have 1 input");
@@ -1894,11 +1894,11 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						if (bCoinbase)
 							return cb("only one coinbase per message allowed");
 							bCoinbase = true;
-						
+
 						if (arrAuthorAddresses.length !== 1){
-								return cb("coin base author must be one");			
+								return cb("coin base author must be one");
 						}
-						
+
 						total_input += input.amount;
 						// Check author come from n-2 round pow units authors
 						if (objUnit.round_index === 1 )
@@ -1912,9 +1912,9 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							round.checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address,function(isExisted){
 								if(isExisted){
 									return cb("coinbase unit by each author can not sent more than once ");
-								}								
+								}
 								// check amount is valid
-								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address, 
+								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address,
 								function(commission){
 									if (commission != input.amount){
 										return cb("coinbase unit amount is incorrect ");
@@ -1924,7 +1924,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							});
 						})
 						break;
-					
+
 				case "transfer":
 				//	if (objAsset)
 				//		profiler2.start(); pow del
@@ -2075,14 +2075,14 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 				// 	if (objValidationState.arrInputKeys.indexOf(input_key) >= 0)
 				// 		return cb("input "+input_key+" already used");
 				// 	objValidationState.arrInputKeys.push(input_key);
-					
+
 				// 	doubleSpendWhere = "type=? AND from_main_chain_index=? AND address=? AND asset IS NULL";
 				// 	doubleSpendVars = [type, input.from_main_chain_index, address];
 
 				// 	mc_outputs.readNextSpendableMcIndex(conn, type, address, objValidationState.arrConflictingUnits, function(next_spendable_mc_index){
 				// 		if (input.from_main_chain_index < next_spendable_mc_index)
 				// 			return cb(type+" ranges must not overlap"); // gaps allowed, in case a unit becomes bad due to another address being nonserial
-				// 		var max_mci = (type === "headers_commission") 
+				// 		var max_mci = (type === "headers_commission")
 				// 			? headers_commission.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci)
 				// 			: paid_witnessing.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci);
 				// 		if (input.to_main_chain_index > max_mci)

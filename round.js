@@ -131,6 +131,7 @@ function getDurationByCycleId(conn, cycleId, callback){
                         return callback(0);
                     if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
                         return callback(0);
+
                     callback(Math.floor((rowsMax[0].max_timestamp - rowsMin[0].min_timestamp)/1000));
                 }
             );            

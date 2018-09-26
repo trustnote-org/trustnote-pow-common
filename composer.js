@@ -156,7 +156,7 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 	
 	// pow del
 	// function addHeadersCommissionInputs(){
-	// 	addMcInputs("headers_commission", HEADERS_COMMISSION_INPUT_SIZE, 
+	// 	addMcInputs("headers_commission", HEADERS_COMMISSION_INPUT_SIZE,
 	// 		headers_commission.getMaxSpendableMciForLastBallMci(last_ball_mci), addWitnessingInputs);
 	// }
 	
@@ -166,7 +166,7 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 	
 	// function addMcInputs(type, input_size, max_mci, onStillNotEnough){
 	// 	async.eachSeries(
-	// 		arrAddresses, 
+	// 		arrAddresses,
 	// 		function(address, cb){
 	// 			var target_amount = required_amount + input_size + (bMultiAuthored ? ADDRESS_SIZE : 0) - total_amount;
 	// 			mc_outputs.findMcIndexIntervalToTargetAmount(conn, type, address, max_mci, target_amount, {
@@ -379,12 +379,12 @@ function composePowJoint(from_address, round_index, seed, difficulty, solution, 
 		payload: payload
 	};
 	composeJoint({
-		paying_addresses: [from_address], 
-		outputs: [{address: from_address, amount: 0}], 
-		messages: [objMessage], 
+		paying_addresses: [from_address],
+		outputs: [{address: from_address, amount: 0}],
+		messages: [objMessage],
 		round_index: round_index,
 		pow_type: constants.POW_TYPE_POW_EQUHASH,
-		signer: signer, 
+		signer: signer,
 		callbacks: callbacks
 	});
 }
@@ -392,11 +392,11 @@ function composePowJoint(from_address, round_index, seed, difficulty, solution, 
 // pow add trustme joint
 function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 	composeJoint({
-		paying_addresses: [from_address], 
-		outputs: [{address: from_address, amount: 0}], 
+		paying_addresses: [from_address],
+		outputs: [{address: from_address, amount: 0}],
 		round_index: round_index,
 		pow_type: constants.POW_TYPE_TRUSTME,
-		signer: signer, 
+		signer: signer,
 		callbacks: callbacks
 	});
 }
@@ -404,14 +404,14 @@ function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 // pow add Coinbase joint
 function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer, callbacks){
 	composeJoint({
-		paying_addresses: [from_address], 
-		outputs: [{address: from_address, amount: 0}], 
+		paying_addresses: [from_address],
+		outputs: [{address: from_address, amount: 0}],
 		//inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
 		inputs: [{type: "coinbase", amount: coinbase_amount}],
 		round_index: round_index,
 		input_amount: coinbase_amount,
 		pow_type: constants.POW_TYPE_COIN_BASE,
-		signer: signer, 
+		signer: signer,
 		callbacks: callbacks
 	});
 }
@@ -530,7 +530,7 @@ function composeJoint(params){
 		messages: arrMessages,
 		authors: []
 	};
-	
+
 	var objJoint = {unit: objUnit};
 	// pow del
 	// if (params.earned_headers_commission_recipients) // it needn't be already sorted by address, we'll sort it now
@@ -540,12 +540,12 @@ function composeJoint(params){
 	// else if (bMultiAuthored) // by default, the entire earned hc goes to the change address
 	// 	objUnit.earned_headers_commission_recipients = [{address: arrChangeOutputs[0].address, earned_headers_commission_share: 100}];
 	
-	//pow add 
+	//pow add
 	if(params.round_index){
 		objUnit.round_index = params.round_index;
 		objUnit.pow_type = params.pow_type;
 	}
-	// Victor ShareAddress 
+	// Victor ShareAddress
 	if (params.arrShareDefinition)
 		objUnit.arrShareDefinition = params.arrShareDefinition;
 
@@ -613,7 +613,7 @@ function composeJoint(params){
 			// pow modi
 			parentComposer.pickParentUnitsAndLastBall(
 				conn, 
-				// arrWitnesses, 
+				// arrWitnesses,
 				function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
 					if (err)
 						return cb("unable to find parents: "+err);
@@ -721,7 +721,7 @@ function composeJoint(params){
 			var naked_payload_commission = objectLength.getTotalPayloadSize(objUnit); // without input coins
 
 			if (bGenesis){
-				// pow modi 
+				// pow modi
 				//objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: arrWitnesses[0]}];
 				objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: constants.FOUNDATION_ADDRESS}];
 				objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
@@ -822,7 +822,7 @@ function composeJoint(params){
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					if (Object.keys(assocPrivatePayloads).length === 0)
 						assocPrivatePayloads = null;
-					// // Victor ShareAddress 
+					// // Victor ShareAddress
 					// if (params.arrShareDefinition)
 					// 	objJoint.arrShareDefinition = params.arrShareDefinition;
 					//profiler.stop('compose');
@@ -921,7 +921,7 @@ function getSavingCallbacks(callbacks){
 					console.log("validation error: "+err);
 					//throw Error("validation error: "+err);
 					callbacks.ifError("Validation error: "+err);
-					
+
 				//	throw Error("unexpected validation error: "+err);
 				},
 				ifJointError: function(err){
