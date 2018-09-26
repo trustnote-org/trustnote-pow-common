@@ -22,6 +22,7 @@ function readCurrentWitnesses( handleWitnesses, actionIfEmpty )
 
 function readMyWitnesses( handleWitnesses, actionIfEmpty )
 {
+	return handleWitnesses();
 	db.query("SELECT address FROM my_witnesses ORDER BY address", function(rows){
 		var arrWitnesses = rows.map(function(row){ return row.address; });
 		// reset witness list if old witnesses found

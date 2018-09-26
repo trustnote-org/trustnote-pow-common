@@ -118,9 +118,9 @@ function getDurationByCycleId(conn, cycleId, callback){
         [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, minRoundIndex],
         function(rowsMin){
             if (rowsMin.length !== 1)
-                 return callback(0);
+                return callback(0);
             if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
-                return  callback(0);
+                return callback(0);
             conn.query(
                 "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
                 WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
@@ -130,7 +130,8 @@ function getDurationByCycleId(conn, cycleId, callback){
                     if (rowsMax.length !== 1)
                         return callback(0);
                     if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
-                        return  callback(0);
+                        return callback(0);
+
                     callback(Math.floor((rowsMax[0].max_timestamp - rowsMin[0].min_timestamp)/1000));
                 }
             );            
@@ -158,67 +159,67 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
     );
 }
 
-function getPowEquhashUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-{
-	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_POW_EQUHASH, pfnCallback );
-}
-function getTrustMEUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-{
-	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_TRUSTME, pfnCallback );
-}
-function getCoinBaseUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-{
-	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_COIN_BASE, pfnCallback );
-}
+// function getPowEquhashUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
+// {
+// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_POW_EQUHASH, pfnCallback );
+// }
+// function getTrustMEUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
+// {
+// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_TRUSTME, pfnCallback );
+// }
+// function getCoinBaseUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
+// {
+// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_COIN_BASE, pfnCallback );
+// }
 
-/**
- *	get units with type by round index
- *	@param	{handle}	oConn
- *	@param	{function}	oConn.query
- *	@param	{number}	nRoundIndex
- *	@param	{number}	nType
- *	@param	{function}	pfnCallback( err, arrRows )
- *	@return {*}
- */
-function getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, nType, pfnCallback )
-{
-	if ( ! oConn )
-	{
-		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid oConn` );
-	}
-	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 0 )
-	{
-		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nRoundIndex` );
-	}
-	if ( 'number' !== typeof nType )
-	{
-		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nType` );
-	}
+// /**
+//  *	get units with type by round index
+//  *	@param	{handle}	oConn
+//  *	@param	{function}	oConn.query
+//  *	@param	{number}	nRoundIndex
+//  *	@param	{number}	nType
+//  *	@param	{function}	pfnCallback( err, arrRows )
+//  *	@return {*}
+//  */
+// function getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, nType, pfnCallback )
+// {
+// 	if ( ! oConn )
+// 	{
+// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid oConn` );
+// 	}
+// 	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 0 )
+// 	{
+// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nRoundIndex` );
+// 	}
+// 	if ( 'number' !== typeof nType )
+// 	{
+// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nType` );
+// 	}
 
-	oConn.query
-	(
-		"SELECT * FROM units \
-		WHERE round_index = ? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? \
-		ORDER BY main_chain_index",
-		[ nRoundIndex, nType ],
-		function( arrRows )
-		{
-			pfnCallback( null, arrRows );
-		}
-	);
-}
+// 	oConn.query
+// 	(
+// 		"SELECT * FROM units \
+// 		WHERE round_index = ? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? \
+// 		ORDER BY main_chain_index",
+// 		[ nRoundIndex, nType ],
+// 		function( arrRows )
+// 		{
+// 			pfnCallback( null, arrRows );
+// 		}
+// 	);
+// }
 
 
-function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
-    conn.query(
-		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
-		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
-        [round_index, constants.POW_TYPE_TRUSTME],
-		function(rows){
-            callback(rows.length === 1);
-		}
-	);
-}
+// function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
+//     conn.query(
+// 		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
+// 		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
+//         [round_index, constants.POW_TYPE_TRUSTME],
+// 		function(rows){
+//             callback(rows.length === 1);
+// 		}
+// 	);
+// }
 
 // the MinWl and MaxWl maybe null
 function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
@@ -626,14 +627,14 @@ exports.getDifficultydByCycleID = getDifficultydByCycleID;
 exports.getStandardDuration = getStandardDuration;
 exports.getAverageDifficultyByCycleId = getAverageDifficultyByCycleId;
 
-exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
-exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
-exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
-exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
+// exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
+// exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
+// exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
+// exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
 exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
-exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
+// exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;

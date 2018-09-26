@@ -4,14 +4,16 @@
 /**
  *	@boss	XING
  */
-const _bBrowser		= typeof window !== 'undefined' && window;
 
 const _conf		= require( './conf.js' );
+const _bBrowser		= typeof window !== 'undefined' && window;
+const _bLight		= _conf.bLight;
+const _bWallet		= _conf.bWallet;
 
 const _crypto		= require( 'crypto' );
 const _blakejs		= require( 'blakejs' );
 const _async		= require( 'async' );
-const _pow_miner	= _bBrowser ? null : require( 'trustnote-pow-miner' );
+const _pow_miner	= (_bWallet && _bLight && _bBrowser) ? null : require( 'trustnote-pow-miner' );
 
 const _constants	= require( './constants.js' );
 const _round		= require( './round.js' );
@@ -355,7 +357,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
-	if ( _bBrowser )
+	if ( _bBrowser && !_bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
 	}
@@ -491,7 +493,7 @@ function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
  */
 function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 {
-	if ( _bBrowser )
+	if ( _bBrowser && !_bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
 	}
@@ -530,7 +532,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
  */
 function stopMining( nRoundIndex )
 {
-	if ( _bBrowser )
+	if ( _bBrowser && !_bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
 	}
