@@ -1,9 +1,9 @@
 const _eventBus	= require( '../../event_bus.js' );
 
 
-for ( let i = 0; i < 20; i ++ )
+for ( let i = 0; i < 26; i ++ )
 {
-	_eventBus.on( 'my-event', () =>
+	_eventBus.once( 'my-event', () =>
 	{
 		console.log( `my-event (${ i }).` );
 

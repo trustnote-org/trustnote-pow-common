@@ -211,9 +211,18 @@ function sendRequest( ws, command, params, bReroutable, responseHandler )
 				if (next_ws === ws || assocReroutedConnectionsByTag[tag] && assocReroutedConnectionsByTag[tag].indexOf(next_ws) >= 0)
 				{
 					console.log('will not reroute '+command+' to the same peer, will rather wait for a new connection');
-					eventBus.once('connected_to_source', function(){ // try again
-						console.log('got new connection, retrying reroute '+command);
-						reroute();
+					eventBus.once( 'connected_to_source', function( oNewWs )
+					{
+						//	try again
+						if ( oNewWs )
+						{
+							console.log( `got new connection, retrying to reroute ${ command }` );
+							reroute();
+						}
+						else
+						{
+							console.log( `no connection received, just release memory on rerouting command ${ command }` );
+						}
 					});
 					return;
 				}
@@ -314,10 +323,17 @@ function findNextPeer( ws, handleNextPeer )
 
 		var peer = ws ? ws.peer : '[none]';
 		console.log('findNextPeer after '+peer+' found no appropriate peer, will wait for a new connection');
-		eventBus.once('connected_to_source', function(new_ws)
+		eventBus.once( 'connected_to_source', function( oNewWs )
 		{
-			console.log('got new connection, retrying findNextPeer after '+peer);
-			findNextPeer(ws, handleNextPeer);
+			if ( oNewWs )
+			{
+				console.log( `got new connection, retry to findNextPeer after ${ peer }` );
+				findNextPeer( ws, handleNextPeer );
+			}
+			else
+			{
+				console.log( `no connection received, just release memory after ${ peer }` );
+			}
 		});
 	});
 }
@@ -743,17 +759,35 @@ function printEventBusStatus()
 
 function subscribe( ws )
 {
-	ws.subscription_id = crypto.randomBytes(30).toString("base64"); // this is to detect self-connect
+	//	this is to detect self-connect
+	ws.subscription_id	= crypto.randomBytes( 30 ).toString( "base64" );
 	storage.readLastMainChainIndex( function( last_mci )
 	{
-		sendRequest( ws, 'subscribe', {subscription_id: ws.subscription_id, last_mci: last_mci}, false, function(ws, request, response)
-		{
-			delete ws.subscription_id;
-			if (response.error)
-				return;
-			ws.bSource = true;
-			eventBus.emit('connected_to_source', ws);
-		});
+		sendRequest
+		(
+			ws,
+			'subscribe',
+			{
+				subscription_id	: ws.subscription_id,
+				last_mci	: last_mci
+			},
+			false,
+			function( ws, request, response )
+			{
+				delete ws.subscription_id;
+				if ( response.error )
+				{
+					//	null identify as NOT CONNECTED TO SOURCE
+					eventBus.emit( 'connected_to_source', null );
+				}
+				else
+				{
+					//	yes, connected to source
+					ws.bSource = true;
+					eventBus.emit( 'connected_to_source', ws );
+				}
+			}
+		);
 	});
 }
 

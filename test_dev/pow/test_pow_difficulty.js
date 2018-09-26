@@ -7,6 +7,7 @@ process.env.ENV_UNIT_TEST	= true;
 /**
  * 	...
  */
+const _fs	= require( 'fs' );
 const _db	= require( '../../db.js' );
 const _pow	= require( '../../pow.js' );
 const _round	= require( '../../round.js' );
@@ -19,8 +20,8 @@ const _async	= require( 'async' );
 _db.takeConnectionFromPool( function( oNewConn )
 {
 	let arrComputeList	= [];
-	let nStart		= 2;
-	let nEnd		= 34;
+	let nStart		= 19;
+	let nEnd		= 900;
 
 	for ( let i = nStart; i < nEnd; i ++ )
 	{
@@ -32,7 +33,11 @@ _db.takeConnectionFromPool( function( oNewConn )
 				{
 					if ( null === err )
 					{
-						console.log( `@@@ new difficulty: ${ nNewDifficultyValue }` );
+						console.log( `[${ i }]@@@ new difficulty: ${ nNewDifficultyValue }` );
+
+						//	...
+						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewDifficultyValue }\n`, { flag : 'a' } );
+
 					}
 					else
 					{
