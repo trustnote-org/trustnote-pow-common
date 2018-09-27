@@ -3290,10 +3290,10 @@ var catchup_balls_at_start = -1;
 var catchup_balls_left = 0;
 function logCatchupStatus(){
 	if(!bCatchingUp)
-		return ;
+	     return ;
 	var percent = Math.round((catchup_balls_at_start - catchup_balls_left) / catchup_balls_at_start * 100);
 	console.info("-----------------------Syncing Data-----------------------");
-	console.info("        Progress : " + percent +"%");
+	console.info("  ("              Progress: " + percent +"%");
 	console.info("");
 }
 
