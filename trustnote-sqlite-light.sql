@@ -295,7 +295,7 @@ CREATE TABLE inputs (
 	asset CHAR(44) NULL,
 	denomination INT NOT NULL DEFAULT 1,
 	is_unique TINYINT NULL DEFAULT 1,
-	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue')) NOT NULL,
+	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue','coinbase')) NOT NULL,
 	src_unit CHAR(44) NULL, -- transfer
 	src_message_index TINYINT NULL, -- transfer
 	src_output_index TINYINT NULL, -- transfer
