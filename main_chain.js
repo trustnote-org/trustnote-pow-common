@@ -823,8 +823,8 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate new seed error !");
 										conn.query(
-											"INSERT INTO round (round_index, min_wl, max_wl, seed) VALUES (?, null, null, ?)", 
-											[round_index+1, newSeed], 
+											"INSERT INTO round (round_index, min_wl, max_wl, seed, creation_date) VALUES (?, null, null, ?, "+conn.getFromUnixTime("?")+")", 
+											[round_index+1, newSeed, Math.round(Date.now()/1000)], 
 											function(){
 												cb1();
 											}
@@ -838,8 +838,8 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate difficulty error " + err);
 										conn.query(
-											"INSERT INTO round_cycle (cycle_id, difficulty) VALUES (?, ?)", 
-											[round.getCycleIdByRoundIndex(round_index+1), newDifficulty], 
+											"INSERT INTO round_cycle (cycle_id, difficulty, creation_date) VALUES (?, ?, "+conn.getFromUnixTime("?")+")", 
+											[round.getCycleIdByRoundIndex(round_index+1), newDifficulty, Math.round(Date.now()/1000)], 
 											function(){
 												infoMiningSuccess(round_index+1, newDifficulty);
 												cb1();
