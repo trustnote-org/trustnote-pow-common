@@ -114,6 +114,7 @@ CREATE TABLE round(
 	min_wl INT NULL,
 	max_wl INT NULL,
 	seed CHAR (64),
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (round_index)
 ) 
 
@@ -121,6 +122,7 @@ CREATE TABLE round(
 CREATE TABLE round_cycle(
 	cycle_id INTEGER NOT NULL,
 	difficulty INT NULL,
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (cycle_id)
 ) 
 
