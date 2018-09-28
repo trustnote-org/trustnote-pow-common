@@ -841,6 +841,7 @@ function markMcIndexStable(conn, mci, onDone){
 											"INSERT INTO round_cycle (cycle_id, difficulty) VALUES (?, ?)", 
 											[round.getCycleIdByRoundIndex(round_index+1), newDifficulty], 
 											function(){
+												infoMiningSuccess(round_index+1, newDifficulty);
 												cb1();
 											}
 										);
@@ -1075,6 +1076,13 @@ function getSimilarMcis(mci){
 		else
 			return arrSimilarMcis;
 	}
+}
+
+function infoMiningSuccess(round_index, newDifficulty){
+	console.info("--------------------Difficulty Adjustment---------------------");
+	console.info("       Round Index: " + round_index);
+	console.info("    Difficulty New: " + newDifficulty);
+	console.info("");
 }
 
 exports.updateMainChain = updateMainChain;

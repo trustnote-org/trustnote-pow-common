@@ -3,6 +3,8 @@ CREATE TABLE units (
 	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	version VARCHAR(3) NOT NULL DEFAULT '1.0',
 	alt VARCHAR(3) NOT NULL DEFAULT '1',
+	round_index BIGINT NULL,
+	pow_type INT Null, --  1: pow-equhash 2: trustme 3: coin base 
 	witness_list_unit CHAR(44) NULL,
 	last_ball_unit CHAR(44) NULL,
 	content_hash CHAR(44) NULL,
@@ -96,6 +98,33 @@ CREATE TABLE authentifiers (
 	FOREIGN KEY (unit) REFERENCES units(unit)
 );
 CREATE INDEX authentifiersIndexByAddress ON authentifiers(address);
+
+
+--  new table to store round 
+CREATE TABLE round(
+	round_index BIGINT NOT NULL,
+	min_wl INT NULL,
+	max_wl INT NULL,
+	seed CHAR (64),
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (round_index)
+) 
+
+--  new table to store round 
+CREATE TABLE round_cycle(
+	cycle_id INTEGER NOT NULL,
+	difficulty INT NULL,
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (cycle_id)
+) 
+
+
+--  new table to store pow units 
+CREATE TABLE pow(
+	unit CHAR(44) NOT NULL,
+	solution VARCHAR(256)  NULL,
+	PRIMARY KEY (unit)
+) 
 
 -- must be sorted by address
 CREATE TABLE unit_witnesses (
@@ -268,7 +297,7 @@ CREATE TABLE inputs (
 	asset CHAR(44) NULL,
 	denomination INT NOT NULL DEFAULT 1,
 	is_unique TINYINT NULL DEFAULT 1,
-	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue')) NOT NULL,
+	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue','coinbase')) NOT NULL,
 	src_unit CHAR(44) NULL, -- transfer
 	src_message_index TINYINT NULL, -- transfer
 	src_output_index TINYINT NULL, -- transfer

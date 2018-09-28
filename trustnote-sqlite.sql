@@ -114,6 +114,7 @@ CREATE TABLE round(
 	min_wl INT NULL,
 	max_wl INT NULL,
 	seed CHAR (64),
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (round_index)
 ) 
 
@@ -121,6 +122,7 @@ CREATE TABLE round(
 CREATE TABLE round_cycle(
 	cycle_id INTEGER NOT NULL,
 	difficulty INT NULL,
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (cycle_id)
 ) 
 
@@ -308,7 +310,7 @@ CREATE TABLE inputs (
 	asset CHAR(44) NULL,
 	denomination INT NOT NULL DEFAULT 1,
 	is_unique TINYINT NULL DEFAULT 1,
-	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue')) NOT NULL,
+	type TEXT CHECK (type IN('transfer','headers_commission','witnessing','issue','coinbase')) NOT NULL,
 	src_unit CHAR(44) NULL, -- transfer
 	src_message_index TINYINT NULL, -- transfer
 	src_output_index TINYINT NULL, -- transfer

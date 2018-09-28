@@ -1900,6 +1900,12 @@ function requestNextHashTree( ws )
 	{
 		if ( rows.length > 0 )
 		{
+
+			if(catchup_balls_at_start == -1){ // first time to get all catchup ball number
+				catchup_balls_at_start = rows[0].count_left;
+			}
+
+			catchup_balls_left = rows[0].count_left;;
 			eventBus.emit('catchup_balls_left', rows[0].count_left);
 		}
 	});
@@ -3279,7 +3285,19 @@ else
 	start();
 }
 
+// this section is just for friendly UI  to end user  
+var catchup_balls_at_start = -1;
+var catchup_balls_left = 0;
+function logCatchupStatus(){
+	if(!bCatchingUp)
+	     return ;
+	var percent = Math.round((catchup_balls_at_start - catchup_balls_left) / catchup_balls_at_start * 100);
+	console.info("-----------------------Syncing Data-----------------------");
+	console.info("                Progress: " + percent +"%");
+	console.info("");
+}
 
+setInterval(logCatchupStatus, 1000 * 60);
 
 
 /**
