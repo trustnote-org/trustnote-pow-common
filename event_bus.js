@@ -26,8 +26,8 @@ const _fnAddListener = function( sEventName )
 	if ( nMaxCount > 0 && nListenersCount > nMaxCount )
 	{
 		const oError = new Error( `|||||||||| Too many listeners of type '${ sEventName }' added to EventEmitter. Max is ${ nMaxCount } and we've added ${ nListenersCount }.` );
-		console.error( oError );
-		throw oError;
+		console.log( oError );
+		//throw oError;
 	}
 
 	return this;

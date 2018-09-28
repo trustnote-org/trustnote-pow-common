@@ -1,19 +1,28 @@
 const _eventBus	= require( '../../event_bus.js' );
 
 
-for ( let i = 0; i < 26; i ++ )
+for ( let i = 0; i < 25; i ++ )
 {
 	_eventBus.once( 'my-event', () =>
 	{
 		console.log( `my-event (${ i }).` );
-
-		//	...
-		printEventBusStatus();
 	});
 }
 
-_eventBus.emit( 'my-event' );
+//	...
+printEventBusStatus();
 
+//	...
+//_eventBus.emit( 'my-event' );
+
+//	...
+setTimeout( () => {
+	printEventBusStatus();
+}, 1000 );
+
+
+const oError = new Error( `|||||||||| Too many listeners of type added to EventEmitter.` );
+console.log( oError );
 
 
 
