@@ -2389,6 +2389,26 @@ function handleJustsaying( ws, subject, body )
 				return sendFreeJoints(ws);
 			
 		case 'version':
+			//
+			//	...
+			//	let appPackageJson	= require( desktopApp.getAppRootDir() + '/package.json' );
+			//	exports.program		= appPackageJson.name;
+			//	exports.program_version	= appPackageJson.version;
+			//
+			//	sendJustsaying
+			//	(
+			//		ws,
+			//		'version',
+			//		{
+			//			protocol_version	: constants.version,
+			//			alt			: constants.alt,
+			//			library			: libraryPackageJson.name,
+			//			library_version		: libraryPackageJson.version,
+			//			program			: conf.program,
+			//			program_version		: conf.program_version
+			//		}
+			//	);
+			//
 			if ( ! body )
 			{
 				return;
