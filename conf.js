@@ -11,7 +11,7 @@ function mergeExports(anotherModule){
 /**
  * 	for debug
  */
-exports.debug		= false;
+exports.debug		= true;
 
 
 
