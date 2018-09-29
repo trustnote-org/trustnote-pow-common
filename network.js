@@ -2389,20 +2389,26 @@ function handleJustsaying( ws, subject, body )
 				return sendFreeJoints(ws);
 			
 		case 'version':
-			if (!body)
-				return;
-			if (body.protocol_version !== constants.version){
-				sendError(ws, 'Incompatible versions, mine '+constants.version+', yours '+body.protocol_version);
-				ws.close(1000, 'incompatible versions');
+			if ( ! body )
+			{
 				return;
 			}
-			if (body.alt !== constants.alt){
-				sendError(ws, 'Incompatible alts, mine '+constants.alt+', yours '+body.alt);
-				ws.close(1000, 'incompatible alts');
+			if ( body.protocol_version !== constants.version )
+			{
+				sendError( ws, 'Incompatible versions, mine ' + constants.version + ', yours ' + body.protocol_version );
+				ws.close( 1000, 'incompatible versions' );
 				return;
 			}
+			if ( body.alt !== constants.alt )
+			{
+				sendError( ws, 'Incompatible alts, mine ' + constants.alt + ', yours ' + body.alt );
+				ws.close( 1000, 'incompatible alts' );
+				return;
+			}
+
+			//	...
 			ws.library_version = body.library_version;
-			eventBus.emit('peer_version', ws, body); // handled elsewhere
+			eventBus.emit( 'peer_version', ws, body );	// handled elsewhere
 			break;
 
 		case 'new_version': // a new version is available
