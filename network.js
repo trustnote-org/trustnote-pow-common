@@ -1700,6 +1700,7 @@ function comeOnline()
 	coming_online_time = Date.now();
 	waitTillIdle( requestFreeJointsFromAllOutboundPeers );
 	eventBus.emit('catching_up_done');
+	catchup_balls_at_start = -1;
 }
 
 function isIdle()
