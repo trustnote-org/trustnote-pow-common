@@ -20,7 +20,7 @@ const _event_bus		= require( './event_bus.js' );
 /**
  *	last round index from all outbound peers
  */
-let _nLastRoundIndexFromAllOutboundPeers	= null;
+let _nLastRoundIndexFromPeers	= null;
 
 
 
@@ -255,15 +255,15 @@ function processCatchupChain( catchupChain, peer, callbacks )
 
 	/**
 	 *	POW ADD
-	 *	update _nLastRoundIndexFromAllOutboundPeers
+	 *	update _nLastRoundIndexFromPeers
 	 */
 	if ( catchupChain.last_round_index && 'number' === typeof catchupChain.last_round_index && catchupChain.last_round_index > 0 )
 	{
-		if ( null === _nLastRoundIndexFromAllOutboundPeers ||
-			catchupChain.last_round_index > _nLastRoundIndexFromAllOutboundPeers )
+		if ( null === _nLastRoundIndexFromPeers ||
+			catchupChain.last_round_index > _nLastRoundIndexFromPeers )
 		{
-			_nLastRoundIndexFromAllOutboundPeers = catchupChain.last_round_index;
-			_event_bus.emit( 'updated_last_round_index_from_all_outbound_peers', _nLastRoundIndexFromAllOutboundPeers );
+			_nLastRoundIndexFromPeers = catchupChain.last_round_index;
+			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers );
 		}
 	}
 
@@ -794,9 +794,9 @@ function purgeHandledBallsFromHashTree( conn, onDone )
  * 	get last round index from all outbound peers
  *	@return	{number}
  */
-function getLastRoundIndexFromAllOutboundPeers()
+function getLastRoundIndexFromPeers()
 {
-	return _nLastRoundIndexFromAllOutboundPeers;
+	return _nLastRoundIndexFromPeers;
 }
 
 
@@ -807,10 +807,10 @@ function getLastRoundIndexFromAllOutboundPeers()
 /**
  *	@exports
  */
-exports.prepareCatchupChain			= prepareCatchupChain;
-exports.processCatchupChain			= processCatchupChain;
-exports.readHashTree				= readHashTree;
-exports.processHashTree				= processHashTree;
-exports.purgeHandledBallsFromHashTree		= purgeHandledBallsFromHashTree;
+exports.prepareCatchupChain		= prepareCatchupChain;
+exports.processCatchupChain		= processCatchupChain;
+exports.readHashTree			= readHashTree;
+exports.processHashTree			= processHashTree;
+exports.purgeHandledBallsFromHashTree	= purgeHandledBallsFromHashTree;
 
-exports.getLastRoundIndexFromAllOutboundPeers	= getLastRoundIndexFromAllOutboundPeers;
+exports.getLastRoundIndexFromPeers	= getLastRoundIndexFromPeers;
