@@ -128,7 +128,8 @@ function updateMainChain(conn, last_unit, onDone){
 								}
 	
 								function updateMc(){
-									conn.query("UPDATE units SET main_chain_index=? WHERE unit IN(?)", [main_chain_index, arrUnits], function(){
+									var strUnitList = arrUnits.map(db.escape).join(', ');
+									conn.query("UPDATE units SET main_chain_index=? WHERE unit IN("+strUnitList+")", [main_chain_index], function(){
 										cb();
 									});
 								}
