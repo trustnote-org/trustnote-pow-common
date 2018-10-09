@@ -683,8 +683,7 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 								FROM units \n\
 								LEFT JOIN parenthoods ON units.unit=child_unit \n\
 								LEFT JOIN units AS punits ON parent_unit=punits.unit AND punits.witnessed_level >= units.witnessed_level \n\
-								WHERE units.unit IN(?) AND punits.unit IS NULL",
-								[arrAltBestChildren],
+								WHERE IN("+arrAltBestChildren.map(db.escape).join(', ')+") AND punits.unit IS NULL",
 								function(max_alt_rows){
 									if (max_alt_rows.length !== 1)
 										throw Error("not a single max alt level");
