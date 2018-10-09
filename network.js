@@ -53,6 +53,7 @@ let last_hearbeat_wake_ts		= Date.now();
 let peer_events_buffer			= [];
 let assocKnownPeers			= {};
 
+const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
 
 
 if ( process.browser )
@@ -1861,6 +1862,37 @@ function requestCatchup( ws )
 	});
 }
 
+/**
+ *	request catchup in dev
+ *	@param	{object}	oWebSocket
+ *	@param	{object}	oRequestData
+ *	@param	{number}	oRequestData.last_stable_mci
+ *	@param	{number}	oRequestData.last_known_mci
+ *	@return	{*}
+ */
+function requestCatchup_Dev( oWebSocket, oRequestData )
+{
+	//
+	//	{ last_stable_mci: last_stable_mci, last_known_mci: last_known_mci }
+	//
+	if ( ! _bUnitTestEnv )
+	{
+		return console.log( `this function only works in dev env.` );
+	}
+
+	return sendRequest
+	(
+		oWebSocket,
+		'catchup',
+		oRequestData,
+		true,
+		handleCatchupChain
+	);
+}
+
+
+
+
 function handleCatchupChain( ws, request, response )
 {
 	if ( response.error )
@@ -3367,10 +3399,11 @@ exports.isConnected					= isConnected;
 /***
  *	for debug
  */
-if ( conf.debug )
+if ( _bUnitTestEnv )
 {
 	exports.connectToPeer		= connectToPeer;
 	exports.requestCatchup		= requestCatchup;
+	exports.requestCatchup_Dev	= requestCatchup_Dev;
 }
 
 
