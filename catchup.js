@@ -13,7 +13,15 @@ const _db			= require( './db.js' );
 const _mutex			= require( './mutex.js' );
 const _validation		= require( './validation.js' );
 const _round			= require( './round.js' );
+const _event_bus		= require( './event_bus.js' );
 //const _witness_pow_proof	= require( './witness_pow_proof.js' );		//	POW DEL	2018/9/6 11:15 AM
+
+
+/**
+ *	last round index from all outbound peers
+ */
+let _nLastRoundIndexFromAllOutboundPeers	= null;
+
 
 
 
@@ -231,10 +239,6 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	// 	return callbacks.ifError( "no unstable_mc_joints" );
 	// }
 
-	if ( ! catchupChain.last_round_index || 'number' !== typeof catchupChain.last_round_index || catchupChain.last_round_index <= 0 )
-	{
-		return callbacks.ifError( "no last_round_index or invalid last_round_index" );
-	}
 	if ( ! Array.isArray( catchupChain.stable_last_ball_joints ) )
 	{
 		return callbacks.ifError( "no stable_last_ball_joints" );
@@ -246,6 +250,21 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	if ( 'object' !== typeof catchupChain.stable_last_ball_joints[ 0 ] )
 	{
 		return callbacks.ifError( "stable_last_ball_joints is not a plain object." );
+	}
+
+
+	/**
+	 *	POW ADD
+	 *	update _nLastRoundIndexFromAllOutboundPeers
+	 */
+	if ( catchupChain.last_round_index && 'number' === typeof catchupChain.last_round_index && catchupChain.last_round_index > 0 )
+	{
+		if ( null === _nLastRoundIndexFromAllOutboundPeers ||
+			catchupChain.last_round_index > _nLastRoundIndexFromAllOutboundPeers )
+		{
+			_nLastRoundIndexFromAllOutboundPeers = catchupChain.last_round_index;
+			_event_bus.emit( 'updated_last_round_index_from_all_outbound_peers', _nLastRoundIndexFromAllOutboundPeers );
+		}
 	}
 
 
@@ -771,14 +790,27 @@ function purgeHandledBallsFromHashTree( conn, onDone )
 }
 
 
+/**
+ * 	get last round index from all outbound peers
+ *	@return	{number}
+ */
+function getLastRoundIndexFromAllOutboundPeers()
+{
+	return _nLastRoundIndexFromAllOutboundPeers;
+}
+
+
+
 
 
 
 /**
  *	@exports
  */
-exports.prepareCatchupChain		= prepareCatchupChain;
-exports.processCatchupChain		= processCatchupChain;
-exports.readHashTree			= readHashTree;
-exports.processHashTree			= processHashTree;
-exports.purgeHandledBallsFromHashTree	= purgeHandledBallsFromHashTree;
+exports.prepareCatchupChain			= prepareCatchupChain;
+exports.processCatchupChain			= processCatchupChain;
+exports.readHashTree				= readHashTree;
+exports.processHashTree				= processHashTree;
+exports.purgeHandledBallsFromHashTree		= purgeHandledBallsFromHashTree;
+
+exports.getLastRoundIndexFromAllOutboundPeers	= getLastRoundIndexFromAllOutboundPeers;
