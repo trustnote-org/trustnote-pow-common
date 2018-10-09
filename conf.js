@@ -124,15 +124,3 @@ else if (exports.storage === 'sqlite'){
 	exports.database.filename = exports.database.filename || (exports.bLight ? 'trustnote-light.sqlite' : 'trustnote.sqlite');
 }
 
-// pow add: initial witness for round 1
-exports.initialWitnesses = [
-	"JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET",
-	"4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO",
-	"A4BRUVOW2LSLH6LVQ3TWFOCAM6JPFWOK",
-	"BHYNQIMH6KGLVQALJ5AM6EM7RTDDGF3P",
-	"D55F4JL2R3S4UHX4UXVFGOWTZPZR2YXO",
-	"JKATXQDYSE5TGRRZG6QUJS2GVYLCAPHM",
-	"TLLGQTKOT7ZINCOSBJG64LKE3ZTD3EDK",
-	"UK7TAQI27IV63N7Q6UB7BSE6OP2B25Z2",
-	"ZW35QKXIKK47A7HW3YRIV6TU3DYDTIVR"
-];
