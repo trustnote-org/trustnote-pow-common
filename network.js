@@ -1700,6 +1700,7 @@ function comeOnline()
 	coming_online_time = Date.now();
 	waitTillIdle( requestFreeJointsFromAllOutboundPeers );
 	eventBus.emit('catching_up_done');
+	catchup_balls_at_start = -1;
 }
 
 function isIdle()
@@ -2389,20 +2390,46 @@ function handleJustsaying( ws, subject, body )
 				return sendFreeJoints(ws);
 			
 		case 'version':
-			if (!body)
-				return;
-			if (body.protocol_version !== constants.version){
-				sendError(ws, 'Incompatible versions, mine '+constants.version+', yours '+body.protocol_version);
-				ws.close(1000, 'incompatible versions');
+			//
+			//	...
+			//	let appPackageJson	= require( desktopApp.getAppRootDir() + '/package.json' );
+			//	exports.program		= appPackageJson.name;
+			//	exports.program_version	= appPackageJson.version;
+			//
+			//	sendJustsaying
+			//	(
+			//		ws,
+			//		'version',
+			//		{
+			//			protocol_version	: constants.version,
+			//			alt			: constants.alt,
+			//			library			: libraryPackageJson.name,
+			//			library_version		: libraryPackageJson.version,
+			//			program			: conf.program,
+			//			program_version		: conf.program_version
+			//		}
+			//	);
+			//
+			if ( ! body )
+			{
 				return;
 			}
-			if (body.alt !== constants.alt){
-				sendError(ws, 'Incompatible alts, mine '+constants.alt+', yours '+body.alt);
-				ws.close(1000, 'incompatible alts');
+			if ( body.protocol_version !== constants.version )
+			{
+				sendError( ws, 'Incompatible versions, mine ' + constants.version + ', yours ' + body.protocol_version );
+				ws.close( 1000, 'incompatible versions' );
 				return;
 			}
+			if ( body.alt !== constants.alt )
+			{
+				sendError( ws, 'Incompatible alts, mine ' + constants.alt + ', yours ' + body.alt );
+				ws.close( 1000, 'incompatible alts' );
+				return;
+			}
+
+			//	...
 			ws.library_version = body.library_version;
-			eventBus.emit('peer_version', ws, body); // handled elsewhere
+			eventBus.emit( 'peer_version', ws, body );	// handled elsewhere
 			break;
 
 		case 'new_version': // a new version is available
@@ -3290,7 +3317,8 @@ var catchup_balls_at_start = -1;
 var catchup_balls_left = 0;
 function logCatchupStatus(){
 	if(!bCatchingUp)
-	     return ;
+		 return ;
+	console.log("catchup_balls_at_start :" + catchup_balls_at_start + "catchup_balls_left: " + catchup_balls_left );
 	var percent = Math.round((catchup_balls_at_start - catchup_balls_left) / catchup_balls_at_start * 100);
 	console.info("-----------------------Syncing Data-----------------------");
 	console.info("                Progress: " + percent +"%");
