@@ -115,8 +115,7 @@ function updateMainChain(conn, last_unit, onDone){
 									conn.query(
 										"SELECT unit \n\
 										FROM parenthoods JOIN units ON parent_unit=unit \n\
-										WHERE child_unit IN(?) AND main_chain_index IS NULL",
-										[arrStartUnits],
+										WHERE child_unit IN("+arrStartUnits.map(db.escape).join(', ')+") AND main_chain_index IS NULL",
 										function(rows){
 											if (rows.length === 0)
 												return updateMc();
@@ -380,7 +379,7 @@ function updateMainChain(conn, last_unit, onDone){
 		var arrBestChildren = arrParentUnits.slice();
 		
 		function goDownAndCollectBestChildren(arrStartUnits, cb){
-			conn.query("SELECT unit, is_free FROM units WHERE best_parent_unit IN(?)", [arrStartUnits], function(rows){
+			conn.query("SELECT unit, is_free FROM units WHERE best_parent_unit IN("+arrStartUnits.map(db.escape).join(', ')+")", function(rows){
 				if (rows.length === 0)
 					return cb();
 				//console.log("unit", arrStartUnits, "best children:", rows.map(function(row){ return row.unit; }), "free units:", rows.reduce(function(sum, row){ return sum+row.is_free; }, 0));
@@ -526,12 +525,11 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 					conn.query(
 						"SELECT witnessed_level, best_parent_unit, pow_type, address \n\
 						FROM units JOIN unit_authors using (unit)\n\
-						WHERE unit IN(?) \n\
+						WHERE unit IN("+arrLaterUnits.map(db.escape).join(', ')+") \n\
 						ORDER BY witnessed_level DESC, \n\
 							level-witnessed_level ASC, \n\
 							unit ASC \n\
 						LIMIT 1", 
-						[arrLaterUnits],
 						function(rows){
 							var row = rows[0];
 							//if (row.count > 0)
@@ -570,7 +568,7 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 					var arrBestChildren = [];
 
 					function goDownAndCollectBestChildren(arrStartUnits, cb){
-						conn.query("SELECT unit, is_free, main_chain_index FROM units WHERE best_parent_unit IN(?)", [arrStartUnits], function(rows){
+						conn.query("SELECT unit, is_free, main_chain_index FROM units WHERE best_parent_unit IN("+arrStartUnits.map(db.escape).join(', ')+")", function(rows){
 							if (rows.length === 0)
 								return cb();
 							async.eachSeries(
@@ -600,7 +598,7 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 					// leaves only those roots that are included by later units
 					function filterAltBranchRootUnits(cb){
 						var arrFilteredAltBranchRootUnits = [];
-						conn.query("SELECT unit, is_free, main_chain_index FROM units WHERE unit IN(?)", [arrAltBranchRootUnits], function(rows){
+						conn.query("SELECT unit, is_free, main_chain_index FROM units WHERE unit IN("+arrAltBranchRootUnits.map(db.escape).join(', ')+")", function(rows){
 							if (rows.length === 0)
 								throw Error("no alt branch root units?");
 							async.eachSeries(
