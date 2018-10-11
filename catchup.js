@@ -12,7 +12,16 @@ const _object_hash		= require( './object_hash.js' );
 const _db			= require( './db.js' );
 const _mutex			= require( './mutex.js' );
 const _validation		= require( './validation.js' );
+const _round			= require( './round.js' );
+const _event_bus		= require( './event_bus.js' );
 //const _witness_pow_proof	= require( './witness_pow_proof.js' );		//	POW DEL	2018/9/6 11:15 AM
+
+
+/**
+ *	last round index from all outbound peers
+ */
+let _nLastRoundIndexFromPeers	= null;
+
 
 
 
@@ -51,7 +60,8 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	// 	return callbacks.ifError("no witnesses");
 
 	let objCatchupChain = {
-		//unstable_mc_joints			: [],	//	POW DEL	@2018/9/6 11:24 AM
+		last_round_index			: null,	//	POW ADD @2018/10/9 4:30 PM  by Liu Qixing
+		//unstable_mc_joints			: [],	//	POW DEL	@2018/9/6 11:24 AM  by Liu Qixing
 		stable_last_ball_joints			: [],
 		//witness_change_and_definition_joints	: []	//	POW DEL
 	};
@@ -60,7 +70,23 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	//	...
 	_async.series
 	([
-		function( cb )
+		function( pfnNext )
+		{
+			//
+			//	get current round index
+			//
+			_round.getCurrentRoundIndexByDb( function( nCurrentRoundIndex )
+			{
+				if ( 'number' === typeof nCurrentRoundIndex && nCurrentRoundIndex > 0 )
+				{
+					objCatchupChain.last_round_index = nCurrentRoundIndex;
+				}
+
+				//	...
+				pfnNext();
+			});
+		},
+		function( pfnNext )
 		{
 			//
 			//	check if the peer really needs hash trees
@@ -73,19 +99,19 @@ function prepareCatchupChain( catchupRequest, callbacks )
 				{
 					if ( rows.length === 0 )
 					{
-						return cb( "already_current" );
+						return pfnNext( "already_current" );
 					}
 					if ( rows[ 0 ].is_stable === 0 )
 					{
-						return cb( "already_current" );
+						return pfnNext( "already_current" );
 					}
 
 					//	...
-					cb();
+					pfnNext();
 				}
 			);
 		},
-		function( cb )
+		function( pfnNext )
 		{
 			//
 			//	POW ADD
@@ -96,12 +122,12 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			{
 				if ( ! objLastStableMcUnitProps )
 				{
-					return cb( `failed to read last stable mc unit.` );
+					return pfnNext( `failed to read last stable mc unit.` );
 				}
 
 				//	...
 				sLastBallUnit = objLastStableMcUnitProps.unit;
-				cb();
+				pfnNext();
 			});
 
 			//
@@ -135,14 +161,14 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			// 	}
 			// );
 		},
-		function( cb )
+		function( pfnNext )
 		{
 			//
 			//	jump by last_ball references until we land on or behind last_stable_mci
 			//
 			if ( ! sLastBallUnit )
 			{
-				return cb();
+				return pfnNext();
 			}
 
 			goUp( sLastBallUnit );
@@ -166,7 +192,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 					_storage.readUnitProps( _db, unit, function( objUnitProps )
 					{
 						( objUnitProps.main_chain_index <= last_stable_mci )
-							? cb()
+							? pfnNext()
 							: goUp( objJoint.unit.last_ball_unit );
 					});
 				});
@@ -224,6 +250,21 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	if ( 'object' !== typeof catchupChain.stable_last_ball_joints[ 0 ] )
 	{
 		return callbacks.ifError( "stable_last_ball_joints is not a plain object." );
+	}
+
+
+	/**
+	 *	POW ADD
+	 *	update _nLastRoundIndexFromPeers
+	 */
+	if ( catchupChain.last_round_index && 'number' === typeof catchupChain.last_round_index && catchupChain.last_round_index > 0 )
+	{
+		if ( null === _nLastRoundIndexFromPeers ||
+			catchupChain.last_round_index > _nLastRoundIndexFromPeers )
+		{
+			_nLastRoundIndexFromPeers = catchupChain.last_round_index;
+			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers );
+		}
 	}
 
 
@@ -749,6 +790,17 @@ function purgeHandledBallsFromHashTree( conn, onDone )
 }
 
 
+/**
+ * 	get last round index from all outbound peers
+ *	@return	{number}
+ */
+function getLastRoundIndexFromPeers()
+{
+	return _nLastRoundIndexFromPeers;
+}
+
+
+
 
 
 
@@ -760,3 +812,5 @@ exports.processCatchupChain		= processCatchupChain;
 exports.readHashTree			= readHashTree;
 exports.processHashTree			= processHashTree;
 exports.purgeHandledBallsFromHashTree	= purgeHandledBallsFromHashTree;
+
+exports.getLastRoundIndexFromPeers	= getLastRoundIndexFromPeers;

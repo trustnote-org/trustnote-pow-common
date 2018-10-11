@@ -53,6 +53,7 @@ let last_hearbeat_wake_ts		= Date.now();
 let peer_events_buffer			= [];
 let assocKnownPeers			= {};
 
+const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
 
 
 if ( process.browser )
@@ -1861,6 +1862,37 @@ function requestCatchup( ws )
 	});
 }
 
+/**
+ *	request catchup in dev
+ *	@param	{object}	oWebSocket
+ *	@param	{object}	oRequestData
+ *	@param	{number}	oRequestData.last_stable_mci
+ *	@param	{number}	oRequestData.last_known_mci
+ *	@return	{*}
+ */
+function requestCatchup_Dev( oWebSocket, oRequestData )
+{
+	//
+	//	{ last_stable_mci: last_stable_mci, last_known_mci: last_known_mci }
+	//
+	if ( ! _bUnitTestEnv )
+	{
+		return console.log( `this function only works in dev env.` );
+	}
+
+	return sendRequest
+	(
+		oWebSocket,
+		'catchup',
+		oRequestData,
+		true,
+		handleCatchupChain
+	);
+}
+
+
+
+
 function handleCatchupChain( ws, request, response )
 {
 	if ( response.error )
@@ -2390,20 +2422,46 @@ function handleJustsaying( ws, subject, body )
 				return sendFreeJoints(ws);
 			
 		case 'version':
-			if (!body)
-				return;
-			if (body.protocol_version !== constants.version){
-				sendError(ws, 'Incompatible versions, mine '+constants.version+', yours '+body.protocol_version);
-				ws.close(1000, 'incompatible versions');
+			//
+			//	...
+			//	let appPackageJson	= require( desktopApp.getAppRootDir() + '/package.json' );
+			//	exports.program		= appPackageJson.name;
+			//	exports.program_version	= appPackageJson.version;
+			//
+			//	sendJustsaying
+			//	(
+			//		ws,
+			//		'version',
+			//		{
+			//			protocol_version	: constants.version,
+			//			alt			: constants.alt,
+			//			library			: libraryPackageJson.name,
+			//			library_version		: libraryPackageJson.version,
+			//			program			: conf.program,
+			//			program_version		: conf.program_version
+			//		}
+			//	);
+			//
+			if ( ! body )
+			{
 				return;
 			}
-			if (body.alt !== constants.alt){
-				sendError(ws, 'Incompatible alts, mine '+constants.alt+', yours '+body.alt);
-				ws.close(1000, 'incompatible alts');
+			if ( body.protocol_version !== constants.version )
+			{
+				sendError( ws, 'Incompatible versions, mine ' + constants.version + ', yours ' + body.protocol_version );
+				ws.close( 1000, 'incompatible versions' );
 				return;
 			}
+			if ( body.alt !== constants.alt )
+			{
+				sendError( ws, 'Incompatible alts, mine ' + constants.alt + ', yours ' + body.alt );
+				ws.close( 1000, 'incompatible alts' );
+				return;
+			}
+
+			//	...
 			ws.library_version = body.library_version;
-			eventBus.emit('peer_version', ws, body); // handled elsewhere
+			eventBus.emit( 'peer_version', ws, body );	// handled elsewhere
 			break;
 
 		case 'new_version': // a new version is available
@@ -3341,10 +3399,11 @@ exports.isConnected					= isConnected;
 /***
  *	for debug
  */
-if ( conf.debug )
+if ( _bUnitTestEnv )
 {
 	exports.connectToPeer		= connectToPeer;
 	exports.requestCatchup		= requestCatchup;
+	exports.requestCatchup_Dev	= requestCatchup_Dev;
 }
 
 
