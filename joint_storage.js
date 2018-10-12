@@ -247,14 +247,14 @@ function purgeUncoveredNonserialJoints(bByExistenceOfChildren, onDone){
 		// some unhandled joints may depend on the unit to be archived but it is not in dependencies because it was known when its child was received
 		db.query( // purge the bad ball if we've already received at least 7 witnesses after receiving the bad ball
 			"SELECT unit FROM units "+byIndex+" \n\
-		WHERE "+cond+" AND sequence IN('final-bad','temp-bad') AND content_hash IS NULL \n\
-			AND NOT EXISTS (SELECT * FROM dependencies WHERE depends_on_unit=units.unit) \n\
-			AND NOT EXISTS (SELECT * FROM balls WHERE balls.unit=units.unit) \n\
-			AND EXISTS ( \n\
-				SELECT DISTINCT address FROM units AS wunits CROSS JOIN unit_authors USING(unit)  \n\
-				WHERE pow_type = ? AND  wunits."+order_column+" > units."+order_column+" \n\
-				LIMIT ?,1 \n\
-			) \n\
+			 WHERE "+cond+" AND sequence IN('final-bad','temp-bad') AND content_hash IS NULL \n\
+				AND NOT EXISTS (SELECT * FROM dependencies WHERE depends_on_unit=units.unit) \n\
+				AND NOT EXISTS (SELECT * FROM balls WHERE balls.unit=units.unit) \n\
+				AND EXISTS ( \n\
+					SELECT DISTINCT address FROM units AS wunits CROSS JOIN unit_authors USING(unit)  \n\
+					WHERE pow_type = ? AND  wunits."+order_column+" > units."+order_column+" \n\
+					LIMIT ?,1 \n\
+				) \n\
 			/* AND NOT EXISTS (SELECT * FROM unhandled_joints) */", 
 		[constants.POW_TYPE_TRUSTME, constants.MAJORITY_OF_WITNESSES - 1],
 		function(rows){
