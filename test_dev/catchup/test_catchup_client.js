@@ -8,8 +8,12 @@ const _network		= require( '../../network.js' );
 const _catchup		= require( '../../catchup.js' );
 const _event_bus	= require( '../../event_bus.js' );
 
-//const _peer		= 'ws://dev.mainchain.pow.trustnote.org:9191';
-const _peer		= 'ws://127.0.0.1:9191';
+const _arrPeerList	= [
+	'ws://dev.mainchain.pow.trustnote.org:9191',
+	'ws://test.mainchain.pow.trustnote.org:9191',
+	'ws://127.0.0.1:9191'
+];
+const _peer		= _arrPeerList[ 1 ];
 
 
 
