@@ -257,15 +257,7 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	 *	POW ADD
 	 *	update _nLastRoundIndexFromPeers
 	 */
-	if ( catchupChain.last_round_index && 'number' === typeof catchupChain.last_round_index && catchupChain.last_round_index > 0 )
-	{
-		if ( null === _nLastRoundIndexFromPeers ||
-			catchupChain.last_round_index > _nLastRoundIndexFromPeers )
-		{
-			_nLastRoundIndexFromPeers = catchupChain.last_round_index;
-			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers );
-		}
-	}
+	updateLastRoundIndexFromPeers( catchupChain.last_round_index );
 
 
 	/**
@@ -790,6 +782,25 @@ function purgeHandledBallsFromHashTree( conn, onDone )
 }
 
 
+
+/**
+ * 	update last round index from all outbound peers
+ *	@return	{void}
+ */
+function updateLastRoundIndexFromPeers( nLastRoundIndex )
+{
+	if ( 'number' === typeof nLastRoundIndex && nLastRoundIndex > 0 )
+	{
+		if ( null === _nLastRoundIndexFromPeers ||
+			nLastRoundIndex > _nLastRoundIndexFromPeers )
+		{
+			_nLastRoundIndexFromPeers = nLastRoundIndex;
+			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers );
+		}
+	}
+}
+
+
 /**
  * 	get last round index from all outbound peers
  *	@return	{number}
@@ -813,4 +824,5 @@ exports.readHashTree			= readHashTree;
 exports.processHashTree			= processHashTree;
 exports.purgeHandledBallsFromHashTree	= purgeHandledBallsFromHashTree;
 
+exports.updateLastRoundIndexFromPeers	= updateLastRoundIndexFromPeers;
 exports.getLastRoundIndexFromPeers	= getLastRoundIndexFromPeers;
