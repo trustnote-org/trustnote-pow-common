@@ -28,6 +28,7 @@ const ecdsaSig				= require('../encrypt/signature.js');
 const eventBus				= require('../base/event_bus.js');
 const light				= require('../wallet/light.js');
 const breadcrumbs			= require('../base/breadcrumbs.js');
+const _round				= require('../pow/round.js');
 
 const mail				= process.browser ? null : require('../base/mail.js'+'');
 
@@ -142,20 +143,25 @@ function sendErrorResult( ws, unit, error )
 
 function sendVersion( ws )
 {
-	var libraryPackageJson = require('./package.json');
-	sendJustsaying
-	(
-		ws,
-		'version',
-		{
-			protocol_version: constants.version,
-			alt: constants.alt,
-			library: libraryPackageJson.name,
-			library_version: libraryPackageJson.version,
-			program: conf.program,
-			program_version: conf.program_version
-		}
-	);
+	let libraryPackageJson	= require('./package.json');
+
+	_round.getCurrentRoundIndexByDb( function( nCurrentRoundIndex )
+	{
+		sendJustsaying
+		(
+			ws,
+			'version',
+			{
+				protocol_version	: constants.version,
+				alt			: constants.alt,
+				library			: libraryPackageJson.name,
+				library_version		: libraryPackageJson.version,
+				program			: conf.program,
+				program_version		: conf.program_version,
+				last_round_index	: nCurrentRoundIndex,
+			}
+		);
+	});
 }
 
 function sendResponse( ws, tag, response )
@@ -2458,6 +2464,11 @@ function handleJustsaying( ws, subject, body )
 				ws.close( 1000, 'incompatible alts' );
 				return;
 			}
+
+			//
+			//	update last round index
+			//
+			catchup.updateLastRoundIndexFromPeers( body.last_round_index );
 
 			//	...
 			ws.library_version = body.library_version;
