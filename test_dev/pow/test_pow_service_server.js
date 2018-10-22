@@ -1,4 +1,4 @@
-const _pow_client	= require( '../../pow_service.js' );
+const _pow_client	= require( '../../pow/pow_service.js' );
 
 
 /**

@@ -7,7 +7,7 @@ process.env.ENV_UNIT_TEST	= true;
 /**
  * 	...
  */
-const _pow	= require( '../../pow.js' );
+const _pow	= require( '../../pow/pow.js' );
 
 let objInput	= {
 	roundIndex	: 1,

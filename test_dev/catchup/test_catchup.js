@@ -1,5 +1,5 @@
 const WebSocket		= process.browser ? global.WebSocket : require( 'ws' );
-const _network		= require( '../../network.js' );
+const _network		= require( '../../p2p/network.js' );
 
 
 const _peer	= 'ws://dev.mainchain.pow.trustnote.org:9191';
