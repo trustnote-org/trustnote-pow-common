@@ -1,5 +1,5 @@
 
-const objectLength		= require( '../base/object_length.js' );
+const objectLength		= require( '../../base/object_length.js' );
 
 
 const unit_equihash	= {

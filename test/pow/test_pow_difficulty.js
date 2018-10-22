@@ -8,10 +8,10 @@ process.env.ENV_UNIT_TEST	= true;
  * 	...
  */
 const _fs	= require( 'fs' );
-const _db	= require( '../db/db.js' );
+const _db	= require( '../../db/db.js' );
 const _pow	= require( '../../pow/pow.js' );
 const _round	= require( '../../pow/round.js' );
-const constants	= require( '../config/constants.js' );
+const constants	= require( '../../config/constants.js' );
 const _async	= require( 'async' );
 
 

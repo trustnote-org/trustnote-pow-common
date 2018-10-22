@@ -1,4 +1,4 @@
-const _eventBus	= require( '../base/event_bus.js' );
+const _eventBus	= require( '../../base/event_bus.js' );
 
 
 for ( let i = 0; i < 25; i ++ )
