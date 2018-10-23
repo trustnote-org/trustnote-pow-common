@@ -19,7 +19,7 @@ const _trustnote_pow_miner	= require( 'trustnote-pow-miner' );
 // *	@param	{string}	oInput.publicSeed
 // *	@param	{string}	oInput.superNodeAuthor
 //
-let nDifficulty		= _trustnote_pow_miner.difficulty256HexToUInt32( "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
+let nDifficulty		= _trustnote_pow_miner.target256HexToBits32( "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
 let nMiningTimes	= 0;
 
 

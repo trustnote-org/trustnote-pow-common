@@ -891,7 +891,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		//
 		//	calculate next bits
 		//
-		_pow_miner.calculateNextDifficulty
+		_pow_miner.calculateNextWorkRequired
 		(
 			nAverageDifficulty,
 			nTimeUsed,
@@ -918,12 +918,12 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 					}
 					else
 					{
-						pfnCallback( `calculateNextDifficulty callback :: invalid value .bits` );
+						pfnCallback( `calculateNextWorkRequired callback :: invalid value .bits` );
 					}
 				}
 				else
 				{
-					pfnCallback( `calculateNextDifficulty callback :: invalid oData object` );
+					pfnCallback( `calculateNextWorkRequired callback :: invalid oData object` );
 				}
 			}
 		);
