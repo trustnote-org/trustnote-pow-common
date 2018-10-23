@@ -24,6 +24,8 @@ CREATE TABLE units (
 	KEY byFree(is_free),
 	KEY byStableMci(is_stable, main_chain_index),
 	KEY byDate(creation_date),
+	KEY byRoundIndex(round_index);
+    KEY byPOWType(pow_type);
 	CONSTRAINT unitsByLastBallUnit FOREIGN KEY byLastBallUnit(last_ball_unit) REFERENCES units(unit),
 	FOREIGN KEY byBestParentUnit(best_parent_unit) REFERENCES units(unit),
 	CONSTRAINT unitsByWitnessListUnit FOREIGN KEY byWitnessList(witness_list_unit) REFERENCES units(unit)
@@ -622,6 +624,12 @@ CREATE TABLE shared_address_signing_paths (
 --    FOREIGN KEY byDeviceAddress(device_address) REFERENCES correspondent_devices(device_address)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+CREATE TABLE supernode (
+	address CHAR(32) NOT NULL,
+	deposit_address CHAR(32) NOT NULL,
+	FOREIGN KEY (address) REFERENCES addresses(address),
+	FOREIGN KEY (deposit_address) REFERENCES shared_addresses(shared_address)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;;
 
 CREATE TABLE outbox (
 	message_hash CHAR(44) NOT NULL PRIMARY KEY,
