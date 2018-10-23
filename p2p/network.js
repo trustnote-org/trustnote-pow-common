@@ -143,7 +143,7 @@ function sendErrorResult( ws, unit, error )
 
 function sendVersion( ws )
 {
-	let libraryPackageJson	= require('./package.json');
+	let libraryPackageJson	= require('../package.json');
 
 	_round.getCurrentRoundIndexByDb( function( nCurrentRoundIndex )
 	{
