@@ -33,7 +33,8 @@ CREATE INDEX byLimci ON units(latest_included_mc_index);
 CREATE INDEX byLevel ON units(level);
 CREATE INDEX byFree ON units(is_free);
 CREATE INDEX byStableMci ON units(is_stable, main_chain_index);
-
+CREATE INDEX byRoundIndex ON units(round_index);
+CREATE INDEX byPOWType ON units(pow_type);
 
 CREATE TABLE balls (
 	ball CHAR(44) NOT NULL PRIMARY KEY, -- sha256 in base64
@@ -670,6 +671,14 @@ CREATE TABLE shared_address_signing_paths (
 	FOREIGN KEY (shared_address) REFERENCES shared_addresses(shared_address)
 	-- own address is not present in correspondents
 --    FOREIGN KEY byDeviceAddress(device_address) REFERENCES correspondent_devices(device_address)
+);
+
+CREATE TABLE supernode (
+	address CHAR(32) NOT NULL,
+	deposit_address CHAR(32) NOT NULL,
+	-- own address is not present in correspondents
+	FOREIGN KEY (address) REFERENCES addresses(address),
+	FOREIGN KEY (deposit_address) REFERENCES shared_addresses(shared_address)
 );
 
 
