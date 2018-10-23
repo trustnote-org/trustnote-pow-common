@@ -1502,14 +1502,17 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 
 // pow add:
 function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){
-	if (hasFieldsExcept(payload, ["inputs", "outputs", "seed","difficulty", "solution"]))
+	if (hasFieldsExcept(payload, ["seed","difficulty", "solution"]))
 		return callback("unknown fields in pow_equihash message");
 	if (objValidationState.bHasBasePowequihash)
 		return callback("can have only one PowEquhash message");
 	objValidationState.bHasBasePowequihash = true;
-
+    
 	// dev branch disale real pow unit check temperorary
 	// return callback();
+
+	// check deposit address is valid
+
 
 	var firstTrustMEBall = null;
 	async.series(
@@ -1549,7 +1552,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				//check ifsolution is correct
 				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
 					if(err)
-						return cb("Wrong pow proof work: "+ err);
+						return cb("Wrong pow proof of work: "+ err);
 					return cb();
 				});
 			}],

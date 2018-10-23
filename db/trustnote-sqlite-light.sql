@@ -113,7 +113,7 @@ CREATE TABLE round(
 --  new table to store round 
 CREATE TABLE round_cycle(
 	cycle_id INTEGER NOT NULL,
-	difficulty INT NULL,
+	bits INT NULL,
 	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (cycle_id)
 ) 

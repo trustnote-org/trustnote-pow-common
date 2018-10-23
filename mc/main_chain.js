@@ -833,7 +833,7 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate difficulty error " + err);
 										conn.query(
-											"INSERT INTO round_cycle (cycle_id, difficulty) VALUES (?, ?)", 
+											"INSERT INTO round_cycle (cycle_id, bits) VALUES (?, ?)", 
 											[round.getCycleIdByRoundIndex(round_index+1), newDifficulty], 
 											function(){
 												infoMiningSuccess(round_index+1, newDifficulty);
