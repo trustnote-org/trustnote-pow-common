@@ -48,12 +48,12 @@ function getDifficultydByRoundIndex(conn, roundIndex, callback){
         throw Error("the round id can not less then 0");
     var cycleId = getCycleIdByRoundIndex(roundIndex);
     conn.query(
-		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
+		"SELECT bits FROM round_cycle WHERE cycle_id=?",
         [cycleId],
 		function(rows){
 			if (rows.length !== 1)
-                throw Error("Can not find current round difficulty");
-            callback(rows[0].difficulty);
+                throw Error("Can not find current round bits");
+            callback(rows[0].bits);
 		}
 	);
 }
@@ -62,12 +62,12 @@ function getDifficultydByCycleID(conn, cycleId, callback){
     if (cycleId <= 0)
         throw Error("the cycle id can not less then 0");
     conn.query(
-		"SELECT difficulty FROM round_cycle WHERE cycle_id=?", 
+		"SELECT bits FROM round_cycle WHERE cycle_id=?",
         [cycleId],
 		function(rows){
 			if (rows.length !== 1)
-                throw Error("Can not find current cycle difficulty");
-            callback(rows[0].difficulty);
+                throw Error("Can not find current cycle bits");
+            callback(rows[0].bits);
 		}
 	);
 }
@@ -147,7 +147,7 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
     if(cycleId <= constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION) 
         throw Error("The first " + constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + " cycles can not calculate average difficult");
     conn.query(
-        "SELECT SUM(difficulty) AS sumAverageDifficulty FROM round_cycle WHERE cycle_id>=? AND cycle_id<=?",
+        "SELECT SUM(bits) AS sumAverageDifficulty FROM round_cycle WHERE cycle_id>=? AND cycle_id<=?",
         [cycleId-constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION, cycleId-1],
         function(rowsAverageDifficulty){
             if (rowsAverageDifficulty.length !== 1)

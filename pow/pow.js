@@ -49,7 +49,7 @@ const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string'
  *	   ]
  *	   Note: the address0 came from TrustNote Foundation.
  *	2, ball address of the first TrustME unit from round (N)
- *	3, difficulty value of round (N)
+ *	3, bits value of round (N)
  *	4, public seed of round (N)
  *	5, author address of current SuperNode.
  *
@@ -73,7 +73,7 @@ const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string'
  *		{
  *			roundIndex		: 111,
  *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			difficulty		: 11111,
+ *			bits			: 11111,
  *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
@@ -94,7 +94,7 @@ const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string'
  *		{
  *			roundIndex		: 111,
  *			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
- *			difficulty		: 11111,
+ *			bits			: 11111,
  *			publicSeed		: 'public key',
  *			superNodeAuthor		: 'xing.supernode.trustnote.org',
  *		},
@@ -197,7 +197,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 					'pow_mined_gift',
 					{
 						round		: nRoundIndex,
-						difficulty	: nDifficulty,
+						bits		: nDifficulty,
 						publicSeed	: sSeed,
 						nonce		: _generateRandomInteger( 10000, 200000 ),
 						hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
@@ -284,7 +284,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		{
 			//
 			//	round (N)
-			//	calculate difficulty value
+			//	calculate bits value
 			//
 			_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
 			{
@@ -314,7 +314,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		let objInput	= {
 			roundIndex		: nRoundIndex,
 			firstTrustMEBall	: sCurrentFirstTrustMEBall,
-			difficulty		: nCurrentDifficultyValue,
+			bits			: nCurrentDifficultyValue,
 			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
@@ -331,7 +331,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
  * 	@param	{object}	oInput
  *	@param	{number}	oInput.roundIndex
  *	@param	{string}	oInput.firstTrustMEBall
- *	@param	{string}	oInput.difficulty
+ *	@param	{string}	oInput.bits
  *	@param	{string}	oInput.publicSeed
  *	@param	{string}	oInput.superNodeAuthor
  *	@param	{function}	pfnCallback( err )
@@ -344,7 +344,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
  * 		will return solution object for success
  * 		{
  *			round		: oInput.roundIndex,
- *			difficulty	: oInput.difficulty,
+ *			bits		: oInput.bits,
  *			publicSeed	: oInput.publicSeed,
  *			nonce		: oData.nonce,
  *			hash		: oData.hashHex
@@ -373,9 +373,9 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMiningWithInputs with invalid oInput.firstTrustMEBall' );
 	}
-	if ( 'number' !== typeof oInput.difficulty || oInput.difficulty <= 0 )
+	if ( 'number' !== typeof oInput.bits || oInput.bits <= 0 )
 	{
-		throw new Error( 'call startMiningWithInputs with invalid oInput.difficulty' );
+		throw new Error( 'call startMiningWithInputs with invalid oInput.bits' );
 	}
 	if ( 'string' !== typeof oInput.publicSeed || 0 === oInput.publicSeed.length )
 	{
@@ -400,7 +400,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	let _oOptions	=
 		{
 			bufInputHeader	: _createMiningInputBufferFromObject( oInput ),
-			difficulty	: oInput.difficulty,
+			bits		: oInput.bits,
 			calcTimes	: ( 'number' === typeof oInput.calcTimes ? oInput.calcTimes : 30 ),
 			maxLoop		: ( 'number' === typeof oInput.maxLoop ? oInput.maxLoop : 1000000 ),
 		};
@@ -420,7 +420,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
 					let objSolution	= {
 						round		: oInput.roundIndex,
-						difficulty	: oInput.difficulty,
+						bits		: oInput.bits,
 						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
@@ -457,7 +457,7 @@ function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
 			'pow_mined_gift',
 			{
 				round		: oInput.roundIndex,
-				difficulty	: oInput.difficulty,
+				bits		: oInput.bits,
 				publicSeed	: oInput.publicSeed,
 				nonce		: _generateRandomInteger( 10000, 200000 ),
 				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
@@ -480,7 +480,7 @@ function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
  * 	@param	{object}	objInput
  *	@param	{number}	objInput.roundIndex
  *	@param	{string}	objInput.firstTrustMEBall
- *	@param	{string}	objInput.difficulty
+ *	@param	{string}	objInput.bits
  *	@param	{string}	objInput.publicSeed
  *	@param	{string}	objInput.superNodeAuthor
  *	@param	{string}	sHash				hex string with the length of 64 bytes,
@@ -518,7 +518,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	_pow_miner.checkProofOfWork
 	(
 		_createMiningInputBufferFromObject( objInput ),
-		objInput.difficulty,
+		objInput.bits,
 		nNonce,
 		sHash,
 		pfnCallback
@@ -725,7 +725,7 @@ function queryPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
 
 
 /**
- *	query difficulty value by round index from database
+ *	query bits value by round index from database
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
@@ -745,7 +745,7 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 
 	oConn.query
 	(
-		"SELECT difficulty \
+		"SELECT bits \
 		FROM round_cycle \
 		WHERE cycle_id = ?",
 		[
@@ -755,17 +755,17 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		{
 			if ( 0 === arrRows.length )
 			{
-				return pfnCallback( `difficulty not found in table [round_cycle].` );
+				return pfnCallback( `bits not found in table [round_cycle].` );
 			}
 
-			return pfnCallback( null, parseInt( arrRows[ 0 ][ 'difficulty' ] ) );
+			return pfnCallback( null, parseInt( arrRows[ 0 ][ 'bits' ] ) );
 		}
 	);
 }
 
 
 /**
- *	calculate difficulty value
+ *	calculate bits value
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
@@ -788,7 +788,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	let nTimeStandard;
 
 	//
-	//	return difficulty value of cycle 1,
+	//	return bits value of cycle 1,
 	//	if nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION
 	//
 	if ( nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
@@ -850,7 +850,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 					{
 						//
 						//	STOP HERE,
-						//	return difficulty value of previous cycle
+						//	return bits value of previous cycle
 						//
 						return queryDifficultyValueByCycleIndex
 						(
@@ -864,7 +864,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 								}
 
 								//	...
-								//	difficulty of previous cycle
+								//	bits of previous cycle
 								//
 								return pfnCallback( null, nDifficulty );
 							}
@@ -889,7 +889,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		}
 
 		//
-		//	calculate next difficulty
+		//	calculate next bits
 		//
 		_pow_miner.calculateNextDifficulty
 		(
@@ -900,7 +900,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			{
 				//
 				//	oData
-				//	{ difficulty : uNextDifficulty }
+				//	{ bits : uNextDifficulty }
 				//
 				if ( err )
 				{
@@ -910,15 +910,15 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 				if ( oData &&
 					'object' === typeof oData )
 				{
-					if ( oData.hasOwnProperty( 'difficulty' ) &&
-						'number' === typeof oData.difficulty &&
-						oData.difficulty > 0 )
+					if ( oData.hasOwnProperty( 'bits' ) &&
+						'number' === typeof oData.bits &&
+						oData.bits > 0 )
 					{
-						pfnCallback( null, oData.difficulty );
+						pfnCallback( null, oData.bits );
 					}
 					else
 					{
-						pfnCallback( `calculateNextDifficulty callback :: invalid value .difficulty` );
+						pfnCallback( `calculateNextDifficulty callback :: invalid value .bits` );
 					}
 				}
 				else
@@ -955,7 +955,7 @@ function _createMiningInputBufferFromObject( objInput )
 	objInputCpy	= {
 		roundIndex		: objInput.roundIndex,
 		firstTrustMEBall	: objInput.firstTrustMEBall,
-		difficulty		: objInput.difficulty,
+		bits			: objInput.bits,
 		publicSeed		: objInput.publicSeed,
 		superNodeAuthor		: objInput.superNodeAuthor,
 	};

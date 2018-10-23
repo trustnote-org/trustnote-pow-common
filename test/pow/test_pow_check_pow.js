@@ -12,7 +12,7 @@ const _pow	= require( '../../pow/pow.js' );
 let objInput	= {
 	roundIndex	: 1,
 	firstTrustMEBall	: "zd+E/jN0E7wyKASy7A/D0llRMiNQTtd3OaPhBbMF/uc=",
-	difficulty		: 528482303,
+	bits			: 528482303,
 	publicSeed		: "27859fd336472cdfd8054d9aaa2057d6953e9a87d300cfc8a81f43121aaa918e",
 	superNodeAuthor		: "2G6WV4QQVF75EPKSXTVRKRTZYSXNIWLU"
 };

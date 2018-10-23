@@ -23,7 +23,7 @@
                             {
                                 "app": "pow_equihash",
                                 "payload": {
-                                    "difficulty": 2860.0276627085022,
+                                    "bits": 2860.0276627085022,
                                     "seed": "7feff16be8b6af3527a6179c30514f6d7768fb51984f9871cd44bfa7974c99bf",
                                     "solution": "{\"hash\":\"44567c00b17e221f05b68a2b9b58d95b253a7e7291e7cd7b9b94dd92ee7dbba4\",\"nonce\":14904}"
                                 },

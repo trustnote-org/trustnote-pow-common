@@ -12,7 +12,7 @@ const unit_equihash	= {
           "payload_hash": "8AHx8iL7XS9I0FHq2SvDWd8NQIrB7XPZ57u2jgzLvIM=",
           "payload": {
             "seed": "ae43c89af46b36acfc6bcd97fc390c831b93908afd1c83c72b20ed37b528025a",
-            "difficulty": 0,
+            "bits": 0,
             "solution": {
               "hash": "8545fa2bb13e951ec108cb5ef8161e5c576737dd39fe251875ab24340f997e8d",
               "nonce": 107515

@@ -33,7 +33,7 @@ _db.takeConnectionFromPool( function( oNewConn )
 				{
 					if ( null === err )
 					{
-						console.log( `[${ i }]@@@ new difficulty: ${ nNewDifficultyValue }` );
+						console.log( `[${ i }]@@@ new bits: ${ nNewDifficultyValue }` );
 
 						//	...
 						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewDifficultyValue }\n`, { flag : 'a' } );

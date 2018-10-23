@@ -15,7 +15,7 @@ const _trustnote_pow_miner	= require( 'trustnote-pow-miner' );
 //
 // *	@param	{number}	oInput.roundIndex
 // *	@param	{string}	oInput.firstTrustMEBall
-// *	@param	{string}	oInput.difficulty
+// *	@param	{string}	oInput.bits
 // *	@param	{string}	oInput.publicSeed
 // *	@param	{string}	oInput.superNodeAuthor
 //
@@ -46,7 +46,7 @@ function mining()
 		{
 			roundIndex		: nMiningTimes + 1,
 			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
-			difficulty		: nDifficulty,
+			bits			: nDifficulty,
 			publicSeed		: 'public key',
 			superNodeAuthor		: 'xing.supernode.trustnote.org',
 		},
