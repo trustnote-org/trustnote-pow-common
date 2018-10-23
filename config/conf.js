@@ -90,8 +90,8 @@ if (typeof window === 'undefined' || !window.cordova){ // desktop
 	exports.program_version = appPackageJson.version;
 	if (appRootDir !== __dirname){
 		try{
-			mergeExports(require(appRootDir + '/config/conf.js'));
-			console.log('merged app root conf from ' + appRootDir + '/config/conf.js');
+			mergeExports(require(appRootDir + '/conf.js'));
+			console.log('merged app root conf from ' + appRootDir + '/conf.js');
 		}
 		catch(e){
 			console.log("not using app root conf: "+e);
