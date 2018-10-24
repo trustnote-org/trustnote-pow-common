@@ -185,7 +185,7 @@ function startMining( oConn, nRoundIndex, pfnCallback )
 }
 function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 {
-	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
+	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nBits )
 	{
 		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
 		{
@@ -197,7 +197,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 					'pow_mined_gift',
 					{
 						round		: nRoundIndex,
-						bits		: nDifficulty,
+						bits		: nBits,
 						publicSeed	: sSeed,
 						nonce		: _generateRandomInteger( 10000, 200000 ),
 						hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
@@ -246,7 +246,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 	}
 
 	let sCurrentFirstTrustMEBall	= null;
-	let nCurrentDifficultyValue	= null;
+	let nCurrentBitsValue		= null;
 	let sCurrentPublicSeed		= null;
 	let sSuperNodeAuthorAddress	= null;
 
@@ -286,9 +286,9 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 			//	round (N)
 			//	calculate bits value
 			//
-			_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nDifficulty )
+			_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nBits )
 			{
-				nCurrentDifficultyValue	= nDifficulty;
+				nCurrentBitsValue	= nBits;
 				return pfnNext();
 			});
 		},
@@ -314,7 +314,7 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		let objInput	= {
 			roundIndex		: nRoundIndex,
 			firstTrustMEBall	: sCurrentFirstTrustMEBall,
-			bits			: nCurrentDifficultyValue,
+			bits			: nCurrentBitsValue,
 			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
@@ -334,14 +334,18 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
  *	@param	{string}	oInput.bits
  *	@param	{string}	oInput.publicSeed
  *	@param	{string}	oInput.superNodeAuthor
- *	@param	{function}	pfnCallback( err )
+ *	@param	{function}	pfnCallback( err )	will be called immediately while we start mining
  *	@return	{boolean}
  *
  * 	@events
  *
  * 	'pow_mined_gift'
  *
- * 		will return solution object for success
+ * 		will post solution object through event bus while mining successfully
+ *
+ * 		[parameters]
+ * 		err		- null if no error, otherwise a string contains error description,
+ * 		objSolution	- solution object
  * 		{
  *			round		: oInput.roundIndex,
  *			bits		: oInput.bits,
@@ -349,15 +353,10 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
  *			nonce		: oData.nonce,
  *			hash		: oData.hashHex
  *		};
- *
- *		or an error occurred
- *		{
- *			err : `INVALID DATA! ...`
- *		};
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
-	if ( _bBrowser && !_bWallet )
+	if ( _bBrowser && ! _bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
 	}
@@ -391,7 +390,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	}
 	if ( _bDebugModel && ! _bUnitTestEnv )
 	{
-		return _startMiningWithInputsInDebugModel( oInput, pfnCallback );
+		return _startMiningWithInputs_debug( oInput, pfnCallback );
 	}
 
 	/**
@@ -410,6 +409,8 @@ function startMiningWithInputs( oInput, pfnCallback )
 	console.log( `))) startMining with options : `, _oOptions );
 	_pow_miner.startMining( _oOptions, function( err, oData )
 	{
+		let objSolution	= null;
+
 		if ( null === err )
 		{
 			console.log( `))) startMining, callback data( ${ typeof oData } ) : `, oData );
@@ -418,14 +419,13 @@ function startMiningWithInputs( oInput, pfnCallback )
 				if ( oData.hasOwnProperty( 'win' ) && oData.win )
 				{
 					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
-					let objSolution	= {
+					objSolution	= {
 						round		: oInput.roundIndex,
 						bits		: oInput.bits,
 						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
 					};
-					_event_bus.emit( 'pow_mined_gift', objSolution );
 				}
 				else if ( oData.hasOwnProperty( 'gameOver' ) && oData.gameOver )
 				{
@@ -442,12 +442,15 @@ function startMiningWithInputs( oInput, pfnCallback )
 			}
 		}
 
-		return pfnCallback( err, oData );
+		//	...
+		_event_bus.emit( 'pow_mined_gift', err, objSolution );
+
 	});
 
+	pfnCallback( null );
 	return true;
 }
-function _startMiningWithInputsInDebugModel( oInput, pfnCallback )
+function _startMiningWithInputs_debug( oInput, pfnCallback )
 {
 	let nTimeout = _generateRandomInteger( 120 * 1000, 180 * 1000 );
 	setTimeout( () =>
@@ -730,17 +733,17 @@ function queryPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
  *	@param	{number}	nCycleIndex
- *	@param	{function}	pfnCallback( err, nDifficultyValue )
+ *	@param	{function}	pfnCallback( err, nBitsValue )
  */
-function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+function queryBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call queryDifficultyValueByRoundIndex with invalid oConn` );
+		return pfnCallback( `call queryBitsValueByCycleIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
 	{
-		return pfnCallback( `call queryDifficultyValueByCycleIndex with invalid nCycleIndex` );
+		return pfnCallback( `call queryBitsValueByCycleIndex with invalid nCycleIndex` );
 	}
 
 	oConn.query
@@ -770,20 +773,20 @@ function queryDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
  *	@param	{number}	nCycleIndex		- index of new round
- * 	@param	{function}	pfnCallback( err, nNewDifficultyValue )
+ * 	@param	{function}	pfnCallback( err, nNewBitsValue )
  */
-function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
-		return pfnCallback( `call calculateDifficultyValue with invalid oConn` );
+		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid oConn` );
 	}
 	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 1 )
 	{
-		return pfnCallback( `call calculateDifficultyValue with invalid nCycleIndex` );
+		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid nCycleIndex` );
 	}
 
-	let nAverageDifficulty;
+	let nAverageBits;
 	let nTimeUsed;
 	let nTimeStandard;
 
@@ -793,18 +796,18 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 	//
 	if ( nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
 	{
-		return queryDifficultyValueByCycleIndex
+		return queryBitsValueByCycleIndex
 		(
 			oConn,
 			1,
-			function( err, nDifficulty )
+			function( err, nBits )
 			{
 				if ( err )
 				{
 					return pfnCallback( err );
 				}
 
-				return pfnCallback( null, nDifficulty );
+				return pfnCallback( null, nBits );
 			}
 		);
 	}
@@ -818,9 +821,9 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			(
 				oConn,
 				nCycleIndex - 1,
-				function( nDifficulty )
+				function( nBits )
 				{
-					nAverageDifficulty = nDifficulty;
+					nAverageBits = nBits;
 					return pfnNext();
 				}
 			);
@@ -852,11 +855,11 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 						//	STOP HERE,
 						//	return bits value of previous cycle
 						//
-						return queryDifficultyValueByCycleIndex
+						return queryBitsValueByCycleIndex
 						(
 							oConn,
 							nCycleIndex - 1,
-							function( err, nDifficulty )
+							function( err, nBits )
 							{
 								if ( err )
 								{
@@ -866,7 +869,7 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 								//	...
 								//	bits of previous cycle
 								//
-								return pfnCallback( null, nDifficulty );
+								return pfnCallback( null, nBits );
 							}
 						);
 					}
@@ -893,14 +896,14 @@ function calculateDifficultyValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		//
 		_pow_miner.calculateNextWorkRequired
 		(
-			nAverageDifficulty,
+			nAverageBits,
 			nTimeUsed,
 			nTimeStandard,
 			function( err, oData )
 			{
 				//
 				//	oData
-				//	{ bits : uNextDifficulty }
+				//	{ bits : uNextBits }
 				//
 				if ( err )
 				{
@@ -991,14 +994,14 @@ function _generateRandomInteger( nMin, nMax )
 /**
  *	@exports
  */
-module.exports.startMining					= startMining;
-module.exports.obtainMiningInput				= obtainMiningInput;
-module.exports.startMiningWithInputs				= startMiningWithInputs;
-module.exports.stopMining					= stopMining;
+module.exports.startMining			= startMining;
+module.exports.obtainMiningInput		= obtainMiningInput;
+module.exports.startMiningWithInputs		= startMiningWithInputs;
+module.exports.stopMining			= stopMining;
 
-module.exports.calculatePublicSeedByRoundIndex			= calculatePublicSeedByRoundIndex;
-module.exports.calculateDifficultyValueByCycleIndex		= calculateDifficultyValueByCycleIndex;
+module.exports.calculatePublicSeedByRoundIndex	= calculatePublicSeedByRoundIndex;
+module.exports.calculateBitsValueByCycleIndex	= calculateBitsValueByCycleIndex;
 
-module.exports.queryPublicSeedByRoundIndex			= queryPublicSeedByRoundIndex;
+module.exports.queryPublicSeedByRoundIndex	= queryPublicSeedByRoundIndex;
 
-module.exports.checkProofOfWork					= checkProofOfWork;
+module.exports.checkProofOfWork			= checkProofOfWork;

@@ -829,7 +829,7 @@ function markMcIndexStable(conn, mci, onDone){
 								function(cb1){    // calculate difficulty
 									if(round.getCycleIdByRoundIndex(round_index+1) === round.getCycleIdByRoundIndex(round_index))
 										return cb1();
-									pow.calculateDifficultyValueByCycleIndex( conn, round.getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
+									pow.calculateBitsValueByCycleIndex( conn, round.getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
 										if(err)
 											throw Error(" calculate difficulty error " + err);
 										conn.query(

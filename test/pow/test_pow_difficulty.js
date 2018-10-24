@@ -29,14 +29,14 @@ _db.takeConnectionFromPool( function( oNewConn )
 		(
 			pfnNext =>
 			{
-				_pow.calculateDifficultyValueByCycleIndex( oNewConn, i, function( err, nNewDifficultyValue )
+				_pow.calculateBitsValueByCycleIndex( oNewConn, i, function( err, nNewBitsValue )
 				{
 					if ( null === err )
 					{
-						console.log( `[${ i }]@@@ new bits: ${ nNewDifficultyValue }` );
+						console.log( `[${ i }]@@@ new bits: ${ nNewBitsValue }` );
 
 						//	...
-						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewDifficultyValue }\n`, { flag : 'a' } );
+						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewBitsValue }\n`, { flag : 'a' } );
 
 					}
 					else
