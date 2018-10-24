@@ -23,5 +23,57 @@ function readSingleWallet(conn, handleWallet){
 	});
 }
 
-exports.readSingleWallet = readSingleWallet;
-exports.readSingleAddress = readSingleAddress;
+
+
+/**
+ *	read miner address
+ *	@param	{string}	sSuperNodeAddress
+ *	@param	{function}	pfnCallback( err, sMinerAddress )
+ */
+function readMinerAddress( sSuperNodeAddress, pfnCallback )
+{
+	let sRet	= '';
+
+	// SELECT shared_address FROM shared_address_signing_paths AS t_my JOIN shared_address_signing_paths AS t_fon
+	// WHERE
+	// t_my.address='myaddress' AND t_my.signing_path = 'r.1.0'
+	// AND t_fon.address='fondation address' AND t_fon.signing_path = 'r.0.0'
+
+	return pfnCallback( null, sRet );
+}
+
+/**
+ *	read miner deposit
+ *	@param	{string}	sSuperNodeAddress
+ *	@param	{function}	pfnCallback( err, nDeposit )
+ */
+function readMinerDeposit( sSuperNodeAddress, pfnCallback )
+{
+	readMinerAddress( sSuperNodeAddress, function( err, sMinerAddress )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		//
+		//	query deposit
+		//
+		let nDeposit	= 0;
+
+		//	...
+		return pfnCallback( null, nDeposit );
+	});
+}
+
+
+
+
+/**
+ *	@exports
+ */
+exports.readSingleWallet	= readSingleWallet;
+exports.readSingleAddress	= readSingleAddress;
+
+exports.readMinerAddress	= readMinerAddress;
+exports.readMinerDeposit	= readMinerDeposit;
