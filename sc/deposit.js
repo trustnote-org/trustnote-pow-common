@@ -35,17 +35,20 @@ function isDepositDefinition(arrDefinition){
 /**
  *	Check if an address has sent invalid unit.
  *
+ * 	@param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
  * 	@param	{string}	address
  * 	@param	{function}	cb( err, hasInvalidUnits ) callback function
  *              If there's error, err is the error message and hasInvalidUnits is null.
  *              If there's no error and there's invalid units, then hasInvalidUnits is true, otherwise false.
  */
-function hasInvalidUnitsFromHistory(address, cb){
+function hasInvalidUnitsFromHistory(conn, address, cb){
+    if (!conn)
+        return hasInvalidUnitsFromHistory(db, address, cb);
     if(!validationUtils.isNonemptyString(address))
         return cb("param address is null or empty string");
     if(!validationUtils.isValidAddress(address))
         return cb("param address is not a valid address");
-    db.query(
+    conn.query(
         "SELECT address FROM units JOIN unit_authors USING(unit)  \n\
         WHERE is_stable=1 AND sequence!='good' AND address=?", 
         [address],
@@ -58,25 +61,28 @@ function hasInvalidUnitsFromHistory(address, cb){
 /**
  * Returns deposit address balance(stable and pending).
  * 
- * @param {String} depositAddress
- * @param {function}	cb( err, balance ) callback function
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {String}    depositAddress
+ * @param   {function}	cb( err, balance ) callback function
  *                      If address is invalid, then returns err "invalid address".
  *                      If address is not a deposit, then returns err "address is not a deposit".
  *                      If can not find the address, then returns err "address not found".
  * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
  */
-function getBalanceOfDepositContract(depositAddress, cb){
+function getBalanceOfDepositContract(conn, depositAddress, cb){
+    if (!conn)
+        return getBalanceOfDepositContract(db, depositAddress, cb);
     if(!validationUtils.isNonemptyString(depositAddress))
         return cb("param depositAddress is null or empty string");
     if(!validationUtils.isValidAddress(depositAddress))
         return cb("param depositAddress is not a valid address");
-    db.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
+    conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
         function(rows) {
         if (rows.length !== 1 )
             return cb("param depositAddress is not found");
         if(!isDepositDefinition(JSON.parse(rows[0].definition)))
             return cb("param depositAddress is not a deposit");
-        db.query(
+        conn.query(
             "SELECT asset, is_stable, SUM(amount) AS balance \n\
             FROM outputs JOIN units USING(unit) \n\
             WHERE is_spent=0 AND address=? AND sequence='good' AND asset IS NULL \n\

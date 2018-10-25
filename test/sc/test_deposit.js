@@ -1,6 +1,7 @@
 /*jslint node: true */
 "use strict";
 
+const db = require('../../db/db.js');
 const deposit = require( '../../sc/deposit.js' );
 
 // test isDepositDefinition function begin
@@ -29,14 +30,29 @@ const hasInvalidUnitsFromHistoryCb = function(err, hasInvlid){
         return console.log(" hasInvalidUnitsFromHistory err:" + err);
     console.log(" hasInvalidUnitsFromHistory result: " + hasInvlid);
 }
-deposit.hasInvalidUnitsFromHistory(null, hasInvalidUnitsFromHistoryCb);
-deposit.hasInvalidUnitsFromHistory("", hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory(null, null, hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory(null, "", hasInvalidUnitsFromHistoryCb);
 let invalidAddress = "CAGSFKGJDODHWFJF5LS7577TKVPLH7K0";   // error address
-deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory(null, invalidAddress, hasInvalidUnitsFromHistoryCb);
 invalidAddress = "7RR5E6BRHE55FHE76HO6RT2E4ZP3CHYA";   // has invalid address
-deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory(null, invalidAddress, hasInvalidUnitsFromHistoryCb);
 invalidAddress = "SAHCPBJAAOXRJ6KRSM3OGATIRSWIWOQA";   // good address
-deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory(null, invalidAddress, hasInvalidUnitsFromHistoryCb);
+
+db.takeConnectionFromPool(function(conn) {
+    invalidAddress = "7RR5E6BRHE55FHE76HO6RT2E4ZP3CHYA";   // has invalid address
+    deposit.hasInvalidUnitsFromHistory(conn, invalidAddress,function(err, hasInvlid){
+        conn.release();
+        hasInvalidUnitsFromHistoryCb(err, hasInvlid);
+    });
+});
+db.takeConnectionFromPool(function(conn) {
+    invalidAddress = "SAHCPBJAAOXRJ6KRSM3OGATIRSWIWOQA";   // good address
+    deposit.hasInvalidUnitsFromHistory(conn, invalidAddress, function(err, hasInvlid){
+        conn.release();
+        hasInvalidUnitsFromHistoryCb(err, hasInvlid);
+    });
+});
 
 // test hasInvalidUnitsFromHistory function end
 
