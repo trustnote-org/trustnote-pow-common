@@ -23,3 +23,23 @@ console.log(deposit.isDepositDefinition(arrDefinition));
 
 // test isDepositDefinition function end
 
+// test hasInvalidUnitsFromHistory function begin
+const hasInvalidUnitsFromHistoryCb = function(err, hasInvlid){
+    if(err)
+        return console.log(" hasInvalidUnitsFromHistory result:" + err);
+    console.log(" hasInvalidUnitsFromHistory result: " + hasInvlid);
+}
+deposit.hasInvalidUnitsFromHistory(null, hasInvalidUnitsFromHistoryCb);
+deposit.hasInvalidUnitsFromHistory("", hasInvalidUnitsFromHistoryCb);
+let invalidAddress = "CAGSFKGJDODHWFJF5LS7577TKVPLH7K0";   // error address
+deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+invalidAddress = "7RR5E6BRHE55FHE76HO6RT2E4ZP3CHYA";   // has invalid address
+deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+invalidAddress = "SAHCPBJAAOXRJ6KRSM3OGATIRSWIWOQA";   // good address
+deposit.hasInvalidUnitsFromHistory(invalidAddress, hasInvalidUnitsFromHistoryCb);
+
+// test hasInvalidUnitsFromHistory function end
+
+
+
+
