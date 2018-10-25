@@ -75,11 +75,17 @@ function readMinerDeposit( sSuperNodeAddress, pfnCallback )
  */
 function createDepositAddress(my_address, arrDefinition, assocSignersByPath, callback) {
 	var walletDefinedByAddresses = require('../wallet/wallet_defined_by_addresses.js');
+	var constants = require('../config/constants.js');
+	var myDeviceAddresses = device.getMyDeviceAddress();
 
-	var arrDefinition = ['or', [
-		['address', constants.FOUNDATION_ADDRESS],
-		['address', my_address],]
+	var arrDefinition = [
+		'or', 
+		[
+			['address', constants.FOUNDATION_ADDRESS],
+			['address', my_address],
+		]
 	];
+	
 	var assocSignersByPath={
 		'r.0.0': {
 			address: constants.FOUNDATION_ADDRESS,
