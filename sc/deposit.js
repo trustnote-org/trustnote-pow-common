@@ -36,8 +36,7 @@ function isDepositDefinition(arrDefinition){
  *	Check if an address has sent invalid unit.
  *
  * 	@param	{string}	address
- * 	@param	{function}	cb( err, hasInvalidUnits ) 
- *              callback function
+ * 	@param	{function}	cb( err, hasInvalidUnits ) callback function
  *              If there's error, err is the error message and hasInvalidUnits is null.
  *              If there's no error and there's invalid units, then hasInvalidUnits is true, otherwise false.
  */
@@ -56,6 +55,50 @@ function hasInvalidUnitsFromHistory(address, cb){
     );
 }
 
+/**
+ * Returns deposit address balance(stable and pending).
+ * 
+ * @param {String} depositAddress
+ * @param {function}	cb( err, balance ) callback function
+ *                      If address is invalid, then returns err "invalid address".
+ *                      If address is not a deposit, then returns err "address is not a deposit".
+ *                      If can not find the address, then returns err "address not found".
+ * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
+ */
+function getBalanceOfDepositContract(depositAddress, cb){
+    if(!validationUtils.isNonemptyString(depositAddress))
+        return cb("param depositAddress is null or empty string");
+    if(!validationUtils.isValidAddress(depositAddress))
+        return cb("param depositAddress is not a valid address");
+    db.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
+        function(rows) {
+        if (rows.length !== 1 )
+            return cb("param depositAddress is not found");
+        if(!isDepositDefinition(JSON.parse(rows[0].definition)))
+            return cb("param depositAddress is not a deposit");
+        db.query(
+            "SELECT asset, is_stable, SUM(amount) AS balance \n\
+            FROM outputs JOIN units USING(unit) \n\
+            WHERE is_spent=0 AND address=? AND sequence='good' AND asset IS NULL \n\
+            GROUP BY is_stable", [depositAddress],
+            function(rows) {
+                var balance = {
+                    base: {
+                        stable: 0,
+                        pending: 0
+                    }
+                };
+                for (var i = 0; i < rows.length; i++) {
+                    var row = rows[i];
+                    balance.base[row.is_stable ? 'stable' : 'pending'] = row.balance;
+                }
+                cb(null, balance);
+            }
+        );
+    });
+}
+
 exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
+exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
 

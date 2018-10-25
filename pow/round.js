@@ -614,8 +614,7 @@ setInterval(shrinkRoundCache, 1000*1000);
  *	Get the round index of address's last coinbase unit.
  *
  * 	@param	{string}	address
- * 	@param	{function}	cb( err, roundIndex ) 
- *              callback function
+ * 	@param	{function}	cb( err, roundIndex ) callback function
  *              If there's error, err is the error message and roundIndex is null.
  *              If the address hasn't launch coinbase unit, roundIndex is 0.
  *              If there's no error, roundIndex is the result.
