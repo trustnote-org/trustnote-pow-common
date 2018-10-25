@@ -77,6 +77,8 @@ function createDepositAddress(my_address, callback) {
 	var walletDefinedByAddresses = require('../wallet/wallet_defined_by_addresses.js');
 	var constants = require('../config/constants.js');
 	var device = require('./device.js');
+	var objectHash = require('../base/object_hash.js');
+
 	var myDeviceAddresses = device.getMyDeviceAddress();
 
 	var arrDefinition = [
