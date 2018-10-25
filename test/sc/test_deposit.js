@@ -26,7 +26,7 @@ console.log(deposit.isDepositDefinition(arrDefinition));
 // test hasInvalidUnitsFromHistory function begin
 const hasInvalidUnitsFromHistoryCb = function(err, hasInvlid){
     if(err)
-        return console.log(" hasInvalidUnitsFromHistory result:" + err);
+        return console.log(" hasInvalidUnitsFromHistory err:" + err);
     console.log(" hasInvalidUnitsFromHistory result: " + hasInvlid);
 }
 deposit.hasInvalidUnitsFromHistory(null, hasInvalidUnitsFromHistoryCb);
