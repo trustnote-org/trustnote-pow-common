@@ -66,7 +66,36 @@ function readMinerDeposit( sSuperNodeAddress, pfnCallback )
 	});
 }
 
+/**
+ * Create Deposit Address
+ * @param {String} my_address - address that use to generate deposit address
+ * @param {Array} arrDefinition - definiton of miner shared address
+ * @param {Object} assocSignersByPath - address paths of shared address
+ * @param {Function} callback - callback(deposit_address)
+ */
+function createDepositAddress(my_address, arrDefinition, assocSignersByPath, callback) {
+	var walletDefinedByAddresses = require('../wallet/wallet_defined_by_addresses.js');
 
+	var arrDefinition = ['or', [
+		['address', constants.FOUNDATION_ADDRESS],
+		['address', my_address],]
+	];
+	var assocSignersByPath={
+		'r.0.0': {
+			address: constants.FOUNDATION_ADDRESS,
+			member_signing_path: 'r',
+			device_address: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+		},
+		'r.1.0': {
+			address: my_address,
+			member_signing_path: 'r',
+			device_address: myDeviceAddresses
+		},
+	};
+	var shared_address = objectHash.getChash160(arrDefinition)
+
+	walletDefinedByAddresses.handleNewSharedAddress({address: shared_address, definition: arrDefinition, signers: assocSignersByPath}, callback)
+}
 
 
 /**
@@ -77,3 +106,5 @@ exports.readSingleAddress	= readSingleAddress;
 
 exports.readMinerAddress	= readMinerAddress;
 exports.readMinerDeposit	= readMinerDeposit;
+
+exports.createDepositAddress = createDepositAddress;
