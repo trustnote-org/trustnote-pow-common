@@ -610,7 +610,32 @@ function shrinkRoundCache(){
 setInterval(shrinkRoundCache, 1000*1000);
 
 // cache end
-
+/**
+ *	Get the round index of address's last coinbase unit.
+ *
+ * 	@param	{string}	address
+ * 	@param	{function}	cb( err, roundIndex ) callback function
+ *              If there's error, err is the error message and roundIndex is null.
+ *              If the address hasn't launch coinbase unit, roundIndex is 0.
+ *              If there's no error, roundIndex is the result.
+ */
+function getLastCoinbaseUnitRoundIndex(address, cb){
+    if(!validationUtils.isNonemptyString(address))
+        return cb("param address is null or empty string");
+    if(!validationUtils.isValidAddress(address))
+        return cb("param address is not a valid address");
+    db.query(
+        "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
+        WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
+         AND address=? ORDER BY round_index DESC LIMIT 1", 
+         [constants.POW_TYPE_COIN_BASE, address],
+        function(rows){
+            if(rows.length === 0)
+                return cb(null, 0);
+            cb(null, rows[0].round_index);
+        }
+    );
+}
 
 /**
  *	@exports
@@ -646,4 +671,6 @@ exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
 exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
 exports.getSumCoinbaseByEndRoundIndex	= getSumCoinbaseByEndRoundIndex;
+
+exports.getLastCoinbaseUnitRoundIndex	= getLastCoinbaseUnitRoundIndex;
 
