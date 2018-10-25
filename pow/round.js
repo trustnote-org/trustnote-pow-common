@@ -613,18 +613,21 @@ setInterval(shrinkRoundCache, 1000*1000);
 /**
  *	Get the round index of address's last coinbase unit.
  *
+ * 	@param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
  * 	@param	{string}	address
  * 	@param	{function}	cb( err, roundIndex ) callback function
  *              If there's error, err is the error message and roundIndex is null.
  *              If the address hasn't launch coinbase unit, roundIndex is 0.
  *              If there's no error, roundIndex is the result.
  */
-function getLastCoinbaseUnitRoundIndex(address, cb){
+function getLastCoinbaseUnitRoundIndex(conn, address, cb){
+    if (!conn)
+        return getLastCoinbaseUnitRoundIndex(db, address, cb);
     if(!validationUtils.isNonemptyString(address))
         return cb("param address is null or empty string");
     if(!validationUtils.isValidAddress(address))
         return cb("param address is not a valid address");
-    db.query(
+        conn.query(
         "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
         WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
          AND address=? ORDER BY round_index DESC LIMIT 1", 
