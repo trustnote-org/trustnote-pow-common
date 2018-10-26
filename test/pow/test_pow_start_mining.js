@@ -26,7 +26,7 @@ let nMiningTimes	= 0;
 _event_bus.on
 (
 	'pow_mined_gift',
-	( err, objSolution ) =>
+	( objSolution ) =>
 	{
 		console.log( `### ${ Date.now() } ############################################################` );
 		console.log( objSolution );
