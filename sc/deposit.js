@@ -113,7 +113,6 @@ function getBalanceOfDepositContract(conn, depositAddress, cb){
  * @param   {function}	cb( err, depositAddress ) callback function
  *                      If address is invalid, then returns err "invalid address".
  *                      If can not find the address, then returns err "depositAddress not found".
- * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
  */
 function getDepositAddressBySupernode(conn, supernodeAddress, cb){
     if (!conn)
