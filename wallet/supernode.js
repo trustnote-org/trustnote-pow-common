@@ -66,9 +66,6 @@ function readMinerDeposit( sSuperNodeAddress, pfnCallback )
 	});
 }
 
-
-
-
 /**
  *	@exports
  */
