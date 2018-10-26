@@ -12,6 +12,7 @@ var main_chain = require("../mc/main_chain.js");
 var Definition = require("../encrypt/definition.js");
 var eventBus = require('../base/event_bus.js');
 var profiler = require('../base/profiler.js');
+var deposit = require( '../sc/deposit.js' );
 
 var count_writes = 0;
 var count_units_in_prev_analyze = 0;
@@ -492,13 +493,28 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							conn.addQuery(arrQueries, 
 								"INSERT "+db.getIgnore()+" INTO shared_addresses (shared_address, definition) VALUES (?,?)", 
 								[shareAddress, JSON.stringify(arrDefinition)]);
-								
+							
 							for (var signing_path in assocSignersByPath){
 								var signerInfo = assocSignersByPath[signing_path];
 								conn.addQuery(arrQueries, 
 									"INSERT "+db.getIgnore()+" INTO shared_address_signing_paths \n\
 									(shared_address, address, signing_path, member_signing_path, device_address) VALUES (?,?,?,?,?)", 
 									[shareAddress, signerInfo.address, signing_path, signerInfo.member_signing_path, signerInfo.device_address]);
+							}
+							// deposit add insert supernode table
+							if(deposit.isDepositDefinition(arrDefinition)){
+								var pathCount = 0;
+								var arrSigningAddress = [];
+								for (var signingPath in assocSignersByPath){
+									pathCount++;
+									arrSigningAddress.push(assocSignersByPath[signingPath].address);
+								}
+								if (pathCount !== 2)
+									throw Error("deposit definition signing paths error");
+						
+								conn.addQuery(arrQueries, 
+									'INSERT OR IGNORE INTO supernode (address, deposit_address) VALUES (?, ?)', 
+										[arrSigningAddress[0], arrSigningAddress[1]]);
 							}
 							cb2();
 						}				
