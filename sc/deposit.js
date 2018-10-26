@@ -124,7 +124,7 @@ function getDepositAddressBySupernode(conn, supernodeAddress, cb){
     const arrDefinition = [
         'or', 
         [
-            ['address', constants.FOUNDATION_ADDRESS],
+            ['address', constants.FOUNDATION_SAFE_ADDRESS],
             ['address', supernodeAddress],
         ]
     ];
@@ -154,7 +154,7 @@ function createDepositAddress(my_address, callback) {
 	var arrDefinition = [
 		'or', 
 		[
-			['address', constants.FOUNDATION_ADDRESS],
+			['address', constants.FOUNDATION_SAFE_ADDRESS],
 			['address', my_address],
 		]
 	];
