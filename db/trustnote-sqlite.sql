@@ -673,6 +673,15 @@ CREATE TABLE shared_address_signing_paths (
 --    FOREIGN KEY byDeviceAddress(device_address) REFERENCES correspondent_devices(device_address)
 );
 
+CREATE TABLE supernode (
+	address CHAR(32) NOT NULL,
+	deposit_address CHAR(32) NOT NULL,
+	-- own address is not present in correspondents
+	FOREIGN KEY (address) REFERENCES addresses(address),
+	FOREIGN KEY (deposit_address) REFERENCES shared_addresses(shared_address)
+);
+
+
 CREATE TABLE outbox (
 	message_hash CHAR(44) NOT NULL PRIMARY KEY,
 	`to` CHAR(33) NOT NULL, -- the device this message is addressed to, no FK because of pairing case
