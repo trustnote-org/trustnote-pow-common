@@ -285,7 +285,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 																		function(difficulty_rows){
 																			if (difficulty_rows.length !== 1 && !difficulty_rows[0].difficulty)
 																				throw Error("no difficulty?");
-																			objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].difficulty, solution: JSON.parse(pow_rows[0].solution)};
+																			objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].bits, solution: JSON.parse(pow_rows[0].solution)};
 																			addSpendProofs();
 																		}
 																	);
