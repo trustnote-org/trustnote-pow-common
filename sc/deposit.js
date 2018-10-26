@@ -6,6 +6,7 @@ var constants = require('../config/constants.js');
 var db = require('../db/db.js');
 
 var validationUtils = require("../validation/validation_utils.js");
+var objectHash = require('../base/object_hash.js');
 
 /**
  *	verify if a deposit definition is valid.
@@ -105,6 +106,39 @@ function getBalanceOfDepositContract(conn, depositAddress, cb){
 }
 
 /**
+ * Returns deposit address by supernode address.
+ * 
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {String}    depositAddress
+ * @param   {function}	cb( err, depositAddress ) callback function
+ *                      If address is invalid, then returns err "invalid address".
+ *                      If can not find the address, then returns err "depositAddress not found".
+ * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
+ */
+function getDepositAddressBySupernode(conn, supernodeAddress, cb){
+    if (!conn)
+        return getDepositAddressBySupernode(db, supernodeAddress, cb);
+    if(!validationUtils.isNonemptyString(supernodeAddress))
+        return cb("param supernodeAddress is null or empty string");
+    if(!validationUtils.isValidAddress(supernodeAddress))
+        return cb("param supernodeAddress is not a valid address");
+    const arrDefinition = [
+        'or', 
+        [
+            ['address', constants.FOUNDATION_ADDRESS],
+            ['address', supernodeAddress],
+        ]
+    ];
+    const depositAddress = objectHash.getChash160(arrDefinition)
+    conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
+        function(rows) {
+            if (rows.length !== 1 )
+                return cb("depositAddress is not found");
+            cb(null, depositAddress);
+    });
+}
+
+/**
  * Create Deposit Address
  * @param {String} my_address - address that use to generate deposit address
  * @param {Array} arrDefinition - definiton of miner shared address
@@ -113,9 +147,8 @@ function getBalanceOfDepositContract(conn, depositAddress, cb){
  */
 function createDepositAddress(my_address, callback) {
 	var walletDefinedByAddresses = require('../wallet/wallet_defined_by_addresses.js');
-	var constants = require('../config/constants.js');
-	var device = require('./device.js');
-	var objectHash = require('../base/object_hash.js');
+	var device = require('../wallet/device.js');
+	
 
 	var myDeviceAddresses = device.getMyDeviceAddress();
 
@@ -147,5 +180,6 @@ function createDepositAddress(my_address, callback) {
 exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
 exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
+exports.getDepositAddressBySupernode = getDepositAddressBySupernode;
 
 exports.createDepositAddress = createDepositAddress;
