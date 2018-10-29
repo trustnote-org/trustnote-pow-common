@@ -195,6 +195,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 				_event_bus.emit
 				(
 					'pow_mined_gift',
+					null,
 					{
 						round		: nRoundIndex,
 						bits		: nBits,
@@ -458,6 +459,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 		_event_bus.emit
 		(
 			'pow_mined_gift',
+			null,
 			{
 				round		: oInput.roundIndex,
 				bits		: oInput.bits,
