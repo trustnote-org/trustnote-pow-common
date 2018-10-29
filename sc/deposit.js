@@ -43,8 +43,7 @@ function isDepositDefinition(arrDefinition){
  *              If there's no error and there's invalid units, then hasInvalidUnits is true, otherwise false.
  */
 function hasInvalidUnitsFromHistory(conn, address, cb){
-    if (!conn)
-        return hasInvalidUnitsFromHistory(db, address, cb);
+    var conn = conn || db;
     if(!validationUtils.isNonemptyString(address))
         return cb("param address is null or empty string");
     if(!validationUtils.isValidAddress(address))
@@ -71,8 +70,7 @@ function hasInvalidUnitsFromHistory(conn, address, cb){
  * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
  */
 function getBalanceOfDepositContract(conn, depositAddress, cb){
-    if (!conn)
-        return getBalanceOfDepositContract(db, depositAddress, cb);
+    var conn = conn || db;
     if(!validationUtils.isNonemptyString(depositAddress))
         return cb("param depositAddress is null or empty string");
     if(!validationUtils.isValidAddress(depositAddress))
@@ -115,8 +113,7 @@ function getBalanceOfDepositContract(conn, depositAddress, cb){
  *                      If can not find the address, then returns err "depositAddress not found".
  */
 function getDepositAddressBySupernode(conn, supernodeAddress, cb){
-    if (!conn)
-        return getDepositAddressBySupernode(db, supernodeAddress, cb);
+    var conn = conn || db;
     if(!validationUtils.isNonemptyString(supernodeAddress))
         return cb("param supernodeAddress is null or empty string");
     if(!validationUtils.isValidAddress(supernodeAddress))
@@ -147,8 +144,7 @@ function getDepositAddressBySupernode(conn, supernodeAddress, cb){
  *                      If can not find the address, then returns err "supernodeAddress not found".
  */
 function getSupernodeByDepositAddress(conn, depositAddress, cb){
-    if (!conn)
-        return getSupernodeByDepositAddress(db, depositAddress, cb);
+    var conn = conn || db;
     if(!validationUtils.isNonemptyString(depositAddress))
         return cb("param depostiAddress is null or empty string");
     if(!validationUtils.isValidAddress(depositAddress))
