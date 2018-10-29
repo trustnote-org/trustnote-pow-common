@@ -63,7 +63,6 @@ exports.ROUND_COINBASE = [217590000,
 						0];
 
 exports.MIN_INTERVAL_WL_OF_TRUSTME = 5;
-exports.FOUNDATION_RATIO = 0.2;
 /**
  *	pow_type
  */
@@ -72,6 +71,11 @@ exports.POW_TYPE_TRUSTME	= 2;
 exports.POW_TYPE_COIN_BASE	= 3;
 
 exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 1;
+exports.COUNT_CYCLES_FOR_DIFFICULTY_DURATION = 17;
+
+// SUPERNODE can only spend deposit balance after such rounds 
+exports.COUNT_ROUNDS_FOR_SPENDABLE_DEPOST_BALANCE = 1000;
+
 exports.COUNT_CYCLES_FOR_DIFFICULTY_DURATION = 17;
 // average time consumimg per each round
 exports.DURATION_PER_ROUND = 150;
