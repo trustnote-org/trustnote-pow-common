@@ -748,9 +748,6 @@ function composeJoint(params){
 					total_input = _total_input;
 					objPaymentMessage.payload.inputs = arrInputsWithProofs.map(function(objInputWithProof){ return objInputWithProof.input; });
 					objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
-					console.log("11111"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
-					console.log("22222"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
-					console.log("33333"+objUnit.unit+"------"+objUnit.payload_commission);
 					console.log("inputs increased payload by", objUnit.payload_commission - naked_payload_commission);
 					cb();
 				}

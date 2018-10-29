@@ -159,68 +159,6 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
     );
 }
 
-// function getPowEquhashUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-// {
-// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_POW_EQUHASH, pfnCallback );
-// }
-// function getTrustMEUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-// {
-// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_TRUSTME, pfnCallback );
-// }
-// function getCoinBaseUnitsByRoundIndex( oConn, nRoundIndex, pfnCallback )
-// {
-// 	return getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, constants.POW_TYPE_COIN_BASE, pfnCallback );
-// }
-
-// /**
-//  *	get units with type by round index
-//  *	@param	{handle}	oConn
-//  *	@param	{function}	oConn.query
-//  *	@param	{number}	nRoundIndex
-//  *	@param	{number}	nType
-//  *	@param	{function}	pfnCallback( err, arrRows )
-//  *	@return {*}
-//  */
-// function getUnitsWithTypeByRoundIndex( oConn, nRoundIndex, nType, pfnCallback )
-// {
-// 	if ( ! oConn )
-// 	{
-// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid oConn` );
-// 	}
-// 	if ( 'number' !== typeof nRoundIndex || nRoundIndex < 0 )
-// 	{
-// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nRoundIndex` );
-// 	}
-// 	if ( 'number' !== typeof nType )
-// 	{
-// 		return pfnCallback( `call getUnitsWithTypeByRoundIndex with invalid nType` );
-// 	}
-
-// 	oConn.query
-// 	(
-// 		"SELECT * FROM units \
-// 		WHERE round_index = ? AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? \
-// 		ORDER BY main_chain_index",
-// 		[ nRoundIndex, nType ],
-// 		function( arrRows )
-// 		{
-// 			pfnCallback( null, arrRows );
-// 		}
-// 	);
-// }
-
-
-// function checkIfHaveFirstTrustMEByRoundIndex(conn, round_index, callback){
-//     conn.query(
-// 		"SELECT witnessed_level FROM units WHERE round_index=?  \n\
-// 		AND is_stable=1 AND is_on_main_chain=1 AND pow_type=? ORDER BY main_chain_index LIMIT 1", 
-//         [round_index, constants.POW_TYPE_TRUSTME],
-// 		function(rows){
-//             callback(rows.length === 1);
-// 		}
-// 	);
-// }
-
 // the MinWl and MaxWl maybe null
 function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
     conn.query(
@@ -432,7 +370,6 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     }
                     if(totalCountOfTrustMe === null || typeof totalCountOfTrustMe ===  'undefined' || isNaN(totalCountOfTrustMe))
                         throw Error("calculate coinbase radio error, wrong total count " + totalCountOfTrustMe);
-                    console.log("111111round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     Object.keys(witnessRatioOfTrustMe).forEach(function(address){
                         if(witnessRatioOfTrustMe[address] === null || typeof witnessRatioOfTrustMe[address] ===  'undefined' || isNaN(witnessRatioOfTrustMe[address]))
                             throw Error("calculate coinbase radio error, wrong TrustME count " + witnessRatioOfTrustMe[address]);
@@ -440,7 +377,6 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                     });
                     if (!assocCachedCoinbaseRatio[roundIndex])
                         assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
-                    console.log("222222round index:"+roundIndex+",totalCountOfTrustMe:"+totalCountOfTrustMe+",witnessRatioOfTrustMe:"+JSON.stringify(witnessRatioOfTrustMe));
                     callback(witnessRatioOfTrustMe);
                 }
             );    
@@ -466,7 +402,6 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
         throw Error("coinbase is not number ");
     
     getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
-        console.log("rrrrrrrrrrrrrrr:" +roundIndex +"," + JSON.stringify(witnesses));
         if(witnesses.indexOf(witnessAddress) === -1)
             throw Error("the witness " + witnessAddress + " is not the right witness of round " + roundIndex);
         getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
@@ -496,7 +431,6 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
                 getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
                     if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
                         throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
-                    console.log("333333round index:"+roundIndex+",coinbase:"+coinbase+",totalCommission:"+totalCommission);
                     return callback(Math.floor(totalCoinbase*(1-constants.FOUNDATION_RATIO)*witnessRatioOfTrustMe));
                 });
             }
@@ -579,6 +513,37 @@ function queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, pfnCa
 
 // coinbase end
 
+
+/**
+ *	Get the round index of address's last coinbase unit.
+ *
+ * 	@param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * 	@param	{string}	address
+ * 	@param	{function}	cb( err, roundIndex ) callback function
+ *              If there's error, err is the error message and roundIndex is null.
+ *              If the address hasn't launch coinbase unit, roundIndex is 0.
+ *              If there's no error, roundIndex is the result.
+ */
+function getLastCoinbaseUnitRoundIndex(conn, address, cb){
+    if (!conn)
+        return getLastCoinbaseUnitRoundIndex(db, address, cb);
+    if(!validationUtils.isNonemptyString(address))
+        return cb("param address is null or empty string");
+    if(!validationUtils.isValidAddress(address))
+        return cb("param address is not a valid address");
+        conn.query(
+        "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
+        WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
+         AND address=? ORDER BY round_index DESC LIMIT 1", 
+         [constants.POW_TYPE_COIN_BASE, address],
+        function(rows){
+            if(rows.length === 0)
+                return cb(null, 0);
+            cb(null, rows[0].round_index);
+        }
+    );
+}
+
 // cache begin
 function shrinkRoundCacheObj(roundIndex, arrIndex, assocCachedObj){
     var minIndex = Math.min.apply(Math, arrIndex);
@@ -610,35 +575,7 @@ function shrinkRoundCache(){
 setInterval(shrinkRoundCache, 1000*1000);
 
 // cache end
-/**
- *	Get the round index of address's last coinbase unit.
- *
- * 	@param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
- * 	@param	{string}	address
- * 	@param	{function}	cb( err, roundIndex ) callback function
- *              If there's error, err is the error message and roundIndex is null.
- *              If the address hasn't launch coinbase unit, roundIndex is 0.
- *              If there's no error, roundIndex is the result.
- */
-function getLastCoinbaseUnitRoundIndex(conn, address, cb){
-    if (!conn)
-        return getLastCoinbaseUnitRoundIndex(db, address, cb);
-    if(!validationUtils.isNonemptyString(address))
-        return cb("param address is null or empty string");
-    if(!validationUtils.isValidAddress(address))
-        return cb("param address is not a valid address");
-        conn.query(
-        "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
-        WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
-         AND address=? ORDER BY round_index DESC LIMIT 1", 
-         [constants.POW_TYPE_COIN_BASE, address],
-        function(rows){
-            if(rows.length === 0)
-                return cb(null, 0);
-            cb(null, rows[0].round_index);
-        }
-    );
-}
+
 
 /**
  *	@exports
@@ -655,14 +592,9 @@ exports.getDifficultydByCycleID = getDifficultydByCycleID;
 exports.getStandardDuration = getStandardDuration;
 exports.getAverageDifficultyByCycleId = getAverageDifficultyByCycleId;
 
-// exports.getPowEquhashUnitsByRoundIndex	= getPowEquhashUnitsByRoundIndex;
-// exports.getTrustMEUnitsByRoundIndex	= getTrustMEUnitsByRoundIndex;
-// exports.getCoinBaseUnitsByRoundIndex	= getCoinBaseUnitsByRoundIndex;
-// exports.getUnitsWithTypeByRoundIndex	= getUnitsWithTypeByRoundIndex;
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
 exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
-// exports.checkIfHaveFirstTrustMEByRoundIndex = checkIfHaveFirstTrustMEByRoundIndex;
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
 exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
