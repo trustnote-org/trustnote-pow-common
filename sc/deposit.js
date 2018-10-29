@@ -109,7 +109,7 @@ function getBalanceOfDepositContract(conn, depositAddress, cb){
  * Returns deposit address by supernode address.
  * 
  * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
- * @param   {String}    depositAddress
+ * @param   {String}    supernodeAddress
  * @param   {function}	cb( err, depositAddress ) callback function
  *                      If address is invalid, then returns err "invalid address".
  *                      If can not find the address, then returns err "depositAddress not found".
@@ -134,6 +134,31 @@ function getDepositAddressBySupernode(conn, supernodeAddress, cb){
             if (rows.length !== 1 )
                 return cb("depositAddress is not found");
             cb(null, depositAddress);
+    });
+}
+
+/**
+ * Returns supernode address by deposit address.
+ * 
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {String}    depositAddress
+ * @param   {function}	cb( err, supernodeAddress ) callback function
+ *                      If depositAddress is invalid, then returns err "invalid address".
+ *                      If can not find the address, then returns err "supernodeAddress not found".
+ */
+function getSupernodeByDepositAddress(conn, depositAddress, cb){
+    if (!conn)
+        return getSupernodeByDepositAddress(db, depositAddress, cb);
+    if(!validationUtils.isNonemptyString(depositAddress))
+        return cb("param depostiAddress is null or empty string");
+    if(!validationUtils.isValidAddress(depositAddress))
+        return cb("param depostiAddress is not a valid address");
+
+    conn.query("SELECT address FROM supernode WHERE deposit_address = ?", [depositAddress], 
+        function(rows) {
+            if (rows.length !== 1 )
+                return cb("supernodeAddress is not found");
+            cb(null, rows[0].address);
     });
 }
 
@@ -180,5 +205,6 @@ exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
 exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
 exports.getDepositAddressBySupernode = getDepositAddressBySupernode;
+exports.getSupernodeByDepositAddress = getSupernodeByDepositAddress;
 
 exports.createDepositAddress = createDepositAddress;
