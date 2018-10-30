@@ -734,18 +734,18 @@ function queryPublicSeedByRoundIndex( oConn, nRoundIndex, pfnCallback )
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
- *	@param	{number}	nCycleIndex
+ *	@param	{number}	uCycleIndex
  *	@param	{function}	pfnCallback( err, nBitsValue )
  */
-function queryBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+function queryBitsValueByCycleIndex( oConn, uCycleIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
 		return pfnCallback( `call queryBitsValueByCycleIndex with invalid oConn` );
 	}
-	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 0 )
+	if ( 'number' !== typeof uCycleIndex || uCycleIndex <= 0 )
 	{
-		return pfnCallback( `call queryBitsValueByCycleIndex with invalid nCycleIndex` );
+		return pfnCallback( `call queryBitsValueByCycleIndex with invalid uCycleIndex` );
 	}
 
 	oConn.query
@@ -754,7 +754,7 @@ function queryBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 		FROM round_cycle \
 		WHERE cycle_id = ?",
 		[
-			_round.getCycleIdByRoundIndex( nCycleIndex )
+			_round.getCycleIdByRoundIndex( uCycleIndex )
 		],
 		function( arrRows )
 		{
@@ -774,18 +774,18 @@ function queryBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
- *	@param	{number}	nCycleIndex		- index of new round
+ *	@param	{number}	uCycleIndex		- index of new round
  * 	@param	{function}	pfnCallback( err, nNewBitsValue )
  */
-function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
+function calculateBitsValueByCycleIndex( oConn, uCycleIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid oConn` );
 	}
-	if ( 'number' !== typeof nCycleIndex || nCycleIndex <= 1 )
+	if ( 'number' !== typeof uCycleIndex || uCycleIndex <= 1 )
 	{
-		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid nCycleIndex` );
+		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid uCycleIndex` );
 	}
 
 	let nAverageBits;
@@ -794,9 +794,9 @@ function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 
 	//
 	//	return bits value of cycle 1,
-	//	if nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION
+	//	if uCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION
 	//
-	if ( nCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
+	if ( uCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
 	{
 		return queryBitsValueByCycleIndex
 		(
@@ -822,7 +822,7 @@ function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			_round.getAverageDifficultyByCycleId
 			(
 				oConn,
-				nCycleIndex - 1,
+				uCycleIndex - 1,
 				function( nBits )
 				{
 					nAverageBits = nBits;
@@ -836,7 +836,7 @@ function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 			_round.getDurationByCycleId
 			(
 				oConn,
-				nCycleIndex - 1,
+				uCycleIndex - 1,
 				function( nTimeUsedInSecond )
 				{
 					console.log( `%%% _round.getDurationByCycleId, nTimeUsedInSecond = ${ nTimeUsedInSecond }` );
@@ -860,7 +860,7 @@ function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 						return queryBitsValueByCycleIndex
 						(
 							oConn,
-							nCycleIndex - 1,
+							uCycleIndex - 1,
 							function( err, nBits )
 							{
 								if ( err )
@@ -937,6 +937,185 @@ function calculateBitsValueByCycleIndex( oConn, nCycleIndex, pfnCallback )
 
 
 /**
+ *	calculate bits value
+ *
+ *	@param	{handle}	oConn
+ *	@param	{function}	oConn.query
+ *	@param	{number}	uCycleIndex		- index of new round
+ *	@param	{number}	dblDeposit		- index of new round
+ *	@param	{number}	uRoundIndex		- index of new round
+ * 	@param	{function}	pfnCallback( err, nNewBitsValue )
+ */
+function calculateBitsValueByCycleIndexWithDeposit( oConn, uCycleIndex, dblDeposit, uRoundIndex, pfnCallback )
+{
+	if ( ! oConn )
+	{
+		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid oConn` );
+	}
+	if ( 'number' !== typeof uCycleIndex || uCycleIndex <= 1 )
+	{
+		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid uCycleIndex` );
+	}
+	if ( 'number' !== typeof dblDeposit )
+	{
+		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid dblDeposit` );
+	}
+	if ( 'number' !== typeof uRoundIndex || uRoundIndex < 0 )
+	{
+		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid uRoundIndex` );
+	}
+
+	let nAverageBits;
+	let nTimeUsed;
+	let nTimeStandard;
+
+	//
+	//	return bits value of cycle 1,
+	//	if uCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION
+	//
+	if ( uCycleIndex <= _constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION + 1 )
+	{
+		return queryBitsValueByCycleIndex
+		(
+			oConn,
+			1,
+			function( err, nBits )
+			{
+				if ( err )
+				{
+					return pfnCallback( err );
+				}
+
+				return pfnCallback( null, nBits );
+			}
+		);
+	}
+
+	//	...
+	_async.series
+	([
+		function( pfnNext )
+		{
+			_round.getAverageDifficultyByCycleId
+			(
+				oConn,
+				uCycleIndex - 1,
+				function( nBits )
+				{
+					nAverageBits = nBits;
+					return pfnNext();
+				}
+			);
+		},
+		function( pfnNext )
+		{
+			//	in seconds
+			_round.getDurationByCycleId
+			(
+				oConn,
+				uCycleIndex - 1,
+				function( nTimeUsedInSecond )
+				{
+					console.log( `%%% _round.getDurationByCycleId, nTimeUsedInSecond = ${ nTimeUsedInSecond }` );
+
+					//	...
+					if ( 'number' === typeof nTimeUsedInSecond &&
+						nTimeUsedInSecond > 0 )
+					{
+						//
+						//	to be continued ...
+						//
+						nTimeUsed = nTimeUsedInSecond;
+						return pfnNext();
+					}
+					else
+					{
+						//
+						//	STOP HERE,
+						//	return bits value of previous cycle
+						//
+						return queryBitsValueByCycleIndex
+						(
+							oConn,
+							uCycleIndex - 1,
+							function( err, nBits )
+							{
+								if ( err )
+								{
+									return pfnNext( err );
+								}
+
+								//	...
+								//	bits of previous cycle
+								//
+								return pfnCallback( null, nBits );
+							}
+						);
+					}
+				}
+			);
+		},
+		function( pfnNext )
+		{
+			//
+			//	in seconds
+			//
+			nTimeStandard = _round.getStandardDuration();
+			return pfnNext();
+		}
+	], function( err )
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		//
+		//	calculate next bits
+		//
+		_pow_miner.calculateNextWorkRequiredWithDeposit
+		(
+			nAverageBits,
+			nTimeUsed,
+			nTimeStandard,
+			dblDeposit,
+			uRoundIndex,
+			function( err, oData )
+			{
+				//
+				//	oData
+				//	{ bits : uNextBits, shiftByDeposit : 0, shiftByRoundIndex : 0 }
+				//
+				if ( err )
+				{
+					return pfnCallback( err );
+				}
+
+				if ( oData &&
+					'object' === typeof oData )
+				{
+					if ( oData.hasOwnProperty( 'bits' ) &&
+						'number' === typeof oData.bits &&
+						oData.bits > 0 )
+					{
+						pfnCallback( null, oData.bits, oData.shiftByDeposit, oData.shiftByRoundIndex );
+					}
+					else
+					{
+						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits` );
+					}
+				}
+				else
+				{
+					pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid oData object` );
+				}
+			}
+		);
+	});
+}
+
+
+/**
  *	create an input buffer with length of 140 from Js plain object
  *	@public
  *	@param	{object}	objInput
@@ -996,14 +1175,15 @@ function _generateRandomInteger( nMin, nMax )
 /**
  *	@exports
  */
-module.exports.startMining			= startMining;
-module.exports.obtainMiningInput		= obtainMiningInput;
-module.exports.startMiningWithInputs		= startMiningWithInputs;
-module.exports.stopMining			= stopMining;
+module.exports.startMining					= startMining;
+module.exports.obtainMiningInput				= obtainMiningInput;
+module.exports.startMiningWithInputs				= startMiningWithInputs;
+module.exports.stopMining					= stopMining;
 
-module.exports.calculatePublicSeedByRoundIndex	= calculatePublicSeedByRoundIndex;
-module.exports.calculateBitsValueByCycleIndex	= calculateBitsValueByCycleIndex;
+module.exports.calculatePublicSeedByRoundIndex			= calculatePublicSeedByRoundIndex;
+module.exports.calculateBitsValueByCycleIndex			= calculateBitsValueByCycleIndex;
+module.exports.calculateBitsValueByCycleIndexWithDeposit	= calculateBitsValueByCycleIndexWithDeposit;
 
-module.exports.queryPublicSeedByRoundIndex	= queryPublicSeedByRoundIndex;
+module.exports.queryPublicSeedByRoundIndex			= queryPublicSeedByRoundIndex;
 
-module.exports.checkProofOfWork			= checkProofOfWork;
+module.exports.checkProofOfWork					= checkProofOfWork;
