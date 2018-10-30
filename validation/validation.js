@@ -18,6 +18,7 @@ var profiler = require('../base/profiler.js');
 var breadcrumbs = require('../base/breadcrumbs.js');
 var round = require('../pow/round.js');
 var pow = require('../pow/pow.js');
+var deposit = require('../sc/deposit.js');
 
 var MAX_INT32 = Math.pow(2, 31) - 1;
 
@@ -249,7 +250,7 @@ function validate(objJoint, callbacks) {
 					profiler.stop('validation-messages');
 					profiler.start();
 					// move old writer method (updateBestParnt and updateWitnessedlevel) here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
-				    ValidateWitnessLevel(conn, objUnit, objValidationState, cb);
+				    ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, cb);
 				}
 			], 
 			function(err){
@@ -1189,7 +1190,7 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 }
 
 // pow add :
-function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
+function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, callback) {
 	console.log("validating witness level");
 	if (!objUnit.parent_units) {//gensis un;
 		objValidationState.best_parent_unit = null;
@@ -1215,23 +1216,23 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 				});
 			},
 			function(cb){
-			if(!objUnit.pow_type)
-				return cb();
-			if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
-				// check there is no trust me unit in this round
-				conn.query("SELECT 1 FROM units WHERE round_index=? AND pow_type = ? ", [objUnit.round_index,constants.POW_TYPE_TRUSTME], function(rows){
-					if (rows.length === 0)
-						return cb("the first unit is not trust me unit of round "+ objUnit.round_index );
+				if(!objUnit.pow_type)
 					return cb();
-				});
-			}else{
-				return cb();
-			}
-		},
-		function(cb){
-			if(!objUnit.pow_type)
-				return cb();
-			if (objUnit.pow_type){ // for only pow related units,validate wl
+				if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
+					// check there is no trust me unit in this round
+					conn.query("SELECT 1 FROM units WHERE round_index=? AND pow_type = ? ", [objUnit.round_index,constants.POW_TYPE_TRUSTME], function(rows){
+						if (rows.length === 0)
+							return cb("the first unit is not trust me unit of round "+ objUnit.round_index );
+						return cb();
+					});
+				}else{
+					return cb();
+				}
+			},
+			function(cb){
+				if(!objUnit.pow_type)
+					return cb();
+				// for only pow related units,validate wl
 				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
 					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
@@ -1244,7 +1245,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 
 						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
 							if (last_round_min_wl === null){
-							    return cb("last_round_min_wl or last_round_min_wl is null ");
+								return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
 							// if(unit_witenessed_level < last_round_max_wl){
 							// 	console.log("unit info "+ JSON.stringify(objUnit));
@@ -1253,28 +1254,25 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 							return cb();
 						});
 					}
-					// else if(max_wl === null) {//max_wl is null which means current round is in going and not completed, we only check wl is bigger than min_wl
-					// 	if(unit_witenessed_level < min_wl){
-					// 		return cb("unit witnessed level is less than min_wl")
-					// 	}
-					// 	// wl is valid
-					// 	return cb();
-					// }
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
 						if(unit_witenessed_level < min_wl){
 							return cb("unit witnessed level " + unit_witenessed_level + "is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
 						}
-						// if(unit_witenessed_level > max_wl){
-						// 	return cb("unit witnessed level " + unit_witenessed_level + " is bigger than max_wl, max_wl: " + max_wl + JSON.stringify(objUnit) );
-						// }
-						// wl is valid
-
-
 						return cb();
 					}
 				});
+			},
+			function(cb){// check no bad joints to ensure supernode is not doing bad
+				if(!objUnit.pow_type)
+					return cb();
+				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
+					if(err)
+						return cb(err);
+					if(invalid)
+						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
+					return cb();
+				});
 			}
-		}
 	],
 	function(err){
 		if (err){
@@ -1511,12 +1509,23 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	// dev branch disale real pow unit check temperorary
 	// return callback();
 
-	// check deposit address is valid
-
-
 	var firstTrustMEBall = null;
+	var depositBalance = 0 ;
 	async.series(
 		[
+			// check deposit address is valid and balance 
+			function(cb){
+				deposit.getDepositAddressBySupernode(conn, objUnit.authors[0].address, function (err,depositAddress){
+					if(err)
+						 return cb(err + " can not send pow unit");
+					deposit.getBalanceOfDepositContract(conn, depositAddress, function (err,balance){
+						if(err)
+							return cb(err);
+						depositBalance = balance;
+						cb();
+					   });
+				});
+			},
 			function(cb){
 				round.checkIfPowUnitByRoundIndexAndAddressExists(conn, objUnit.round_index, objUnit.authors[0].address, function(bExist) {
 					if(bExist)
@@ -1547,14 +1556,15 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				var objPowProof={roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed,
-					superNodeAuthor:objUnit.authors[0].address} ;
+				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed,
+					superNodeAuthor:objUnit.authors[0].address, deposit: depositBalance} ;
 				//check ifsolution is correct
 				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
 					if(err)
 						return cb("Wrong pow proof of work: "+ err);
 					return cb();
 				});
+				
 			}],
 			function(err){
 				if(err)
@@ -2017,8 +2027,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							total_input += src_output.amount;
 							
 							if (!objAsset || !objAsset.is_private)
-								return checkInputDoubleSpend(cb);
-
+								return checkInputDoubleSpend(checkDepositAddressSpend);
 							// for private payments only, unit already saved (if public, we are already before last ball)
 							// when divisible, the asset is also non-transferrable and auto-destroy, 
 							// then this transfer is a transfer back to the issuer 
@@ -2026,10 +2035,54 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							graph.determineIfIncluded(conn, input.unit, [objUnit.unit], function(bIncluded){
 								if (!bIncluded)
 									return cb("input "+input.unit+" is not in your genes");
-								checkInputDoubleSpend(cb);
+								checkInputDoubleSpend(checkDepositAddressSpend);
 							});
-						}
-					);
+							
+						    // Deposit add : if owner_address is deposit address , additional check if user has rights to spend it now.
+							 function checkDepositAddressSpend(){
+								if (objUnit.authors.length !== 2)
+									return cb();	
+								
+								var supernodes = objUnit.authors.filter( function (author) { return author.address != owner_address });
+								var coAuthorAddr = supernodes[0].address ;
+								// Check owner address is kind of deposit address  
+								despoit.getSupernodeByDepositAddress(conn, owner_address, function(err, pairSupernodeAddr){
+									if(err){
+										// no correspont supernode which indicates owner_address is not deposit address
+										return cb();
+									}
+								    // owner_address is deposit address
+									deposit.hasInvalidUnitsFromHistory(conn, pairSupernodeAddr, function (err, isInvalid){
+										if(err) //normal tranaction
+											return cb(err);
+										
+										if (constants.FOUNDATION_SAFE_ADDRESS === coAuthorAddr){ // foundation spend deposit condition
+											if(!isInvalid) // supernode is good condition
+												return cb("supernode [" + pairSupernodeAddr + "] don not submit bad joints, Foundation can not spend its deposit balance ");
+											return cb();
+										}
+										else if(coAuthorAddr === pairSupernodeAddr){ // condition for supernode spend the deposit balance
+											if(isInvalid)
+												return cb("supernode [" + pairSupernodeAddr + "] submit bad joints, can not spend its deposit contract balance ");
+											round.getLastCoinbaseUnitRoundIndex(conn, pairSupernodeAddr, function(err, lastCoinBaseRound){
+												if(err)
+													return cb(err);
+												if(lastCoinBaseRound === 0 ) // never participate in minning and no coinbase  record
+													return cb();
+												round.getCurrentRoundIndex(conn, function(latestRoundIndex){
+													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SPENDABLE_DEPOST_BALANCE){
+														return cb("supernode can not spend deposit contract balance before ")
+													}
+													return cb();
+												});
+											});
+										}
+									
+										return cb("unknown user:" + coAuthorAddr +" try to spend deposit :" + owner_address )
+									});		
+								});
+							}
+						});
 					break;
 
 				// pow del headers_commission & witnessing check
