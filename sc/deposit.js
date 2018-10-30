@@ -184,7 +184,7 @@ function createDepositAddress(my_address, callback) {
 		'r.0.0': {
 			address: constants.FOUNDATION_ADDRESS,
 			member_signing_path: 'r',
-			device_address: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+			device_address: constants.FOUNDATION_DEVICE_ADDRESS
 		},
 		'r.1.0': {
 			address: my_address,
