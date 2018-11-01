@@ -35,6 +35,8 @@ function getLength(value) {
 }
 
 function getHeadersSize(objUnit) {
+	if (objUnit.pow_type)
+		return 0;
 	if (objUnit.content_hash)
 		throw Error("trying to get headers size of stripped unit");
 	var objHeader = _.cloneDeep(objUnit);
@@ -57,6 +59,8 @@ function getTotalPayloadSizeOld(objUnit) {
 }
 
 function getTotalPayloadSize(objUnit) {
+	if (objUnit.pow_type)
+		return 0;
 	if (objUnit.content_hash)
 		throw Error("trying to get payload size of stripped unit");
 	// pow modi
