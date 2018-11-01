@@ -210,7 +210,7 @@ function addNewSharedAddress(address, arrDefinition, assocSignersByPath, bForwar
 				if (!bForwarded)
 					forwardNewSharedAddressToCosignersOfMyMemberAddresses(address, arrDefinition, assocSignersByPath);
 				if (onDone)
-					onDone();
+					onDone(address);
 			});
 		}
 	);

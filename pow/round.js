@@ -197,8 +197,10 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 		return callback(witnesses);
     }
     
-    if (assocCachedWitnesses[roundIndex])
+    if (assocCachedWitnesses[roundIndex]){
+        console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
         return callback(assocCachedWitnesses[roundIndex]);
+    }
     conn.query(
             "SELECT distinct(address) \n\
             FROM units JOIN unit_authors using (unit)\n\
@@ -210,6 +212,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
                 throw Error("Can not find enough witnesses of round" + roundIndex);
             witnesses = rows.map(function(row) { return row.address; } );
             witnesses.push(constants.FOUNDATION_ADDRESS);
+            console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
             assocCachedWitnesses[roundIndex] = witnesses;
             callback(witnesses);
 		}
@@ -227,8 +230,10 @@ function getWitnessesByRoundIndexByDb(roundIndex, callback){
 		return  callback(witnesses);
     }
     
-    if (assocCachedWitnesses[roundIndex])
-      return callback(assocCachedWitnesses[roundIndex]);
+    if (assocCachedWitnesses[roundIndex]){
+        console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
+        return callback(assocCachedWitnesses[roundIndex]);
+    }
      
     db.query(
 		"SELECT distinct(address) \n\
@@ -241,6 +246,7 @@ function getWitnessesByRoundIndexByDb(roundIndex, callback){
                 throw Error("Can not find enough witnesses ");
             witnesses = rows.map(function(row) { return row.address; } );
             witnesses.push(constants.FOUNDATION_ADDRESS);
+            console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
             assocCachedWitnesses[roundIndex] = witnesses;
             callback(witnesses);
 		}
@@ -287,8 +293,10 @@ function checkIfTrustMeAuthorByRoundIndex(conn, roundIndex, address, callback){
 function getMaxMciByRoundIndex(conn, roundIndex, callback){
     if(roundIndex === 0)
         return callback(0);
-    if (assocCachedMaxMci[roundIndex])
+    if (assocCachedMaxMci[roundIndex]){
+        console.log("RoundCacheLog:use:getMaxMciByRoundIndex->assocCachedMaxMci,roundIndex:" + roundIndex);
         return callback(assocCachedMaxMci[roundIndex]);
+    }
     conn.query(
         "select max(main_chain_index) AS max_mci from units \n\
         where is_on_main_chain=1 AND is_stable=1 AND pow_type=? AND round_index=?", 
@@ -296,6 +304,7 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
         function(rows){
             if (rows.length !== 1)
                 throw Error("Can not find max mci ");
+            console.log("RoundCacheLog:push:getMaxMciByRoundIndex->assocCachedMaxMci,roundIndex:" + roundIndex);
             assocCachedMaxMci[roundIndex] = rows[0].max_mci;
             callback(rows[0].max_mci);
         }
@@ -305,8 +314,10 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
 function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
     if(roundIndex <= 0) 
         throw Error("The first round have no commission ");
-    if (assocCachedTotalCommission[roundIndex])
+    if (assocCachedTotalCommission[roundIndex]){
+        console.log("RoundCacheLog:use:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
         return callback(assocCachedTotalCommission[roundIndex]);
+    }
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
         if(minWl === null)
             throw Error("Can't get commission before the round switch.");
@@ -320,6 +331,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
                     function(rows){
                         if (rows.length !== 1)
                             throw Error("Can not calculate the total commision of round index " + roundIndex);
+                        console.log("RoundCacheLog:push:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
                         assocCachedTotalCommission[roundIndex] = rows[0].total_commission;
                         callback(rows[0].total_commission);
                     }
@@ -332,8 +344,10 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     if(roundIndex <= 0) 
         throw Error("The first round have no commission ");
-    if (assocCachedCoinbaseRatio[roundIndex])
+    if (assocCachedCoinbaseRatio[roundIndex]){
+        console.log("RoundCacheLog:use:getAllCoinbaseRatioByRoundIndex->assocCachedCoinbaseRatio,roundIndex:" + roundIndex);
         return callback(assocCachedCoinbaseRatio[roundIndex]);
+    }
     getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
         if(minWl === null)
             throw Error("Can't get commission before the round switch.");
@@ -375,8 +389,10 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
                             throw Error("calculate coinbase radio error, wrong TrustME count " + witnessRatioOfTrustMe[address]);
                         witnessRatioOfTrustMe[address] = witnessRatioOfTrustMe[address]/totalCountOfTrustMe;
                     });
-                    if (!assocCachedCoinbaseRatio[roundIndex])
+                    if (!assocCachedCoinbaseRatio[roundIndex]){
+                        console.log("RoundCacheLog:push:getAllCoinbaseRatioByRoundIndex->assocCachedCoinbaseRatio,roundIndex:" + roundIndex);
                         assocCachedCoinbaseRatio[roundIndex] = witnessRatioOfTrustMe;
+                    }
                     callback(witnessRatioOfTrustMe);
                 }
             );    
@@ -546,12 +562,15 @@ function getLastCoinbaseUnitRoundIndex(conn, address, cb){
 
 // cache begin
 function shrinkRoundCacheObj(roundIndex, arrIndex, assocCachedObj){
+    console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + roundIndex);
     var minIndex = Math.min.apply(Math, arrIndex);
     if(roundIndex - minIndex > 10000){
+        console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,delete all");
         assocCachedObj = {};
     }
     else{
         for (var offset = minIndex; offset < roundIndex - MAX_ROUND_IN_CACHE; offset++){
+            console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + offset);
             delete assocCachedObj[offset];
         }
     }
@@ -562,8 +581,13 @@ function shrinkRoundCache(){
 	var arrMaxMci = Object.keys(assocCachedMaxMci);
 	var arrCoinbaseRatio = Object.keys(assocCachedCoinbaseRatio);
     if (arrWitnesses.length < MAX_ROUND_IN_CACHE && arrTotalCommission.length < MAX_ROUND_IN_CACHE && 
-        arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE)
-		return console.log('round cache is small, will not shrink');
+        arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE){
+        console.log("RoundCacheLog:shrinkRoundCache,arrWitnesses.length:" + arrWitnesses.length +
+                ",arrTotalCommission.length:" + arrTotalCommission.length +
+                ",arrMaxMci.length:" + arrMaxMci.length +
+                ",arrCoinbaseRatio.length:" + arrCoinbaseRatio.length);
+        return console.log('round cache is small, will not shrink');
+    }
 	getCurrentRoundIndex(db, function(roundIndex){
         shrinkRoundCacheObj(roundIndex, arrWitnesses, assocCachedWitnesses);        
         shrinkRoundCacheObj(roundIndex, arrTotalCommission, assocCachedTotalCommission);        
@@ -600,6 +624,7 @@ exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexAndAddressExists;
 
+exports.getMaxMciByRoundIndex = getMaxMciByRoundIndex;
 exports.getCoinbaseByRoundIndexAndAddress = getCoinbaseByRoundIndexAndAddress;
 exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 

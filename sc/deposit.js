@@ -7,6 +7,7 @@ var db = require('../db/db.js');
 
 var validationUtils = require("../validation/validation_utils.js");
 var objectHash = require('../base/object_hash.js');
+var round = require('../pow/round.js');
 
 /**
  *	verify if a deposit definition is valid.
@@ -59,47 +60,59 @@ function hasInvalidUnitsFromHistory(conn, address, cb){
 }
 
 /**
- * Returns deposit address balance(stable and pending).
+ * Returns deposit address stable balance, Before the roundIndex
  * 
  * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
  * @param   {String}    depositAddress
+ * @param   {String}    roundIndex
  * @param   {function}	cb( err, balance ) callback function
  *                      If address is invalid, then returns err "invalid address".
  *                      If address is not a deposit, then returns err "address is not a deposit".
  *                      If can not find the address, then returns err "address not found".
  * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
  */
-function getBalanceOfDepositContract(conn, depositAddress, cb){
+function getBalanceOfDepositContract(conn, depositAddress, roundIndex, cb){
     var conn = conn || db;
     if(!validationUtils.isNonemptyString(depositAddress))
         return cb("param depositAddress is null or empty string");
     if(!validationUtils.isValidAddress(depositAddress))
         return cb("param depositAddress is not a valid address");
-    conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
-        function(rows) {
-        if (rows.length !== 1 )
-            return cb("param depositAddress is not found");
-        if(!isDepositDefinition(JSON.parse(rows[0].definition)))
-            return cb("param depositAddress is not a deposit");
-        conn.query(
-            "SELECT asset, is_stable, SUM(amount) AS balance \n\
-            FROM outputs JOIN units USING(unit) \n\
-            WHERE is_spent=0 AND address=? AND sequence='good' AND asset IS NULL \n\
-            GROUP BY is_stable", [depositAddress],
-            function(rows) {
-                var balance = {
-                    base: {
-                        stable: 0,
-                        pending: 0
+    if(!validationUtils.isPositiveInteger(roundIndex))
+        return cb("param roundIndex is not a positive integer");
+    if(roundIndex === 1)
+        return cb(null, 0);
+    //WHERE src_unit=? AND src_message_index=? AND src_output_index=? \n\
+    round.getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+        var sumBanlance = 0;
+        conn.query("SELECT src_unit, src_message_index, src_output_index AS count \n\
+            FROM inputs JOIN units USING(unit) \n\
+            WHERE asset IS NULL AND main_chain_index>? AND address=?", 
+        [lastRoundMaxMci, depositAddress], 
+        function(rowsInputs) {
+            conn.query("SELECT unit, is_spent, amount, message_index, output_index \n\
+                FROM outputs JOIN units USING(unit) \n\
+                WHERE asset IS NULL AND main_chain_index<=? AND address=?", 
+            [lastRoundMaxMci, depositAddress], 
+            function(rowsOutputs) {
+                if (rowsOutputs.length === 0)
+                    return cb(null, 0);
+                for (var i=0; i<rowsOutputs.length; i++) {
+                    if(rowsOutputs[i].is_spent === 0) {
+                        sumBanlance += rowsOutputs[i].amount;
                     }
-                };
-                for (var i = 0; i < rows.length; i++) {
-                    var row = rows[i];
-                    balance.base[row.is_stable ? 'stable' : 'pending'] = row.balance;
+                    else {
+                        if(rowsInputs.length > 0) {
+                            for (var j=0; j<rowsInputs.length; j++) {
+                                if(rowsInputs[j].src_unit === rowsOutputs[i].unit && rowsInputs[j].src_message_index === rowsOutputs[i].message_index && rowsInputs[j].src_output_index === rowsOutputs[i].output_index ){
+                                    sumBanlance += rowsOutputs[i].amount;
+                                }
+                            }
+                        }                        
+                    }
                 }
-                cb(null, balance);
-            }
-        );
+                cb(null, sumBanlance);
+            });
+        });
     });
 }
 
@@ -184,7 +197,7 @@ function createDepositAddress(my_address, callback) {
 		'r.0.0': {
 			address: constants.FOUNDATION_ADDRESS,
 			member_signing_path: 'r',
-			device_address: 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+			device_address: constants.FOUNDATION_DEVICE_ADDRESS
 		},
 		'r.1.0': {
 			address: my_address,
