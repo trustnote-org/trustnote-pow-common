@@ -69,7 +69,7 @@ function hasInvalidUnitsFromHistory(conn, address, cb){
  *                      If can not find the address, then returns err "address not found".
  * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
  */
-function getBalanceOfDepositContract(conn, depositAddress, cb){
+function getBalanceOfDepositContract(conn, depositAddress,roundIndex, cb){
     var conn = conn || db;
     if(!validationUtils.isNonemptyString(depositAddress))
         return cb("param depositAddress is null or empty string");

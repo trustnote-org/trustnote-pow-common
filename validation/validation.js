@@ -1263,7 +1263,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 				});
 			},
 			function(cb){// check no bad joints to ensure supernode is not doing bad
-				if(!objUnit.pow_type)
+				if(!objUnit.pow_type || objUnit.pow_type !==1)
 					return cb();
 				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
 					if(err)
@@ -1518,7 +1518,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				deposit.getDepositAddressBySupernode(conn, objUnit.authors[0].address, function (err,depositAddress){
 					if(err)
 						 return cb(err + " can not send pow unit");
-					deposit.getBalanceOfDepositContract(conn, depositAddress, function (err,balance){
+					deposit.getBalanceOfDepositContract(conn, depositAddress,objUnit.round_index,  function (err,balance){
 						if(err)
 							return cb(err);
 						depositBalance = balance;
