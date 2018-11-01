@@ -19,6 +19,7 @@ const _constants	= require( '../config/constants.js' );
 const _round		= require( '../pow/round.js' );
 const _super_node	= require( '../wallet/supernode.js' );
 const _event_bus	= require( '../base/event_bus.js' );
+const _db		= require( '../db/db.js' );
 
 const _bDebugModel	= _conf.debug;
 const _bUnitTestEnv	= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
@@ -488,6 +489,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
  *	@param	{string}	objInput.bits
  *	@param	{string}	objInput.publicSeed
  *	@param	{string}	objInput.superNodeAuthor
+ *	@param	{number}	objInput.deposit
  *	@param	{string}	sHash				hex string with the length of 64 bytes,
  *								e.g.: '3270bcfd5d77014d85208e39d8608154c89ea10b51a1ba668bc87193340cdd67'
  *	@param	{number}	nNonce				number with the value great then or equal to 0
@@ -502,9 +504,17 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
 	}
-	if ( 'object' !== typeof objInput )
+	if ( ! objInput || 'object' !== typeof objInput )
 	{
 		throw new Error( 'call checkProofOfWork with invalid objInput' );
+	}
+	if ( ! _isValidRoundIndex( objInput.roundIndex ) )
+	{
+		throw new Error( 'call checkProofOfWork with invalid objInput.roundIndex' );
+	}
+	if ( 'number' !== typeof objInput.deposit )
+	{
+		throw new Error( 'call checkProofOfWork with invalid objInput.deposit' );
 	}
 	if ( 'string' !== typeof sHash || 64 !== sHash.length )
 	{
@@ -519,14 +529,34 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 		return pfnCallback( null, { code : 0 } );
 	}
 
-	//	...
-	_pow_miner.checkProofOfWork
+	//
+	//	check proof of work with self bits
+	//
+	let uCycleIndex	= _round.getCycleIdByRoundIndex( objInput.roundIndex );
+	calculateBitsValueByCycleIndexWithDeposit
 	(
-		_createMiningInputBufferFromObject( objInput ),
-		objInput.bits,
-		nNonce,
-		sHash,
-		pfnCallback
+		_db,
+		uCycleIndex,
+		objInput.deposit,
+		objInput.roundIndex,
+		( err, uSelfBits ) =>
+		{
+			if ( err )
+			{
+				return pfnCallback( err );
+			}
+
+			//	...
+			let objSelfInput = Object.assign( {}, objInput, { bits : uSelfBits } );
+			_pow_miner.checkProofOfWork
+			(
+				_createMiningInputBufferFromObject( objSelfInput ),
+				objSelfInput.bits,
+				nNonce,
+				sHash,
+				pfnCallback
+			);
+		}
 	);
 }
 
@@ -1166,6 +1196,16 @@ function _generateRandomInteger( nMin, nMax )
 	return Math.floor( Math.random() * ( nMax + 1 - nMin ) ) + nMin;
 }
 
+/**
+ *	check if the vValue is a valid round index
+ *	@param	{number}	vValue
+ *	@return {boolean}
+ *	@private
+ */
+function _isValidRoundIndex( vValue )
+{
+	return 'number' === typeof vValue && vValue > 0;
+}
 
 
 
