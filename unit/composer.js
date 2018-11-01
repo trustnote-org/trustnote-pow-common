@@ -368,8 +368,8 @@ function composeAssetAttestorsJoint(from_address, asset, arrNewAttestors, signer
 }
 
 // pow add pow joint
-function composePowJoint(from_address, round_index, seed, difficulty, solution, signer, callbacks){
-	var payload = {seed: seed, difficulty: difficulty, solution: solution}
+function composePowJoint(from_address, round_index, seed, bits, deposit, selfBits, solution, signer, callbacks){
+	var payload = {seed: seed, bits: bits, deposit:deposit, selfBits:selfBits, solution: solution}
 	var objMessage = {
 		app: "pow_equihash",
 		payload_location: "inline",

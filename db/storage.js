@@ -269,30 +269,32 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 											break;
 
 										case "pow_equihash":   // pow add
-											conn.query(
-												"SELECT solution,round_index FROM pow join units using (unit) WHERE unit=?", [unit], 
-												function(pow_rows){
-													if (pow_rows.length !== 1)
-														throw Error("no pow_equihash or too many?");
-														conn.query(
-															"SELECT seed FROM round WHERE round_index=?", [pow_rows[0].round_index], 
-															function(round_rows){
-																if (round_rows.length !== 1 && !round_rows[0].seed)
-																	throw Error("no seed?");
+											// conn.query(
+											// 	"SELECT solution,round_index FROM pow join units using (unit) WHERE unit=?", [unit], 
+											// 	function(pow_rows){
+											// 		if (pow_rows.length !== 1)
+											// 			throw Error("no pow_equihash or too many?");
+											// 			conn.query(
+											// 				"SELECT seed FROM round WHERE round_index=?", [pow_rows[0].round_index], 
+											// 				function(round_rows){
+											// 					if (round_rows.length !== 1 && !round_rows[0].seed)
+											// 						throw Error("no seed?");
 
-																	conn.query(
-																		"SELECT bits FROM round_cycle WHERE cycle_id=?", [round.getCycleIdByRoundIndex(pow_rows[0].round_index)], 
-																		function(difficulty_rows){
-																			if (difficulty_rows.length !== 1 && !difficulty_rows[0].difficulty)
-																				throw Error("no difficulty?");
-																			objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].bits, solution: JSON.parse(pow_rows[0].solution)};
-																			addSpendProofs();
-																		}
-																	);
-															}
-														);
-												}
-											);
+											// 						conn.query(
+											// 							"SELECT bits FROM round_cycle WHERE cycle_id=?", [round.getCycleIdByRoundIndex(pow_rows[0].round_index)], 
+											// 							function(difficulty_rows){
+											// 								if (difficulty_rows.length !== 1 && !difficulty_rows[0].difficulty)
+											// 									throw Error("no difficulty?");
+											// 								objMessage.payload = {seed: round_rows[0].seed, difficulty: difficulty_rows[0].bits, solution: JSON.parse(pow_rows[0].solution)};
+											// 								addSpendProofs();
+											// 							}
+											// 						);
+											// 				}
+											// 			);
+											// 	}
+											// );
+											objMessage.payload = JSON.parse(objMessage.payload);
+											addSpendProofs();
 											break;
 
 										 case "vote":

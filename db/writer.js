@@ -514,7 +514,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 						
 								conn.addQuery(arrQueries, 
 									'INSERT OR IGNORE INTO supernode (address, deposit_address) VALUES (?, ?)', 
-										[arrSigningAddress[0], shareAddress]);
+										[arrSigningAddress[1], shareAddress]);
 							}
 							cb2();
 						}				
