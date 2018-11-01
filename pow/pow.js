@@ -532,11 +532,10 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	//
 	//	check proof of work with self bits
 	//
-	let uCycleIndex	= _round.getCycleIdByRoundIndex( objInput.roundIndex );
 	calculateBitsValueByCycleIndexWithDeposit
 	(
 		_db,
-		uCycleIndex,
+		_round.getCycleIdByRoundIndex( objInput.roundIndex ),
 		objInput.deposit,
 		objInput.roundIndex,
 		( err, uSelfBits ) =>
