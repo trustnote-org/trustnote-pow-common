@@ -17,6 +17,7 @@ const _pow_miner	= (_bWallet && _bLight && _bBrowser) ? null : require( 'trustno
 
 const _constants	= require( '../config/constants.js' );
 const _round		= require( '../pow/round.js' );
+const _deposit		= require( '../sc/deposit.js' );
 const _super_node	= require( '../wallet/supernode.js' );
 const _event_bus	= require( '../base/event_bus.js' );
 const _db		= require( '../db/db.js' );
@@ -223,7 +224,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
  *
  *	@param	{handle}	oConn
  *	@param	{function}	oConn.query
- *	@param	{number}	nRoundIndex
+ *	@param	{number}	uRoundIndex
  *	@param	{function}	pfnCallback( err )
  *	@return {boolean}
  *
@@ -231,13 +232,13 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
  * 	start successfully	pfnCallback( null, objInput );
  * 	failed to start		pfnCallback( error );
  */
-function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
+function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
 {
 	if ( ! oConn )
 	{
 		throw new Error( `call obtainMiningInput with invalid oConn.` );
 	}
-	if ( 'number' !== typeof nRoundIndex )
+	if ( 'number' !== typeof uRoundIndex )
 	{
 		throw new Error( `call obtainMiningInput with invalid nRoundIndex.` );
 	}
@@ -248,9 +249,11 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 	}
 
 	let sCurrentFirstTrustMEBall	= null;
-	let nCurrentBitsValue		= null;
+	let uCurrentBitsValue		= null;
 	let sCurrentPublicSeed		= null;
 	let sSuperNodeAuthorAddress	= null;
+	let sDepositAddress		= null;
+	let fDepositBalance		= null;
 
 	_async.series
 	([
@@ -268,10 +271,42 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		function( pfnNext )
 		{
 			//
+			//	get deposit address by super-node address
+			//
+			_deposit.getDepositAddressBySupernode( oConn, sSuperNodeAuthorAddress, ( err, sAddress ) =>
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+
+				sDepositAddress	= sAddress;
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//
+			//	get deposit amount by deposit address
+			//
+			_deposit.getBalanceOfDepositContract( oConn, sDepositAddress, uRoundIndex, ( err, fBanlance ) =>
+			{
+				if ( err )
+				{
+					return pfnNext( err );
+				}
+
+				fDepositBalance = fBanlance;
+				return pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//
 			//	round (N)
 			//	obtain ball address of the first TrustME unit from current round
 			//
-			_round.queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, nRoundIndex, function( err, sBall )
+			_round.queryFirstTrustMEBallOnMainChainByRoundIndex( oConn, uRoundIndex, function( err, sBall )
 			{
 				if ( err )
 				{
@@ -286,25 +321,49 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		{
 			//
 			//	round (N)
-			//	calculate bits value
-			//
-			_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nBits )
-			{
-				nCurrentBitsValue	= nBits;
-				return pfnNext();
-			});
-		},
-		function( pfnNext )
-		{
-			//
-			//	round (N)
 			//	calculate public seed
 			//
-			_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			_round.getRoundInfoByRoundIndex( oConn, uRoundIndex, function( round_index, min_wl, max_wl, sSeed )
 			{
 				sCurrentPublicSeed = sSeed;
 				return pfnNext();
 			});
+		},
+		// function( pfnNext )
+		// {
+		// 	//
+		// 	//	round (N)
+		// 	//	calculate bits value
+		// 	//
+		// 	_round.getDifficultydByRoundIndex( oConn, uRoundIndex, function( nBits )
+		// 	{
+		// 		nCurrentBitsValue	= nBits;
+		// 		return pfnNext();
+		// 	});
+		// },
+		function( pfnNext )
+		{
+			//
+			//	calculate bits value
+			//
+			calculateBitsValueByCycleIndexWithDeposit
+			(
+				oConn,
+				_round.getCycleIdByRoundIndex( uRoundIndex ),
+				fDepositBalance,
+				uRoundIndex,
+				( err, uSelfBits ) =>
+				{
+					if ( err )
+					{
+						return pfnCallback( err );
+					}
+
+					//	...
+					uCurrentBitsValue = uSelfBits;
+					return pfnNext();
+				}
+			);
 		}
 	], function( err )
 	{
@@ -314,9 +373,10 @@ function obtainMiningInput( oConn, nRoundIndex, pfnCallback )
 		}
 
 		let objInput	= {
-			roundIndex		: nRoundIndex,
+			roundIndex		: uRoundIndex,
 			firstTrustMEBall	: sCurrentFirstTrustMEBall,
-			bits			: nCurrentBitsValue,
+			bits			: uCurrentBitsValue,
+			deposit			: fDepositBalance,
 			publicSeed		: sCurrentPublicSeed,
 			superNodeAuthor		: sSuperNodeAuthorAddress,
 		};
