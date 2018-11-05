@@ -800,6 +800,8 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 	var arrAddressDefinition = objAuthor.definition;
 	if (isNonemptyArray(arrAddressDefinition)){
 		// todo: check that the address is really new?
+		// Todo :deposit add: check if deposit contract, if yes, validate only one deposit contract created for supernode address
+
 		validateAuthentifiers(arrAddressDefinition);
 	}
 	else if (!("definition" in objAuthor)){
@@ -844,7 +846,7 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 				if(last_Round_witnesses.indexOf(objAuthor.address) === -1){
 					return callback("author of trust me unit is invalid");
 				}
-				checkSerialAddressUse();
+				checkSerialAddressUse(); 
 			});
 
 		}else{

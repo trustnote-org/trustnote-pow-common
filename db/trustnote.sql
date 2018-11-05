@@ -627,9 +627,11 @@ CREATE TABLE shared_address_signing_paths (
 CREATE TABLE supernode (
 	address CHAR(32) NOT NULL,
 	deposit_address CHAR(32) NOT NULL,
+	safe_address CHAR(32) NOT NULL,
 	FOREIGN KEY (address) REFERENCES addresses(address),
 	FOREIGN KEY (deposit_address) REFERENCES shared_addresses(shared_address)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;;
+
 
 CREATE TABLE outbox (
 	message_hash CHAR(44) NOT NULL PRIMARY KEY,
