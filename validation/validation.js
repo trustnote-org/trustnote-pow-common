@@ -2065,9 +2065,9 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 											round.getCurrentRoundIndex(conn, function(latestRoundIndex){
 												if (constants.FOUNDATION_SAFE_ADDRESS === coAuthorAddr){ // foundation spend deposit condition
 													if(!isInvalid) // supernode is good condition
-														return cb("supernode [" + pairSupernodeAddr + "] don not submit bad joints, Foundation can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo.address + "] don not submit bad joints, Foundation can not spend its deposit balance ");
 													if(lastCoinBaseRound === 0 ) // never participate in minning and no coinbase  record
-														return cb("supernode [" + pairSupernodeAddr + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo.address + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
 													// check if delay n round to spend 
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_FOUNDATION_SPEND_DEPOSIT){
 														return cb("Foundation safe address can not spend deposit contract balance before ")
