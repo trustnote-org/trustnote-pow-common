@@ -625,7 +625,7 @@ CREATE TABLE shared_address_signing_paths (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE supernode (
-	address CHAR(32) NOT NULL,
+	address CHAR(32) NOT NULL PRIMARY KEY,
 	deposit_address CHAR(32) NOT NULL,
 	safe_address CHAR(32) NOT NULL,
 	FOREIGN KEY (address) REFERENCES addresses(address),
