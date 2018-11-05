@@ -503,6 +503,9 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							}
 							// deposit add insert supernode table
 							if(deposit.isDepositDefinition(arrDefinition)){
+								if (objUnit.authors.length !== 1)
+									throw Error("The number of the author of the first unit to pay for the deposit address must be 1");
+						
 								var pathCount = 0;
 								var arrSigningAddress = [];
 								for (var signingPath in assocSignersByPath){
@@ -513,8 +516,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 									throw Error("deposit definition signing paths error");
 						
 								conn.addQuery(arrQueries, 
-									'INSERT OR IGNORE INTO supernode (address, deposit_address) VALUES (?, ?)', 
-										[arrSigningAddress[1], shareAddress]);
+									'INSERT OR IGNORE INTO supernode (address, deposit_address, safe_address) VALUES (?, ?, ?)', 
+										[objUnit.authors[0].address, shareAddress, arrSigningAddress[1]]);
 							}
 							cb2();
 						}				
