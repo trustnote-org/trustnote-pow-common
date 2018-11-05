@@ -2048,17 +2048,17 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 								var supernodes = objUnit.authors.filter( function (author) { return author.address != owner_address });
 								var coAuthorAddr = supernodes[0].address ;
 								// Check owner address is kind of deposit address  
-								despoit.getSupernodeByDepositAddress(conn, owner_address, function(err, pairSupernodeAddr){
+								despoit.getSupernodeByDepositAddress(conn, owner_address, function(err, supernodeinfo){
 									if(err){
 										// no correspont supernode which indicates owner_address is not deposit address
 										return cb();
 									}
-								    // owner_address is deposit address
-									deposit.hasInvalidUnitsFromHistory(conn, pairSupernodeAddr, function (err, isInvalid){
+									// owner_address is deposit address
+									deposit.hasInvalidUnitsFromHistory(conn, supernodeinfo.address, function (err, isInvalid){
 										if(err) //normal tranaction
 											return cb(err);
 										
-										round.getLastCoinbaseUnitRoundIndex(conn, pairSupernodeAddr, function(err, lastCoinBaseRound){
+										round.getLastCoinbaseUnitRoundIndex(conn, supernodeinfo.address, function(err, lastCoinBaseRound){
 											if(err)
 												return cb(err);
 
@@ -2074,9 +2074,12 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 													}
 													return cb(); // OK condition
 												}
-												else if(coAuthorAddr === pairSupernodeAddr){ // condition for supernode spend the deposit balance
+												else if(coAuthorAddr === supernodeinfo.safe_address){ // condition for supernode spend the deposit balance
+													if(lastCoinBaseRound === 0 ) // not mine at all, take it anytime
+														return cb();
 													if(isInvalid)
 														return cb("supernode [" + pairSupernodeAddr + "] submit bad joints, can not spend its deposit balance ");
+													
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT){
 														return cb("supernode can not spend deposit contract balance before round " + (lastCoinBaseRound + constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT));
 													}
