@@ -163,11 +163,11 @@ function getSupernodeByDepositAddress(conn, depositAddress, cb){
     if(!validationUtils.isValidAddress(depositAddress))
         return cb("param depostiAddress is not a valid address");
 
-    conn.query("SELECT address FROM supernode WHERE deposit_address = ?", [depositAddress], 
+    conn.query("SELECT address, safe_address FROM supernode WHERE deposit_address = ?", [depositAddress], 
         function(rows) {
             if (rows.length !== 1 )
                 return cb("supernodeAddress is not found");
-            cb(null, rows[0].address);
+            cb(null, rows);
     });
 }
 
