@@ -2078,7 +2078,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 													if(lastCoinBaseRound === 0 ) // not mine at all, take it anytime
 														return cb();
 													if(isInvalid)
-														return cb("supernode [" + pairSupernodeAddr + "] submit bad joints, can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo.address + "] submit bad joints, can not spend its deposit balance ");
 													
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT){
 														return cb("supernode can not spend deposit contract balance before round " + (lastCoinBaseRound + constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT));
