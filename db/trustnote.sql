@@ -100,6 +100,23 @@ CREATE TABLE authentifiers (
 	CONSTRAINT authentifiersByAddress FOREIGN KEY byAddress(address) REFERENCES addresses(address)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+--  new table to store round 
+CREATE TABLE round(
+	round_index BIGINT NOT NULL,
+	min_wl INT NULL,
+	seed CHAR (64),
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (round_index)
+) 
+
+--  new table to store round 
+CREATE TABLE round_cycle(
+	cycle_id INTEGER NOT NULL,
+	bits INT NULL,
+	creation_date timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY (cycle_id)
+) 
+
 -- must be sorted by address
 CREATE TABLE unit_witnesses (
 	unit CHAR(44) BINARY NOT NULL,
