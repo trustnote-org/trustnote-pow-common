@@ -1041,7 +1041,7 @@ function calculateBitsValueByCycleIndexWithDeposit( oConn, uCycleIndex, dblDepos
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid oConn` );
 	}
-	if ( 'number' !== typeof uCycleIndex || uCycleIndex <= 1 )
+	if ( 'number' !== typeof uCycleIndex || uCycleIndex < 1 )
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid uCycleIndex` );
 	}
@@ -1049,7 +1049,7 @@ function calculateBitsValueByCycleIndexWithDeposit( oConn, uCycleIndex, dblDepos
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid dblDeposit` );
 	}
-	if ( 'number' !== typeof uRoundIndex || uRoundIndex < 0 )
+	if ( 'number' !== typeof uRoundIndex || uRoundIndex < 1 )
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndexWithDeposit with invalid uRoundIndex` );
 	}
