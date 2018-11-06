@@ -1502,7 +1502,7 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 
 // pow add:
 function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){
-	if (hasFieldsExcept(payload, ["seed","difficulty", "solution"]))
+	if (hasFieldsExcept(payload, ["seed","deposit", "solution"]))
 		return callback("unknown fields in pow_equihash message");
 	if (objValidationState.bHasBasePowequihash)
 		return callback("can have only one PowEquhash message");
@@ -1520,6 +1520,8 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				deposit.getDepositAddressBySupernode(conn, objUnit.authors[0].address, function (err,depositAddress){
 					if(err)
 						 return cb(err + " can not send pow unit");
+					if(payload.deposit != depositAddress)
+						return cb("pow unit deposit address is invalid expeected :" + depositAddress +" Actual :" + payload.deposit);
 					deposit.getBalanceOfDepositContract(conn, depositAddress,objUnit.round_index,  function (err,balance){
 						if(err)
 							return cb(err);
@@ -1558,7 +1560,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed,
+				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, publicSeed:payload.seed,
 					superNodeAuthor:objUnit.authors[0].address, deposit: depositBalance} ;
 				//check ifsolution is correct
 				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){

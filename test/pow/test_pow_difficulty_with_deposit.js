@@ -36,17 +36,16 @@ _db.takeConnectionFromPool( function( oNewConn )
 				_pow.calculateBitsValueByCycleIndexWithDeposit
 				(
 					oNewConn,
-					uCycleIndex,
-					dblDeposit,
 					uRoundIndex,
+					dblDeposit,
 					( err, nNewBitsValue, nShiftByDeposit, nShiftByRoundIndex ) =>
 					{
 						if ( null === err )
 						{
 							let sResult = `[${ i }]uCycleIndex : ${ uCycleIndex }, dblDeposit : ${ dblDeposit }, uRoundIndex : ${ uRoundIndex }`
-							+ `==>`
-							+ `new bits: ${ nNewBitsValue }, nShiftByDeposit : ${ nShiftByDeposit }, nShiftByRoundIndex : ${ nShiftByRoundIndex }.`
-							+ `\n`;
+								+ `==>`
+								+ `new bits: ${ nNewBitsValue }, nShiftByDeposit : ${ nShiftByDeposit }, nShiftByRoundIndex : ${ nShiftByRoundIndex }.`
+								+ `\n`;
 							console.log( sResult );
 
 							//	...
