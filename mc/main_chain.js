@@ -829,14 +829,14 @@ function markMcIndexStable(conn, mci, onDone){
 								function(cb1){    // calculate difficulty
 									if(round.getCycleIdByRoundIndex(round_index+1) === round.getCycleIdByRoundIndex(round_index))
 										return cb1();
-									pow.calculateBitsValueByCycleIndex( conn, round.getCycleIdByRoundIndex(round_index+1), function(err, newDifficulty){
+									pow. calculateBitsValueByRoundIndexWithDeposit( conn, round_index+1, 0, function(err, nBits){
 										if(err)
-											throw Error(" calculate difficulty error " + err);
+											throw Error(" calculate bits error " + err);
 										conn.query(
 											"INSERT INTO round_cycle (cycle_id, bits) VALUES (?, ?)", 
-											[round.getCycleIdByRoundIndex(round_index+1), newDifficulty], 
+											[round.getCycleIdByRoundIndex(round_index+1), nBits], 
 											function(){
-												infoMiningSuccess(round_index+1, newDifficulty);
+												infoMiningSuccess(round_index+1, nBits);
 												cb1();
 											}
 										);
