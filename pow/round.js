@@ -87,7 +87,7 @@ function getCurrentRoundInfo(conn, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find current round index");
-            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].seed);
 		}
 	);
 }
@@ -99,7 +99,7 @@ function getRoundInfoByRoundIndex(conn, roundIndex, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find round index");
-            callback(rows[0].round_index, rows[0].min_wl, rows[0].max_wl, rows[0].seed);
+            callback(rows[0].round_index, rows[0].min_wl, rows[0].seed);
 		}
 	);
 }
@@ -160,14 +160,14 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
 }
 
 // the MinWl and MaxWl maybe null
-function getMinWlAndMaxWlByRoundIndex(conn, roundIndex, callback){
+function getMinWlByRoundIndex(conn, roundIndex, callback){
     conn.query(
-		"SELECT min_wl, max_wl FROM round where round_index=?", 
+		"SELECT min_wl FROM round where round_index=?", 
         [roundIndex],
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find the right round index");
-            callback(rows[0].min_wl, rows[0].max_wl);
+            callback(rows[0].min_wl);
 		}
 	);
 }
@@ -318,7 +318,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
         console.log("RoundCacheLog:use:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
         return callback(assocCachedTotalCommission[roundIndex]);
     }
-    getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
+    getMinWlByRoundIndex(conn, roundIndex, function(minWl){
         if(minWl === null)
             throw Error("Can't get commission before the round switch.");
         getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
@@ -348,7 +348,7 @@ function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
         console.log("RoundCacheLog:use:getAllCoinbaseRatioByRoundIndex->assocCachedCoinbaseRatio,roundIndex:" + roundIndex);
         return callback(assocCachedCoinbaseRatio[roundIndex]);
     }
-    getMinWlAndMaxWlByRoundIndex(conn, roundIndex, function(minWl, maxWl){
+    getMinWlByRoundIndex(conn, roundIndex, function(minWl){
         if(minWl === null)
             throw Error("Can't get commission before the round switch.");
         getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
@@ -606,7 +606,7 @@ setInterval(shrinkRoundCache, 1000*1000);
  */
 exports.getCurrentRoundIndex = getCurrentRoundIndex;
 exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
-exports.getMinWlAndMaxWlByRoundIndex = getMinWlAndMaxWlByRoundIndex;
+exports.getMinWlByRoundIndex = getMinWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;

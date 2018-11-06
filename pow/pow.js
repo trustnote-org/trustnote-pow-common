@@ -189,7 +189,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 {
 	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nBits )
 	{
-		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, sSeed )
 		{
 			let nTimeout = _generateRandomInteger( 120 * 1000, 180 * 1000 );
 			setTimeout( () =>
@@ -323,7 +323,7 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
 			//	round (N)
 			//	calculate public seed
 			//
-			_round.getRoundInfoByRoundIndex( oConn, uRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			_round.getRoundInfoByRoundIndex( oConn, uRoundIndex, function( round_index, min_wl, sSeed )
 			{
 				sCurrentPublicSeed = sSeed;
 				return pfnNext();

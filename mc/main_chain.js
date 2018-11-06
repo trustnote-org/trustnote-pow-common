@@ -768,7 +768,7 @@ function markMcIndexStable(conn, mci, onDone){
 
 	// pow add
 	function handlePowUnits(){
-		round.getCurrentRoundInfo(conn, function(round_index, min_wl, max_wl){
+		round.getCurrentRoundInfo(conn, function(round_index, min_wl){
 			async.series([
 				function(cb){ // min wl
 					if(min_wl != null)
@@ -818,7 +818,7 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate new seed error !");
 										conn.query(
-											"INSERT INTO round (round_index, min_wl, max_wl, seed) VALUES (?, null, null, ?)", 
+											"INSERT INTO round (round_index, min_wl, seed) VALUES (?, null, ?)", 
 											[round_index+1, newSeed], 
 											function(){
 												cb1();

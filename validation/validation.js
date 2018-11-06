@@ -1235,7 +1235,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 				if(!objUnit.pow_type)
 					return cb();
 				// for only pow related units,validate wl
-				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
+				round.getMinWlByRoundIndex(conn, objUnit.round_index, function(min_wl){
 					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
 						if (objUnit.round_index === 1){//first round
@@ -1245,7 +1245,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 							return cb();
 						}
 
-						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
+						round.getMinWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl){
 							if (last_round_min_wl === null){
 								return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
@@ -1536,7 +1536,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,max_wl,seed){
+				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,seed){
 					if (seed !== payload.seed )
 					   return cb("Wrong seed detected of round " + objUnit.round_index + "expected :"+ seed +",actual :"+payload.seed);
 					cb();
