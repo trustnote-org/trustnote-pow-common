@@ -1517,7 +1517,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 		[
 			// check deposit address is valid and balance 
 			function(cb){
-				deposit.getDepositAddressBySupernode(conn, objUnit.authors[0].address, function (err,depositAddress){
+				deposit.getDepositAddressBySupernodeAddress(conn, objUnit.authors[0].address, function (err,depositAddress){
 					if(err)
 						 return cb(err + " can not send pow unit");
 					if(payload.deposit != depositAddress)
@@ -1544,13 +1544,13 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 					cb();
 				});
 			},
-			function(cb){
-				round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
-					if(difficulty !== payload.difficulty)
-						return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
-					cb();
-				});
-			},
+			// function(cb){
+			// 	round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
+			// 		if(difficulty !== payload.difficulty)
+			// 			return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
+			// 		cb();
+			// 	});
+			// },
 			function(cb){  // find first trust me ball
 				round.queryFirstTrustMEBallOnMainChainByRoundIndex(conn,objUnit.round_index, function(err,ball){
 					if(err)
