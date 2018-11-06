@@ -145,7 +145,7 @@ function sendVersion( ws )
 {
 	let libraryPackageJson	= require('../package.json');
 
-	_round.getCurrentRoundIndexByDb( function( nCurrentRoundIndex )
+	_round.getCurrentRoundIndex( null, function( nCurrentRoundIndex )
 	{
 		sendJustsaying
 		(

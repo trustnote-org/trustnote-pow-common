@@ -16,6 +16,7 @@ var assocCachedMaxMci = {};
 var assocCachedCoinbaseRatio = {};
 
 function getCurrentRoundIndex(conn, callback){
+    var conn = conn || db;
     conn.query(
 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
         [],
@@ -27,17 +28,17 @@ function getCurrentRoundIndex(conn, callback){
 	);
 }
 
-function getCurrentRoundIndexByDb(callback){
-    db.query(
-		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
-        [],
-		function(rows){
-			if (rows.length !== 1)
-                throw Error("Can not find current round index");
-            callback(rows[0].round_index);
-		}
-	);
-}
+// function getCurrentRoundIndexByDb(callback){
+//     db.query(
+// 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
+//         [],
+// 		function(rows){
+// 			if (rows.length !== 1)
+//                 throw Error("Can not find current round index");
+//             callback(rows[0].round_index);
+// 		}
+// 	);
+// }
 
 function getCycleIdByRoundIndex(roundIndex){
     return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
@@ -159,7 +160,7 @@ function getAverageDifficultyByCycleId(conn, cycleId, callback){
     );
 }
 
-// the MinWl and MaxWl maybe null
+// the MinWl maybe null
 function getMinWlByRoundIndex(conn, roundIndex, callback){
     conn.query(
 		"SELECT min_wl FROM round where round_index=?", 
@@ -188,7 +189,8 @@ function getSumCoinbaseByEndRoundIndex(endRoundIndex){
 
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
-	// TODO ：cache the witnesses of recent rounds
+    // TODO ：cache the witnesses of recent rounds
+    var conn = conn || db;
 	var witnesses  = [];
 	if (roundIndex === 1){// first round
 		witnesses = witnesses.concat(conf.initialWitnesses);
@@ -220,38 +222,38 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 }
 
 
-function getWitnessesByRoundIndexByDb(roundIndex, callback){
-	// TODO ：cache the witnesses of recent rounds
-	var witnesses  = [];
-	if (roundIndex === 1){// first round
-		witnesses = witnesses.concat(conf.initialWitnesses);
-		if(witnesses.length != constants.COUNT_WITNESSES)
-			throw Error("Can not find enough witnesses in conf initialWitnesses");
-		return  callback(witnesses);
-    }
+// function getWitnessesByRoundIndexByDb(roundIndex, callback){
+// 	// TODO ：cache the witnesses of recent rounds
+// 	var witnesses  = [];
+// 	if (roundIndex === 1){// first round
+// 		witnesses = witnesses.concat(conf.initialWitnesses);
+// 		if(witnesses.length != constants.COUNT_WITNESSES)
+// 			throw Error("Can not find enough witnesses in conf initialWitnesses");
+// 		return  callback(witnesses);
+//     }
     
-    if (assocCachedWitnesses[roundIndex]){
-        console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
-        return callback(assocCachedWitnesses[roundIndex]);
-    }
+//     if (assocCachedWitnesses[roundIndex]){
+//         console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
+//         return callback(assocCachedWitnesses[roundIndex]);
+//     }
      
-    db.query(
-		"SELECT distinct(address) \n\
-		FROM units JOIN unit_authors using (unit)\n\
-        WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-        LIMIT ?", 
-        [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
-		function(rows){
-			if (rows.length !==  constants.COUNT_POW_WITNESSES)
-                throw Error("Can not find enough witnesses ");
-            witnesses = rows.map(function(row) { return row.address; } );
-            witnesses.push(constants.FOUNDATION_ADDRESS);
-            console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
-            assocCachedWitnesses[roundIndex] = witnesses;
-            callback(witnesses);
-		}
-	);
-}
+//     db.query(
+// 		"SELECT distinct(address) \n\
+// 		FROM units JOIN unit_authors using (unit)\n\
+//         WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+//         LIMIT ?", 
+//         [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
+// 		function(rows){
+// 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
+//                 throw Error("Can not find enough witnesses ");
+//             witnesses = rows.map(function(row) { return row.address; } );
+//             witnesses.push(constants.FOUNDATION_ADDRESS);
+//             console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
+//             assocCachedWitnesses[roundIndex] = witnesses;
+//             callback(witnesses);
+// 		}
+// 	);
+// }
 
 function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
     // TODO ：cache the witnesses of recent rounds
@@ -605,7 +607,7 @@ setInterval(shrinkRoundCache, 1000*1000);
  *	@exports
  */
 exports.getCurrentRoundIndex = getCurrentRoundIndex;
-exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
+//exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
 exports.getMinWlByRoundIndex = getMinWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
@@ -620,7 +622,7 @@ exports.getCurrentRoundInfo = getCurrentRoundInfo;
 exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
 
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
-exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
+//exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexAndAddressExists;
 
