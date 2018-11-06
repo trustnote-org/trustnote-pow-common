@@ -483,7 +483,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 					console.log( `pow-solution :: WINNER WINNER, CHICKEN DINNER!`, oData );
 					objSolution	= {
 						round		: oInput.roundIndex,
-						bits		: oInput.bits,
+						selfBits	: oInput.bits,
 						publicSeed	: oInput.publicSeed,
 						nonce		: oData.nonce,
 						hash		: oData.hashHex
