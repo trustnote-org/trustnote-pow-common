@@ -522,7 +522,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 			null,
 			{
 				round		: oInput.roundIndex,
-				bits		: oInput.bits,
+				selfBits		: oInput.bits,
 				publicSeed	: oInput.publicSeed,
 				nonce		: _generateRandomInteger( 10000, 200000 ),
 				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
