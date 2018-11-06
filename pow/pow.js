@@ -872,7 +872,7 @@ function calculateBitsValueByCycleIndex( oConn, uCycleIndex, pfnCallback )
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid oConn` );
 	}
-	if ( 'number' !== typeof uCycleIndex || uCycleIndex <= 1 )
+	if ( 'number' !== typeof uCycleIndex || uCycleIndex < 1 )
 	{
 		return pfnCallback( `call calculateBitsValueByCycleIndex with invalid uCycleIndex` );
 	}
