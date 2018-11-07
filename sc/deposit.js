@@ -214,9 +214,9 @@ function createDepositAddress(my_address, callback) {
 	var shared_address = objectHash.getChash160(arrDefinition)
 
 	if(isDepositDefinition(arrDefinition)){
-        return callback(null, shared_address)
+        return callback.ifOk(null, shared_address)
     } else {
-        throw Error(JSON.stringify(arrDefinition) + ' is not a valid deposit definiton')
+        return callback.ifError(JSON.stringify(arrDefinition) + ' is not a valid deposit definiton')
     }
 }
 
