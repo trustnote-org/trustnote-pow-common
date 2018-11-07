@@ -273,7 +273,7 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
 			//
 			//	get deposit address by super-node address
 			//
-			_deposit.getDepositAddressBySupernode( oConn, sSuperNodeAuthorAddress, ( err, sAddress ) =>
+			_deposit.getDepositAddressBySupernodeAddress( oConn, sSuperNodeAuthorAddress, ( err, sAddress ) =>
 			{
 				if ( err )
 				{
