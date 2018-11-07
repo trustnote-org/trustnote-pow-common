@@ -142,7 +142,7 @@ function getDepositAddressBySafeAddress(conn, safeAddress, cb){
     conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
         function(rows) {
             if (rows.length !== 1 )
-                return cb("depositAddress is not found");
+                return cb("deposit Address is not found when getDepositAddressBySafeAddress " + safeAddress);
             cb(null, depositAddress);
     });
 }
@@ -166,7 +166,7 @@ function getDepositAddressBySupernodeAddress(conn, supernodeAddress, cb){
     conn.query("SELECT deposit_address FROM supernode WHERE address = ?", [supernodeAddress], 
         function(rows) {
             if (rows.length !== 1 )
-                return cb("deposit address is not found");
+                return cb("deposit address is not found when getDepositAddressBySupernodeAddress " + supernodeAddress);
             cb(null, rows[0].deposit_address);
     });
 }
