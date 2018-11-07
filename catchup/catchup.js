@@ -75,7 +75,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			//
 			//	get current round index
 			//
-			_round.getCurrentRoundIndexByDb( function( nCurrentRoundIndex )
+			_round.getCurrentRoundIndex( null, function( nCurrentRoundIndex )
 			{
 				if ( 'number' === typeof nCurrentRoundIndex && nCurrentRoundIndex > 0 )
 				{

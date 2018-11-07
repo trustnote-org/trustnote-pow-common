@@ -189,7 +189,7 @@ function _startMiningInDebugModel( oConn, nRoundIndex, pfnCallback )
 {
 	_round.getDifficultydByRoundIndex( oConn, nRoundIndex, function( nBits )
 	{
-		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+		_round.getRoundInfoByRoundIndex( oConn, nRoundIndex, function( round_index, min_wl, sSeed )
 		{
 			let nTimeout = _generateRandomInteger( 120 * 1000, 180 * 1000 );
 			setTimeout( () =>
@@ -273,7 +273,7 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
 			//
 			//	get deposit address by super-node address
 			//
-			_deposit.getDepositAddressBySupernode( oConn, sSuperNodeAuthorAddress, ( err, sAddress ) =>
+			_deposit.getDepositAddressBySupernodeAddress( oConn, sSuperNodeAuthorAddress, ( err, sAddress ) =>
 			{
 				if ( err )
 				{
@@ -323,7 +323,7 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
 			//	round (N)
 			//	calculate public seed
 			//
-			_round.getRoundInfoByRoundIndex( oConn, uRoundIndex, function( round_index, min_wl, max_wl, sSeed )
+			_round.getRoundInfoByRoundIndex( oConn, uRoundIndex, function( round_index, min_wl, sSeed )
 			{
 				sCurrentPublicSeed = sSeed;
 				return pfnNext();
@@ -522,7 +522,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 			null,
 			{
 				round		: oInput.roundIndex,
-				bits		: oInput.bits,
+				selfBits		: oInput.bits,
 				publicSeed	: oInput.publicSeed,
 				nonce		: _generateRandomInteger( 10000, 200000 ),
 				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )

@@ -1235,7 +1235,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 				if(!objUnit.pow_type)
 					return cb();
 				// for only pow related units,validate wl
-				round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index, function(min_wl,max_wl){
+				round.getMinWlByRoundIndex(conn, objUnit.round_index, function(min_wl){
 					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
 						if (objUnit.round_index === 1){//first round
@@ -1245,7 +1245,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 							return cb();
 						}
 
-						round.getMinWlAndMaxWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl, last_round_max_wl){
+						round.getMinWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl){
 							if (last_round_min_wl === null){
 								return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
@@ -1502,7 +1502,7 @@ function validateInlinePayload(conn, objMessage, message_index, objUnit, objVali
 
 // pow add:
 function validatePowEquhash(conn, payload, message_index, objUnit, objValidationState,callback){
-	if (hasFieldsExcept(payload, ["seed","difficulty", "solution"]))
+	if (hasFieldsExcept(payload, ["seed","deposit", "solution"]))
 		return callback("unknown fields in pow_equihash message");
 	if (objValidationState.bHasBasePowequihash)
 		return callback("can have only one PowEquhash message");
@@ -1517,9 +1517,11 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 		[
 			// check deposit address is valid and balance 
 			function(cb){
-				deposit.getDepositAddressBySupernode(conn, objUnit.authors[0].address, function (err,depositAddress){
+				deposit.getDepositAddressBySupernodeAddress(conn, objUnit.authors[0].address, function (err,depositAddress){
 					if(err)
 						 return cb(err + " can not send pow unit");
+					if(payload.deposit != depositAddress)
+						return cb("pow unit deposit address is invalid expeected :" + depositAddress +" Actual :" + payload.deposit);
 					deposit.getBalanceOfDepositContract(conn, depositAddress,objUnit.round_index,  function (err,balance){
 						if(err)
 							return cb(err);
@@ -1536,19 +1538,19 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,max_wl,seed){
+				round.getRoundInfoByRoundIndex(conn,objUnit.round_index, function(round_index,min_wl,seed){
 					if (seed !== payload.seed )
 					   return cb("Wrong seed detected of round " + objUnit.round_index + "expected :"+ seed +",actual :"+payload.seed);
 					cb();
 				});
 			},
-			function(cb){
-				round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
-					if(difficulty !== payload.difficulty)
-						return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
-					cb();
-				});
-			},
+			// function(cb){
+			// 	round.getDifficultydByRoundIndex(conn,objUnit.round_index, function(difficulty){
+			// 		if(difficulty !== payload.difficulty)
+			// 			return cb("Wrong difficulty detected of round " + objUnit.round_index + "expected :"+ difficulty +",actual :"+payload.difficulty);
+			// 		cb();
+			// 	});
+			// },
 			function(cb){  // find first trust me ball
 				round.queryFirstTrustMEBallOnMainChainByRoundIndex(conn,objUnit.round_index, function(err,ball){
 					if(err)
@@ -1558,7 +1560,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				});
 			},
 			function(cb){
-				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, difficulty:payload.difficulty, publicSeed:payload.seed,
+				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, publicSeed:payload.seed,
 					superNodeAuthor:objUnit.authors[0].address, deposit: depositBalance} ;
 				//check ifsolution is correct
 				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){

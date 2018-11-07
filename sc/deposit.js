@@ -117,33 +117,57 @@ function getBalanceOfDepositContract(conn, depositAddress, roundIndex, cb){
 }
 
 /**
- * Returns deposit address by supernode address.
+ * Returns deposit address by supernode safe address.
  * 
  * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
- * @param   {String}    supernodeAddress
+ * @param   {String}    safeAddress
  * @param   {function}	cb( err, depositAddress ) callback function
  *                      If address is invalid, then returns err "invalid address".
  *                      If can not find the address, then returns err "depositAddress not found".
  */
-function getDepositAddressBySupernode(conn, supernodeAddress, cb){
+function getDepositAddressBySafeAddress(conn, safeAddress, cb){
+    var conn = conn || db;
+    if(!validationUtils.isNonemptyString(safeAddress))
+        return cb("param safeAddress is null or empty string");
+    if(!validationUtils.isValidAddress(safeAddress))
+        return cb("param safeAddress is not a valid address");
+    const arrDefinition = [
+        'or', 
+        [
+            ['address', constants.FOUNDATION_SAFE_ADDRESS],
+            ['address', safeAddress],
+        ]
+    ];
+    const depositAddress = objectHash.getChash160(arrDefinition);
+    conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
+        function(rows) {
+            if (rows.length !== 1 )
+                return cb("deposit Address is not found when getDepositAddressBySafeAddress " + safeAddress);
+            cb(null, depositAddress);
+    });
+}
+
+/**
+ * Returns deposit address by supernode address.
+ * 
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {String}    supernodeAddress
+ * @param   {function}	cb( err, deposit_address ) callback function
+ *                      If depositAddress is invalid, then returns err "invalid address".
+ *                      If can not find the address, then returns err "deposit address not found".
+ */
+function getDepositAddressBySupernodeAddress(conn, supernodeAddress, cb){
     var conn = conn || db;
     if(!validationUtils.isNonemptyString(supernodeAddress))
         return cb("param supernodeAddress is null or empty string");
     if(!validationUtils.isValidAddress(supernodeAddress))
         return cb("param supernodeAddress is not a valid address");
-    const arrDefinition = [
-        'or', 
-        [
-            ['address', constants.FOUNDATION_SAFE_ADDRESS],
-            ['address', supernodeAddress],
-        ]
-    ];
-    const depositAddress = objectHash.getChash160(arrDefinition)
-    conn.query("SELECT definition FROM shared_addresses WHERE shared_address = ?", [depositAddress], 
+
+    conn.query("SELECT deposit_address FROM supernode WHERE address = ?", [supernodeAddress], 
         function(rows) {
             if (rows.length !== 1 )
-                return cb("depositAddress is not found");
-            cb(null, depositAddress);
+                return cb("deposit address is not found when getDepositAddressBySupernodeAddress " + supernodeAddress);
+            cb(null, rows[0].deposit_address);
     });
 }
 
@@ -199,7 +223,8 @@ function createDepositAddress(my_address, callback) {
 exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
 exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
-exports.getDepositAddressBySupernode = getDepositAddressBySupernode;
+exports.getDepositAddressBySupernodeAddress = getDepositAddressBySupernodeAddress;
+exports.getDepositAddressBySafeAddress = getDepositAddressBySafeAddress;
 exports.getSupernodeByDepositAddress = getSupernodeByDepositAddress;
 
 exports.createDepositAddress = createDepositAddress;

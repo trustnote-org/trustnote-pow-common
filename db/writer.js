@@ -502,6 +502,8 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 									[shareAddress, signerInfo.address, signing_path, signerInfo.member_signing_path, signerInfo.device_address]);
 							}
 							// deposit add insert supernode table
+							var result = deposit.isDepositDefinition(arrDefinition);
+							console.log("aaaaaaaaaaaaaa:" + result + "," + JSON.stringify(arrDefinition));
 							if(deposit.isDepositDefinition(arrDefinition)){
 								if (objUnit.authors.length !== 1)
 									throw Error("The number of the author of the first unit to pay for the deposit address must be 1");
