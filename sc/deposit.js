@@ -179,12 +179,6 @@ function getSupernodeByDepositAddress(conn, depositAddress, cb){
  * @param {Function} callback - callback(deposit_address)
  */
 function createDepositAddress(my_address, callback) {
-	var walletDefinedByAddresses = require('../wallet/wallet_defined_by_addresses.js');
-	var device = require('../wallet/device.js');
-	
-
-	var myDeviceAddresses = device.getMyDeviceAddress();
-
 	var arrDefinition = [
 		'or', 
 		[
@@ -193,21 +187,13 @@ function createDepositAddress(my_address, callback) {
 		]
 	];
 	
-	var assocSignersByPath={
-		'r.0.0': {
-			address: constants.FOUNDATION_ADDRESS,
-			member_signing_path: 'r',
-			device_address: constants.FOUNDATION_DEVICE_ADDRESS
-		},
-		'r.1.0': {
-			address: my_address,
-			member_signing_path: 'r',
-			device_address: myDeviceAddresses
-		},
-	};
 	var shared_address = objectHash.getChash160(arrDefinition)
 
-	walletDefinedByAddresses.handleNewSharedAddress({address: shared_address, definition: arrDefinition, signers: assocSignersByPath}, callback)
+	if(isDepositDefinition(arrDefinition)){
+        return callback(null, shared_address)
+    } else {
+        throw Error(JSON.stringify(arrDefinition) + ' is not a valid deposit definiton')
+    }
 }
 
 exports.isDepositDefinition = isDepositDefinition;
