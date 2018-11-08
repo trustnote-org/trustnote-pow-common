@@ -1188,7 +1188,7 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 					}
 					else
 					{
-						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits` );
+						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits, oData = ${ JSON.stringify( oData ) }` );
 					}
 				}
 				else
