@@ -417,6 +417,8 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
+	console.log( `>***< will start mining with inputs : ${ JSON.stringify( oInput ) }` );
+
 	if ( _bBrowser && ! _bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
@@ -433,7 +435,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMiningWithInputs with invalid oInput.firstTrustMEBall' );
 	}
-	if ( 'number' !== typeof oInput.bits || oInput.bits <= 0 )
+	if ( 'number' !== typeof oInput.bits || oInput.bits < 0 )
 	{
 		throw new Error( 'call startMiningWithInputs with invalid oInput.bits' );
 	}
@@ -522,7 +524,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 			null,
 			{
 				round		: oInput.roundIndex,
-				selfBits		: oInput.bits,
+				selfBits	: oInput.bits,
 				publicSeed	: oInput.publicSeed,
 				nonce		: _generateRandomInteger( 10000, 200000 ),
 				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
@@ -1163,6 +1165,7 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			dblDeposit	: dblDeposit,
 			uRoundIndex	: uRoundIndex,
 		};
+		console.log( `>***< will call _pow_miner.calculateNextWorkRequiredWithDeposit with inputs : ${ JSON.stringify( oInputParameters ) }` );
 
 		//
 		//	calculate next bits
@@ -1176,6 +1179,8 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			uRoundIndex,
 			function( err, oData )
 			{
+				console.log( `>***< got err: ${ JSON.stringify( err ) }, oData: ${ JSON.stringify( oData ) } from _pow_miner.calculateNextWorkRequiredWithDeposit.` );
+
 				//
 				//	oData
 				//	{ bits : uNextBits, shiftByDeposit : 0, shiftByRoundIndex : 0 }
