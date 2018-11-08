@@ -1010,7 +1010,7 @@ function calculateBitsValueByCycleIndex( oConn, uCycleIndex, pfnCallback )
 					}
 					else
 					{
-						pfnCallback( `calculateNextWorkRequired callback :: invalid value .bits` );
+						pfnCallback( `calculateNextWorkRequired callback :: invalid value .bits, oData = ${ JSON.stringify( oData ) }` );
 					}
 				}
 				else
