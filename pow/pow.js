@@ -1156,6 +1156,14 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			return pfnCallback( err );
 		}
 
+		let oInputParameters	= {
+			uAverageBits	: uAverageBits,
+			uTimeUsed	: uTimeUsed,
+			uTimeStandard	: uTimeStandard,
+			dblDeposit	: dblDeposit,
+			uRoundIndex	: uRoundIndex,
+		};
+
 		//
 		//	calculate next bits
 		//
@@ -1182,18 +1190,18 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 				{
 					if ( oData.hasOwnProperty( 'bits' ) &&
 						'number' === typeof oData.bits &&
-						oData.bits > 0 )
+						oData.bits >= 0 )
 					{
 						pfnCallback( null, oData.bits, oData.shiftByDeposit, oData.shiftByRoundIndex );
 					}
 					else
 					{
-						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits, oData = ${ JSON.stringify( oData ) }` );
+						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits, oInputParameters = ${ JSON.stringify( oInputParameters ) }, oData = ${ JSON.stringify( oData ) }` );
 					}
 				}
 				else
 				{
-					pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid oData object` );
+					pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid oData object, oInputParameters = ${ JSON.stringify( oInputParameters ) }` );
 				}
 			}
 		);
