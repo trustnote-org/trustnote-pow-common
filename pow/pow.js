@@ -417,6 +417,8 @@ function obtainMiningInput( oConn, uRoundIndex, pfnCallback )
  */
 function startMiningWithInputs( oInput, pfnCallback )
 {
+	console.log( `>***< will start mining with inputs : ${ JSON.stringify( oInput ) }` );
+
 	if ( _bBrowser && ! _bWallet )
 	{
 		throw new Error( 'I am not be able to run in a Web Browser.' );
@@ -433,7 +435,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 	{
 		throw new Error( 'call startMiningWithInputs with invalid oInput.firstTrustMEBall' );
 	}
-	if ( 'number' !== typeof oInput.bits || oInput.bits <= 0 )
+	if ( 'number' !== typeof oInput.bits || oInput.bits < 0 )
 	{
 		throw new Error( 'call startMiningWithInputs with invalid oInput.bits' );
 	}
@@ -522,7 +524,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 			null,
 			{
 				round		: oInput.roundIndex,
-				selfBits		: oInput.bits,
+				selfBits	: oInput.bits,
 				publicSeed	: oInput.publicSeed,
 				nonce		: _generateRandomInteger( 10000, 200000 ),
 				hash		: _crypto.createHash( 'sha256' ).update( String( Date.now() ), 'utf8' ).digest( 'hex' )
@@ -1010,7 +1012,7 @@ function calculateBitsValueByCycleIndex( oConn, uCycleIndex, pfnCallback )
 					}
 					else
 					{
-						pfnCallback( `calculateNextWorkRequired callback :: invalid value .bits` );
+						pfnCallback( `calculateNextWorkRequired callback :: invalid value .bits, oData = ${ JSON.stringify( oData ) }` );
 					}
 				}
 				else
@@ -1156,6 +1158,15 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			return pfnCallback( err );
 		}
 
+		let oInputParameters	= {
+			uAverageBits	: uAverageBits,
+			uTimeUsed	: uTimeUsed,
+			uTimeStandard	: uTimeStandard,
+			dblDeposit	: dblDeposit,
+			uRoundIndex	: uRoundIndex,
+		};
+		console.log( `>***< will call _pow_miner.calculateNextWorkRequiredWithDeposit with inputs : ${ JSON.stringify( oInputParameters ) }` );
+
 		//
 		//	calculate next bits
 		//
@@ -1168,6 +1179,8 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			uRoundIndex,
 			function( err, oData )
 			{
+				console.log( `>***< got err: ${ JSON.stringify( err ) }, oData: ${ JSON.stringify( oData ) } from _pow_miner.calculateNextWorkRequiredWithDeposit.` );
+
 				//
 				//	oData
 				//	{ bits : uNextBits, shiftByDeposit : 0, shiftByRoundIndex : 0 }
@@ -1182,18 +1195,18 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 				{
 					if ( oData.hasOwnProperty( 'bits' ) &&
 						'number' === typeof oData.bits &&
-						oData.bits > 0 )
+						oData.bits >= 0 )
 					{
 						pfnCallback( null, oData.bits, oData.shiftByDeposit, oData.shiftByRoundIndex );
 					}
 					else
 					{
-						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits` );
+						pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid value .bits, oInputParameters = ${ JSON.stringify( oInputParameters ) }, oData = ${ JSON.stringify( oData ) }` );
 					}
 				}
 				else
 				{
-					pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid oData object` );
+					pfnCallback( `calculateNextWorkRequiredWithDeposit callback :: invalid oData object, oInputParameters = ${ JSON.stringify( oInputParameters ) }` );
 				}
 			}
 		);
