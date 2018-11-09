@@ -811,9 +811,6 @@ function composeJoint(params){
 					if (err)
 						return handleError(err);
 					objUnit.unit = objectHash.getUnitHash(objUnit);
-					console.log("9999999999999:" + objUnit.unit);
-					console.log("9999999999999:" + JSON.stringify(objUnit));
-					console.log("9999999999999:" + JSON.stringify(params));
 					if (bGenesis)
 						objJoint.ball = objectHash.getBallHash(objUnit.unit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
