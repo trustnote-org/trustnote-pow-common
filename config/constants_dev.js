@@ -74,8 +74,12 @@ exports.POW_TYPE_COIN_BASE	= 3;
 
 exports.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH = 1;
 exports.COUNT_CYCLES_FOR_DIFFICULTY_DURATION = 17;
+
 // SUPERNODE can only spend deposit balance after such rounds 
-exports.COUNT_ROUNDS_FOR_SPENDABLE_DEPOST_BALANCE = 1000;
+exports.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT = 5;
+
+// FOUNDATION safe address can take over bad supernode deposit after such rounds;
+exports.COUNT_ROUNDS_FOR_FOUNDATION_SPEND_DEPOSIT = 5;
 
 // average time consumimg per each round
 exports.DURATION_PER_ROUND = 150;
