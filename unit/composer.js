@@ -400,10 +400,10 @@ function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 }
 
 // pow add Coinbase joint
-function composeCoinbaseJoint(from_address, round_index, coinbase_amount, signer, callbacks){
+function composeCoinbaseJoint(from_address, coinbase_address, round_index, coinbase_amount, signer, callbacks){
 	composeJoint({
 		paying_addresses: [from_address],
-		outputs: [{address: from_address, amount: 0}],
+		outputs: [{address: coinbase_address, amount: 0}],
 		//inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
 		inputs: [{type: "coinbase", amount: coinbase_amount}],
 		round_index: round_index,
