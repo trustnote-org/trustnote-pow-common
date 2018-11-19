@@ -113,6 +113,28 @@ function getUnitHash(objUnit) {
 	return getBase64Hash(objStrippedUnit);
 }
 
+function getProposalUnitHash(objUnit) {
+	if (objUnit.content_hash) // already stripped
+		return getBase64Hash(getNakedUnit(objUnit));
+	var objStrippedUnit = {
+		content_hash: getUnitContentHash(objUnit),
+		version: objUnit.version,
+		alt: objUnit.alt,
+	};
+	// pow del
+	// if (objUnit.witness_list_unit)
+	// 	objStrippedUnit.witness_list_unit = objUnit.witness_list_unit;
+	// else
+	// 	objStrippedUnit.witnesses = objUnit.witnesses;
+	if (objUnit.parent_units){
+		objStrippedUnit.parent_units = objUnit.parent_units;
+		objStrippedUnit.last_ball = objUnit.last_ball;
+		objStrippedUnit.last_ball_unit = objUnit.last_ball_unit;
+	}
+	return getBase64Hash(objStrippedUnit);
+}
+
+
 function getUnitHashToSign(objUnit) {
 	var objNakedUnit = getNakedUnit(objUnit);
 	for (var i=0; i<objNakedUnit.authors.length; i++)
@@ -171,6 +193,8 @@ exports.getBase64Hash = getBase64Hash;
 
 exports.getUnitContentHash = getUnitContentHash;
 exports.getUnitHash = getUnitHash;
+exports.getProposalUnitHash = getProposalUnitHash;
+
 exports.getUnitHashToSign = getUnitHashToSign;
 exports.getBallHash = getBallHash;
 exports.getJointHash = getJointHash;
