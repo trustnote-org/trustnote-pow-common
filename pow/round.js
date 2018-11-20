@@ -551,7 +551,7 @@ function getLastCoinbaseUnitRoundIndex(conn, address, cb){
         return cb("param address is not a valid address");
         conn.query(
         "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
-        WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
+        WHERE is_stable=1 AND sequence='good' AND pow_type=? \n\
          AND address=? ORDER BY round_index DESC LIMIT 1", 
          [constants.POW_TYPE_COIN_BASE, address],
         function(rows){
