@@ -95,7 +95,7 @@ function getDurationByCycleId(conn, cycleId, callback){
 		"SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
 		WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
 		    AND sequence='good' AND is_stable=1 AND round_index=?",
-		['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
+		['JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET', constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
 		function(rowsMin){
 			if (rowsMin.length !== 1)
 				throw Error("Can not find min timestamp of cycle " + cycleId);
@@ -105,7 +105,7 @@ function getDurationByCycleId(conn, cycleId, callback){
 				"SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
 				WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
 				    AND sequence='good' AND is_stable=1 AND round_index=?",
-				['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
+				['JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET', constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
 				function(rowsMax){
 					if (rowsMax.length !== 1)
 						throw Error("Can not find max timestamp of cycle " + cycleId);
