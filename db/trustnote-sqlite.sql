@@ -5,7 +5,7 @@ CREATE TABLE units (
 	alt VARCHAR(3) NOT NULL DEFAULT '1',
 	round_index BIGINT NULL,
 	pow_type INT Null --  1: pow-equhash 2: trustme 3: coin base 
-	last_ball_unit CHAR(44) NULL,
+	phase INT NULL,
 	content_hash CHAR(44) NULL,
 	headers_commission INT NOT NULL,
 	payload_commission INT NOT NULL,
