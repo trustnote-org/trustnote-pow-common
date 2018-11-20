@@ -30,10 +30,10 @@ _db.takeConnectionFromPool( function( oNewConn )
 			pfnNext =>
 			{
 				let uCycleIndex	= i;
-				let dblDeposit	= i * 10;
-				let uRoundIndex	= i * 100000;
+				let dblDeposit	= 0;
+				let uRoundIndex	= i;
 
-				_pow.calculateBitsValueByCycleIndexWithDeposit
+				_pow.calculateBitsValueByRoundIndexWithDeposit
 				(
 					oNewConn,
 					uRoundIndex,
