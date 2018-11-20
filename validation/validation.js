@@ -1527,7 +1527,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 							return cb(err);
 						depositBalance = balance;
 						cb();
-					   });
+					   }); 
 				});
 			},
 			function(cb){
@@ -2050,37 +2050,37 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 								var supernodes = objUnit.authors.filter( function (author) { return author.address != owner_address });
 								var coAuthorAddr = supernodes[0].address ;
 								// Check owner address is kind of deposit address  
-								despoit.getSupernodeByDepositAddress(conn, owner_address, function(err, supernodeinfo){
+								deposit.getSupernodeByDepositAddress(conn, owner_address, function(err, supernodeinfo){
 									if(err){
 										// no correspont supernode which indicates owner_address is not deposit address
 										return cb();
 									}
 									// owner_address is deposit address
-									deposit.hasInvalidUnitsFromHistory(conn, supernodeinfo.address, function (err, isInvalid){
+									deposit.hasInvalidUnitsFromHistory(conn, supernodeinfo[0].address, function (err, isInvalid){
 										if(err) //normal tranaction
 											return cb(err);
 										
-										round.getLastCoinbaseUnitRoundIndex(conn, supernodeinfo.address, function(err, lastCoinBaseRound){
+										round.getLastCoinbaseUnitRoundIndex(conn, supernodeinfo[0].address, function(err, lastCoinBaseRound){
 											if(err)
 												return cb(err);
 
 											round.getCurrentRoundIndex(conn, function(latestRoundIndex){
 												if (constants.FOUNDATION_SAFE_ADDRESS === coAuthorAddr){ // foundation spend deposit condition
 													if(!isInvalid) // supernode is good condition
-														return cb("supernode [" + supernodeinfo.address + "] don not submit bad joints, Foundation can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo[0].address + "] don not submit bad joints, Foundation can not spend its deposit balance ");
 													if(lastCoinBaseRound === 0 ) // never participate in minning and no coinbase  record
-														return cb("supernode [" + supernodeinfo.address + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo[0].address + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
 													// check if delay n round to spend 
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_FOUNDATION_SPEND_DEPOSIT){
 														return cb("Foundation safe address can not spend deposit contract balance before ")
 													}
 													return cb(); // OK condition
 												}
-												else if(coAuthorAddr === supernodeinfo.safe_address){ // condition for supernode spend the deposit balance
+												else if(coAuthorAddr === supernodeinfo[0].safe_address){ // condition for supernode spend the deposit balance
 													if(lastCoinBaseRound === 0 ) // not mine at all, take it anytime
 														return cb();
 													if(isInvalid)
-														return cb("supernode [" + supernodeinfo.address + "] submit bad joints, can not spend its deposit balance ");
+														return cb("supernode [" + supernodeinfo[0].address + "] submit bad joints, can not spend its deposit balance ");
 													
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT){
 														return cb("supernode can not spend deposit contract balance before round " + (lastCoinBaseRound + constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT));
