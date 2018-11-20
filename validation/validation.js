@@ -2046,15 +2046,18 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							 function checkDepositAddressSpend(){
 								if (objUnit.authors.length !== 2)
 									return cb();	
-								
+									
+								console.log("===================Start to check spend deposit balance");
 								var supernodes = objUnit.authors.filter( function (author) { return author.address != owner_address });
 								var coAuthorAddr = supernodes[0].address ;
 								// Check owner address is kind of deposit address  
+								console.log("===================coAuthorAddr: "+ coAuthorAddr +" | owner_address: " +owner_address);
 								deposit.getSupernodeByDepositAddress(conn, owner_address, function(err, supernodeinfo){
 									if(err){
 										// no correspont supernode which indicates owner_address is not deposit address
 										return cb();
 									}
+									console.log("===================Deposit address: " + owner_address + "  supernode address: "+ supernodeinfo[0].address);
 									// owner_address is deposit address
 									deposit.hasInvalidUnitsFromHistory(conn, supernodeinfo[0].address, function (err, isInvalid){
 										if(err) //normal tranaction
@@ -2063,13 +2066,15 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 										round.getLastCoinbaseUnitRoundIndex(conn, supernodeinfo[0].address, function(err, lastCoinBaseRound){
 											if(err)
 												return cb(err);
-
+											console.log("===================got last coin base round is : "+ lastCoinBaseRound);
 											round.getCurrentRoundIndex(conn, function(latestRoundIndex){
 												if (constants.FOUNDATION_SAFE_ADDRESS === coAuthorAddr){ // foundation spend deposit condition
 													if(!isInvalid) // supernode is good condition
 														return cb("supernode [" + supernodeinfo[0].address + "] don not submit bad joints, Foundation can not spend its deposit balance ");
 													if(lastCoinBaseRound === 0 ) // never participate in minning and no coinbase  record
 														return cb("supernode [" + supernodeinfo[0].address + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
+													
+													console.log("===================got current  round is : "+ latestRoundIndex);
 													// check if delay n round to spend 
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_FOUNDATION_SPEND_DEPOSIT){
 														return cb("Foundation safe address can not spend deposit contract balance before ")
@@ -2082,9 +2087,12 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 													if(isInvalid)
 														return cb("supernode [" + supernodeinfo[0].address + "] submit bad joints, can not spend its deposit balance ");
 													
+													console.log("===================got current  round is : "+ latestRoundIndex);
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT){
 														return cb("supernode can not spend deposit contract balance before round " + (lastCoinBaseRound + constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT));
 													}
+
+													console.log("===================OK to spend deposit balance");
 													return cb();  // OK condition
 												}
 												return cb("unknown user:" + coAuthorAddr +" try to spend deposit :" + owner_address );
