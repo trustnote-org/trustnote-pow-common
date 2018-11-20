@@ -493,18 +493,18 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 							FROM units JOIN unit_authors using (unit) WHERE unit=?", 
 							[start_unit],
 							function(rows){
-								if (rows.length !== 1)
-									throw Error("findMinMcWitnessedLevel: not 1 row");
-								var row = rows[0];
-								//if (row.count > 0 && row.witnessed_level < min_mc_wl)
-								if (row.pow_type === constants.POW_TYPE_TRUSTME && arrCollectedWitnesses.indexOf(row.address) === -1 ){
-									if(row.witnessed_level < min_mc_wl)
-										min_mc_wl = row.witnessed_level;
-									arrCollectedWitnesses.push(row.address);
-									count++;
+								if (rows.length === 0)
+									throw Error("findMinMcWitnessedLevel: no best parent unit");
+								if (rows.length === 1){  //
+									var row = rows[0];
+									if (row.pow_type === constants.POW_TYPE_TRUSTME && arrCollectedWitnesses.indexOf(row.address) === -1 ){
+										if(row.witnessed_level < min_mc_wl)
+											min_mc_wl = row.witnessed_level;
+										arrCollectedWitnesses.push(row.address);
+										count++;
+									}
 								}
-								//count += row.count;  // this is a bug, should count only unique witnesses
-								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(row.best_parent_unit) : handleMinMcWl(min_mc_wl);
+								(count < constants.MAJORITY_OF_WITNESSES) ? goUp(rows[0].best_parent_unit) : handleMinMcWl(min_mc_wl);
 							}
 						);
 					}
