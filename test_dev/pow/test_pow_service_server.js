@@ -6,6 +6,15 @@ const _pow_client	= require( '../../pow/pow_service.js' );
  */
 const _oOptions		= {
 	port		: 1302,
+	onStart		: ( err, oWsServer ) =>
+	{
+		if ( err )
+		{
+			return console.error( err );
+		}
+
+		console.log( `TEST >> socket server started:${ oWsServer }.` );
+	},
 	onConnection	: ( err, oWs ) =>
 	{
 		if ( err )
