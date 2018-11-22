@@ -9,6 +9,17 @@ exports.TOTAL_WHITEBYTES	= 5e14;
 exports.MAJORITY_OF_WITNESSES	= (exports.COUNT_WITNESSES % 2 === 0) ? (exports.COUNT_WITNESSES / 2 + 1) : Math.ceil(exports.COUNT_WITNESSES / 2);
 exports.COUNT_MC_BALLS_FOR_PAID_WITNESSING = 100;
 
+// byzantine
+exports.TOTAL_COORDINATORS = 10;
+exports.TOTAL_BYZANTINE = (exports.TOTAL_COORDINATORS - 1) / 3;
+exports.BYZANTINE_GST = 3000;
+exports.BYZANTINE_DELTA = 500;
+exports.TRUSTME_INTERVAL = 15000;
+exports.TRUSTME_TIMESTAMP_TOLERANT = 200000;
+exports.BYZANTINE_PROPOSE   = 1;
+exports.BYZANTINE_PREVOTE   = 2;
+exports.BYZANTINE_PRECOMMIT = 3;
+
 exports.version = '1.0';
 exports.alt = '1';
 
