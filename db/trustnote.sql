@@ -19,6 +19,7 @@ CREATE TABLE units (
 	is_stable TINYINT NOT NULL DEFAULT 0,
 	sequence ENUM('good','temp-bad','final-bad') NOT NULL DEFAULT 'good',
 	best_parent_unit CHAR(44) BINARY NULL,
+	coordinators TEXT NULL,
 	KEY byMainChain(is_on_main_chain),
 	KEY byMcIndex(main_chain_index),
 	KEY byLimci(latest_included_mc_index),
