@@ -517,7 +517,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 						[unit, unit, unit],
 						function(address_rows){
 							var arrAddresses = address_rows.map(function(row){ return row.address; });
-							conn.query(
+							db.query(
 								"SELECT shared_address, definition FROM shared_addresses WHERE shared_address IN(?)", 
 								[arrAddresses],
 								function(shared_addresses){									
@@ -529,7 +529,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 										function(shared_address, callback1){
 											var arrDefinition = JSON.parse(shared_address.definition);
 											var assocSignersByPath = {};
-											conn.query(
+											db.query(
 												"SELECT shared_address, address, signing_path, member_signing_path, device_address  \n\
 												FROM shared_address_signing_paths WHERE shared_address IN(?)", 
 												[shared_address.shared_address],
