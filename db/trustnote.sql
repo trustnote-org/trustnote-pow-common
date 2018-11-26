@@ -19,7 +19,6 @@ CREATE TABLE units (
 	is_stable TINYINT NOT NULL DEFAULT 0,
 	sequence ENUM('good','temp-bad','final-bad') NOT NULL DEFAULT 'good',
 	best_parent_unit CHAR(44) BINARY NULL,
-	coordinators TEXT NULL,
 	KEY byMainChain(is_on_main_chain),
 	KEY byMcIndex(main_chain_index),
 	KEY byLimci(latest_included_mc_index),
@@ -102,6 +101,18 @@ CREATE TABLE authentifiers (
 	FOREIGN KEY byUnit(unit) REFERENCES units(unit),
 	CONSTRAINT authentifiersByAddress FOREIGN KEY byAddress(address) REFERENCES addresses(address)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- store trust me co sign result
+CREATE TABLE coordinator_authentifiers (
+	unit CHAR(44) NOT NULL,
+	address CHAR(32) NOT NULL,
+	path VARCHAR(40) NOT NULL,
+	authentifier VARCHAR(4096) NOT NULL,
+	PRIMARY KEY (unit, address, path),
+	FOREIGN KEY (unit) REFERENCES units(unit),
+	CONSTRAINT authentifiersByAddress FOREIGN KEY (address) REFERENCES addresses(address)
+);
+CREATE INDEX authentifiersIndexByAddress ON coordinator_authentifiers(address);
 
 --  new table to store round 
 CREATE TABLE round(
