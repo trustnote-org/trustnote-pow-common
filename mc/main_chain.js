@@ -449,16 +449,11 @@ function createListOfPrivateMcUnits(start_unit, min_level, handleList){
 function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handleResult){
 	if (storage.isGenesisUnit(earlier_unit))
 		return handleResult(true);
-	// hack to workaround past validation error
-	if (earlier_unit === 'LGFzduLJNQNzEqJqUXdkXr58wDYx77V8WurDF3+GIws=' && arrLaterUnits.join(',') === '6O4t3j8kW0/Lo7n2nuS8ITDv2UbOhlL9fF1M6j/PrJ4=')
-		return handleResult(true);
 	storage.readPropsOfUnits(conn, earlier_unit, arrLaterUnits, function(objEarlierUnitProps, arrLaterUnitProps){
 		if (objEarlierUnitProps.is_free === 1)
 			return handleResult(false);
 		var max_later_limci = Math.max.apply(
 			null, arrLaterUnitProps.map(function(objLaterUnitProps){ return objLaterUnitProps.latest_included_mc_index; }));
-		// pow modi
-		//readBestParentAndItsWitnesses(conn, earlier_unit, function(best_parent_unit, arrWitnesses){
 		readBestParent(conn, earlier_unit, function(best_parent_unit){
 			conn.query("SELECT unit, is_on_main_chain, main_chain_index, level FROM units WHERE best_parent_unit=?", [best_parent_unit], function(rows){
 				if (rows.length === 0)
@@ -473,9 +468,6 @@ function determineIfStableInLaterUnits(conn, earlier_unit, arrLaterUnits, handle
 				var first_unstable_mc_index = arrMcRows[0].main_chain_index;
 				var first_unstable_mc_level = arrMcRows[0].level;
 				var arrAltBranchRootUnits = arrAltRows.map(function(row){ return row.unit; });
-				//console.log("first_unstable_mc_index", first_unstable_mc_index);
-				//console.log("first_unstable_mc_level", first_unstable_mc_level);
-				//console.log("alt", arrAltBranchRootUnits);
 				
 				function findMinMcWitnessedLevel(handleMinMcWl){
 					var min_mc_wl = Number.MAX_VALUE;
@@ -781,10 +773,11 @@ function markMcIndexStable(conn, mci, onDone){
 							if (rowTrustME.length === 0)
 								return cb(); // next op
 							eventBus.emit("launch_pow", round_index);
+							round.removeAssocCachedRoundInfo(round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
 								[rowTrustME[0].witnessed_level, round_index], 
-								function(){
+								function(){									
 									cb();
 								}
 							);
@@ -821,6 +814,7 @@ function markMcIndexStable(conn, mci, onDone){
 											"INSERT INTO round (round_index, min_wl, seed) VALUES (?, null, ?)", 
 											[round_index+1, newSeed], 
 											function(){
+												round.forwardRound(round_index+1);
 												cb1();
 											}
 										);

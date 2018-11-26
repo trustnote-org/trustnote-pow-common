@@ -6,26 +6,7 @@ var conf = require("../config/conf.js");
 var storage = require("../db/storage.js");
 var main_chain = require("../mc/main_chain.js");
 
-// pow modi
-//function pickParentUnits(conn, arrWitnesses, onDone){
 function pickParentUnits(conn, onDone){
-	// don't exclude units derived from unwitnessed potentially bad units! It is not their blame and can cause a split.
-	
-	// test creating bad units
-	//var cond = bDeep ? "is_on_main_chain=1" : "is_free=0 AND main_chain_index=1420";
-	//var order_and_limit = bDeep ? "ORDER BY main_chain_index DESC LIMIT 1" : "ORDER BY unit LIMIT 1";
-	// POW modi:
-	// conn.query(
-	// 	"SELECT \n\
-	// 		unit, version, alt, ( \n\
-	// 			SELECT COUNT(*) \n\
-	// 			FROM unit_witnesses \n\
-	// 			WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-	// 		) AS count_matching_witnesses \n\
-	// 	FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
-	// 	LEFT JOIN archived_joints USING(unit) \n\
-	// 	WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
-	//  [arrWitnesses, constants.MAX_PARENTS_PER_UNIT], 
 	conn.query(
 		"SELECT \n\
 			unit, version, alt \n\
@@ -37,36 +18,55 @@ function pickParentUnits(conn, onDone){
 		function(rows){
 			if (rows.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
 				throw Error('wrong network');
-			//var count_required_matches = constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS;
-			// we need at least one compatible parent, otherwise go deep
-			//if (rows.filter(function(row){ return (row.count_matching_witnesses >= count_required_matches); }).length === 0)
 			if (rows.length === 0)
-				//return pickDeepParentUnits(conn, arrWitnesses, onDone);
 				return pickDeepParentUnits(conn, onDone);
 			onDone(null, rows.map(function(row){ return row.unit; }));
+		}
+	);
+}
+function pickTrustParentUnits(conn, onDone){
+	// trustme unit's parent must include the last trustme unit
+	var parentUnits = [];
+	conn.query(
+		"SELECT \n\
+			unit, version, alt \n\
+		FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
+		LEFT JOIN archived_joints USING(unit) \n\
+		WHERE +sequence='good' AND pow_type=? AND archived_joints.unit IS NULL ORDER BY main_chain_index DESC LIMIT 1", 
+		[constants.POW_TYPE_TRUSTME], 
+		function(rowsTrustMe){
+			if (rowsTrustMe.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
+				throw Error('wrong network');
+			if(rowsTrustMe.length === 0){  // if there is no trustme unit，then select genesis unit as parent
+				return onDone([constants.GENESIS_UNIT]);
+			}
+			if(rowsTrustMe.length !== 1){  
+				throw Error('error trustme unit');
+			}
+			parentUnits.push(rowsTrustMe[0].unit);
+			conn.query(
+				"SELECT \n\
+					unit, version, alt \n\
+				FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
+				LEFT JOIN archived_joints USING(unit) \n\
+				WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
+				// exclude potential parents that were archived and then received again
+				[ constants.MAX_PARENTS_PER_UNIT-1], 
+				function(rows){
+					if (rows.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
+						throw Error('wrong network');
+					if (rows.length > 0)
+						rows.map(function(row){ parentUnits.push(row.unit); });
+					onDone(null, parentUnits);
+				}
+			);
 		}
 	);
 }
 
 // if we failed to find compatible parents among free units. 
 // (This may be the case if an attacker floods the network trying to shift the witness list)
-// pow modi
-//function pickDeepParentUnits(conn, arrWitnesses, onDone){
 function pickDeepParentUnits(conn, onDone){
-	// fixed: an attacker could cover all free compatible units with his own incompatible ones, then those that were not on MC will be never included
-	//var cond = bDeep ? "is_on_main_chain=1" : "is_free=1";
-	
-	// conn.query(
-	// 	"SELECT unit \n\
-	// 	FROM units \n\
-	// 	WHERE +sequence='good' \n\
-	// 		AND ( \n\
-	// 			SELECT COUNT(*) \n\
-	// 			FROM unit_witnesses \n\
-	// 			WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-	// 		)>=? \n\
-	// 	ORDER BY main_chain_index DESC LIMIT 1", 
-	//  [arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT unit \n\
 		FROM units \n\
@@ -82,16 +82,6 @@ function pickDeepParentUnits(conn, onDone){
 }
 
 function findLastStableMcBall(conn, onDone){
-	//POW modi
-	// conn.query(
-	// 	"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
-	// 	WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND ( \n\
-	// 		SELECT COUNT(*) \n\
-	// 		FROM unit_witnesses \n\
-	// 		WHERE unit_witnesses.unit IN(units.unit, units.witness_list_unit) AND address IN(?) \n\
-	// 	)>=? \n\
-	// 	ORDER BY main_chain_index DESC LIMIT 1", 
-	//  [arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
 		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' \n\
@@ -105,8 +95,20 @@ function findLastStableMcBall(conn, onDone){
 	);
 }
 
-// pow modi
-//function adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrParentUnits, arrWitnesses, handleAdjustedLastStableUnit){
+function findLastTrustBall(conn, onDone){
+	conn.query(
+		"SELECT ball, unit, main_chain_index FROM units JOIN balls USING(unit) \n\
+		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? \n\
+		ORDER BY main_chain_index DESC LIMIT 1", 
+		[constants.POW_TYPE_TRUSTME], 
+		function(rows){
+			if (rows.length === 0)
+				return onDone("failed to find last trust ball");
+			onDone(null, rows[0].ball, rows[0].unit, rows[0].main_chain_index);
+		}
+	);
+}
+
 function adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrParentUnits, handleAdjustedLastStableUnit){
 	main_chain.determineIfStableInLaterUnits(conn, last_stable_mc_ball_unit, arrParentUnits, function(bStable){
 		if (bStable){
@@ -120,11 +122,9 @@ function adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrPar
 		}
 		console.log('will adjust last stable ball because '+last_stable_mc_ball_unit+' is not stable in view of parents '+arrParentUnits.join(', '));
 		if (arrParentUnits.length > 1){ // select only one parent
-			//pickDeepParentUnits(conn, arrWitnesses, function(err, arrAdjustedParentUnits){
 			pickDeepParentUnits(conn, function(err, arrAdjustedParentUnits){
 				if (err)
 					throw Error("pickDeepParentUnits in adjust failed: "+err);
-				//adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrAdjustedParentUnits, arrWitnesses, handleAdjustedLastStableUnit);
 				adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrAdjustedParentUnits, handleAdjustedLastStableUnit);
 			});
 			return;
@@ -132,38 +132,21 @@ function adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrPar
 		storage.readStaticUnitProps(conn, last_stable_mc_ball_unit, function(objUnitProps){
 			if (!objUnitProps.best_parent_unit)
 				throw Error("no best parent of "+last_stable_mc_ball_unit);
-			//adjustLastStableMcBallAndParents(conn, objUnitProps.best_parent_unit, arrParentUnits, arrWitnesses, handleAdjustedLastStableUnit);	
 			adjustLastStableMcBallAndParents(conn, objUnitProps.best_parent_unit, arrParentUnits, handleAdjustedLastStableUnit);
 		});
 	});
 }
 
-// pow modi 
-//function pickParentUnitsAndLastBall(conn, arrWitnesses, onDone){
-	function pickParentUnitsAndLastBall(conn, onDone){
-	//pickParentUnits(conn, arrWitnesses, function(err, arrParentUnits){
-		pickParentUnits(conn, function(err, arrParentUnits){
-		if (err)
-			return onDone(err);
-		//findLastStableMcBall(conn, arrWitnesses, function(err, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
-			findLastStableMcBall(conn, function(err, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
+function pickParentUnitsAndLastBall(conn, onDone){
+	pickParentUnits(conn, function(err, arrParentUnits){
+	if (err)
+		return onDone(err);
+	findLastStableMcBall(conn, function(err, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
 			if (err)
 				return onDone(err);
 			adjustLastStableMcBallAndParents(
-				// conn, last_stable_mc_ball_unit, arrParentUnits, arrWitnesses, 
 				conn, last_stable_mc_ball_unit, arrParentUnits,  
 				function(last_stable_ball, last_stable_unit, last_stable_mci, arrAdjustedParentUnits){
-					// pow modi
-					// storage.findWitnessListUnit(conn, arrWitnesses, last_stable_mci, function(witness_list_unit){
-					// 	var objFakeUnit = {parent_units: arrAdjustedParentUnits};
-					// 	if (witness_list_unit)
-					// 		objFakeUnit.witness_list_unit = witness_list_unit;
-					// 	storage.determineIfHasWitnessListMutationsAlongMc(conn, objFakeUnit, last_stable_unit, arrWitnesses, function(err){
-					// 		if (err)
-					// 			return onDone(err); // if first arg is not array, it is error
-					// 		onDone(null, arrAdjustedParentUnits, last_stable_ball, last_stable_unit, last_stable_mci);
-					// 	});
-					// });
 					onDone(null, arrAdjustedParentUnits, last_stable_ball, last_stable_unit, last_stable_mci);
 				}
 			);
@@ -171,4 +154,17 @@ function adjustLastStableMcBallAndParents(conn, last_stable_mc_ball_unit, arrPar
 	});
 }
 
+function pickTrustParentUnitsAndLastBall(conn, onDone){
+	pickTrustParentUnits(conn, function(err, arrParentUnits){
+	if (err)
+		return onDone(err);
+		findLastTrustBall(conn, function(err, last_trust_ball, last_trust_ball_unit, last_trust_ball_mci){
+			if (err)
+				return onDone(err);
+			onDone(null, arrParentUnits, last_trust_ball, last_trust_ball_unit, last_trust_ball_mci);	
+		});
+	});
+}
+
 exports.pickParentUnitsAndLastBall = pickParentUnitsAndLastBall;
+exports.pickTrustParentUnitsAndLastBall = pickTrustParentUnitsAndLastBall;
