@@ -621,37 +621,19 @@ function readJointWithBall(conn, unit, handleJoint) {
 	});
 }
 
-
-
-function readWitnessList(conn, unit, handleWitnessList){
-	var arrWitnesses = assocCachedUnitWitnesses[unit];
-	if (arrWitnesses)
-		return handleWitnessList(arrWitnesses);
-	conn.query("SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", [unit], function(rows){
-		if (rows.length === 0)
-			throw Error("witness list of unit "+unit+" not found");
-		if (rows.length !== constants.COUNT_WITNESSES)
-			throw Error("wrong number of witnesses in unit "+unit);
-		arrWitnesses = rows.map(function(row){ return row.address; });
-		assocCachedUnitWitnesses[unit] = arrWitnesses;
-		handleWitnessList(arrWitnesses);
-	});
+function getMaxMci(conn, handleResult){
+	var conn = conn || db;
+	conn.query(
+		"SELECT MAX(main_chain_index) FROM units"
+		[],
+		function(rows){
+			IF(rows.length !== 1)
+				throw Error("getMaxMci method can not got one mci  ")
+			handleResult(rows[0].main_chain_index);
+		}
+	);
 }
 
-function readWitnesses(conn, unit, handleWitnessList){
-	var arrWitnesses = assocCachedUnitWitnesses[unit];
-	if (arrWitnesses)
-		return handleWitnessList(arrWitnesses);
-	conn.query("SELECT witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
-		if (rows.length === 0)
-			throw Error("unit "+unit+" not found");
-		var witness_list_unit = rows[0].witness_list_unit;
-		readWitnessList(conn, witness_list_unit ? witness_list_unit : unit, function(arrWitnesses){
-			assocCachedUnitWitnesses[unit] = arrWitnesses;
-			handleWitnessList(arrWitnesses);
-		});
-	});
-}
 
 function determineIfWitnessAddressDefinitionsHaveReferences(conn, arrWitnesses, handleResult){
 	conn.query(
@@ -667,25 +649,6 @@ function determineIfWitnessAddressDefinitionsHaveReferences(conn, arrWitnesses, 
 	);
 }
 
-
-/*
-function readWitnessesOnMcUnit(conn, main_chain_index, handleWitnesses){
-	conn.query( // we read witnesses from MC unit (users can cheat with side-chains)
-		"SELECT address \n\
-		FROM units \n\
-		JOIN unit_witnesses ON(units.unit=unit_witnesses.unit OR units.witness_list_unit=unit_witnesses.unit) \n\
-		WHERE main_chain_index=? AND is_on_main_chain=1", 
-		[main_chain_index],
-		function(witness_rows){
-			if (witness_rows.length === 0)
-				throw "no witness list on MC unit "+main_chain_index;
-			if (witness_rows.length !== constants.COUNT_WITNESSES)
-				throw "wrong number of witnesses on MC unit "+main_chain_index;
-			var arrWitnesses = witness_rows.map(function(witness_row){ return witness_row.address; });
-			handleWitnesses(arrWitnesses);
-		}
-	);
-}*/
 
 
 //	max_mci must be stable
@@ -1509,9 +1472,6 @@ if (!conf.bLight)
 exports.isGenesisUnit = isGenesisUnit;
 exports.isGenesisBall = isGenesisBall;
 
-exports.readWitnesses = readWitnesses;
-exports.readWitnessList = readWitnessList;
-exports.findWitnessListUnit = findWitnessListUnit;
 exports.determineIfWitnessAddressDefinitionsHaveReferences = determineIfWitnessAddressDefinitionsHaveReferences;
 
 exports.readUnitProps = readUnitProps;
@@ -1554,3 +1514,5 @@ exports.forgetUnit = forgetUnit;
 exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
 exports.determinewitnessedLevel = determinewitnessedLevel;
 exports.determineBestParent = determineBestParent;
+exports.getMaxMci = getMaxMci;
+
