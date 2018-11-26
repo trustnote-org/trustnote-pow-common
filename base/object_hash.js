@@ -141,6 +141,11 @@ function getUnitHashToSign(objUnit) {
 		delete objNakedUnit.authors[i].authentifiers;
 	return crypto.createHash("sha256").update(getSourceString(objNakedUnit), "utf8").digest();
 }
+function getProposalHashToSign(objUnit) {
+	var objNakedUnit = getNakedUnit(objUnit);
+	delete objNakedUnit.authors;
+	return crypto.createHash("sha256").update(getSourceString(objNakedUnit), "utf8").digest();
+}
 
 function getBallHash(unit, arrParentBalls, arrSkiplistBalls, bNonserial) {
 	var objBall = {
@@ -196,6 +201,7 @@ exports.getUnitHash = getUnitHash;
 exports.getProposalUnitHash = getProposalUnitHash;
 
 exports.getUnitHashToSign = getUnitHashToSign;
+exports.getProposalHashToSign = getProposalHashToSign;
 exports.getBallHash = getBallHash;
 exports.getJointHash = getJointHash;
 

@@ -1,72 +1,511 @@
 /*jslint node: true */
 "use strict";
 
-//var constants = require('../config/constants.js');
+var constants = require('../config/constants.js');
 //var conf = require('../config/conf.js');
-//var db = require('../db/db.js');
+var db = require('../db/db.js');
 //var async = require('async');
-//var validationUtils = require('../validation/validation_utils.js');
+var validationUtils = require('../validation/validation_utils.js');
+var validation = require('../validation/validation.js');
 var objectHash = require('../base/object_hash.js');
+var eventBus = require('../base/event_bus.js');
+var network = require('../p2p/network.js');
+var composer = require('../unit/composer.js');
+var round = require('../pow/round.js');
+var supernode = require('../wallet/supernode.js');
 
 var MAX_GST_ = 3000;
 var EACH_DELTA = 500;
-var MAX_BYZANTINE_IN_CACHE = 100;
+var MAX_BYZANTINE_IN_CACHE = 10;
 
 // Initialization:
-var H_p           = 0;
-var Phase_p       = 0;   //  current phase number
-var step_p        = "";  // propose,prevote,precommit
-var lockedValue_p = {};
-var lockedRound_p = -1;
-var validValue_p  = {};
-var validRound_p  = -1;
+var h_p           = 0;   // mci
+var p_p           = 0;   // current phase number
+var step_p        = 0;   // 1:propose,2:prevote,3:precommit
+var lockedValue_p = null;
+var lockedPhase_p = -1;
+var validValue_p  = null;
+var validPhase_p  = -1;
+var address_p     = "";
+// temp mci and phase number, used in timeout function
+var h_propose_timeout   = -1;
+var p_propose_timeout   = -1; 
+var h_prevote_timeout   = -1;
+var p_prevote_timeout   = -1; 
+var h_precommit_timeout = -1;
+var p_precommit_timeout = -1; 
 
 var assocByzantinePhase = {};
-var assocDecision = {};
 
+var bTrustMeUnderWay = false;
 
+// init function begin
 
+/**
+ * init byzantine, executes at startup
+ */
+function initByzantine(){
+    db.query("SELECT address FROM my_addresses", [], 
+        function(rowsAddress){
+            if (rowsAddress.length === 0)
+                throw Error("no addresses");
+            if (rowsAddress.length > 1)
+                throw Error("more than 1 address");
+            address_p = rowsAddress[0].address;
+        
+            db.query(
+                "SELECT main_chain_index FROM units \n\
+                WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? \n\
+                ORDER BY main_chain_index DESC LIMIT 1", 
+                [constants.POW_TYPE_TRUSTME], 
+                function(rows){
+                    var hp = 1;     // just after genesis or catchup from fresh start
+                    if (rows.length === 1){  
+                        hp = rows[0].main_chain_index + 1;
+                    }            
+                    startPhase(hp, 0);
+                }
+            );
+        }
+    );
+}
+
+initByzantine();
+
+// init function end
+
+// public function begin
+
+/**
+ * Get round index and a proposer by hp and phase
+ * 
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {Integer}   hp
+ * @param   {Integer}   phase
+ * @param   {function}	callback( err, roundIndex, address ) callback function
+ *                      
+ */
+function getProposer(conn, hp, phase, cb){
+    if(!validationUtils.isPositiveInteger(hp))
+        return cb("param hp is not a positive integer");
+    if(!validationUtils.isNonnegativeInteger(phase))
+        return cb("param phase is not a positive integer");
+    var conn = conn || db;
+    round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
+        round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
+            var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
+            cb(null, witnesses[pIndex], roundIndex);
+        });        
+    });
+}
+
+/**
+ * start a new phase
+ */
+function startPhase(hp, phase){
+    if(!validationUtils.isValidAddress(address_p))
+        throw Error("startPhase address_p is not a valid address");
+    h_p = hp;
+    p_p = phase;
+    step_p = constants.BYZANTINE_PROPOSE;   // propose
+    getProposer(null, h_p, p_p, function(err, proposer, roundIndex){
+        if(err)
+            throw Error("startPhase get proposer err" + err);
+        if(!validationUtils.isValidAddress(proposer))
+            throw Error("startPhase proposer address is not a valid address");
+        if(proposer === address_p){
+            if(validValue_p !== null){
+                pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
+            }
+            else{
+                composer.composeProposalJoint(proposer, roundIndex, h_p, supernode.signerProposal, 
+                    function(err, objJoint){
+                        if(err)
+                            throw Error("startPhase compose proposal joint err" + err);
+                        validation.validateProposalJoint(objJoint, {
+                            ifInvalid: function(err){
+                                throw Error("startPhase my proposer is Invalid:" + err);
+                            },
+                            ifNeedWaiting: function(){
+                                throw Error("startPhase my proposer need waiting?");
+                            },
+                            ifOk: function(){
+                                pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
+                                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                                broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                            }
+                        });                        
+                    }
+                ); 
+            }
+        }
+        else{
+            h_propose_timeout = h_p;
+            p_propose_timeout = p_p;
+            setTimeout(OnTimeoutPropose, getTimeout(p_p));
+        }
+    });
+}
+
+/**
+ *  byzantine gossip message event
+ */
+eventBus.on('byzantine_gossip', function(gossipMessage){
+    switch(gossipMessage.type){
+        case constants.BYZANTINE_PROPOSE: 
+            validation.validateProposalJoint(gossipMessage.v, {
+                ifInvalid: function(){
+                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0);
+                },
+                ifNeedWaiting: function(){
+                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1);
+                },
+                ifOk: function(){
+                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1);
+                }
+            });            
+            break;
+        case constants.BYZANTINE_PREVOTE: 
+            pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
+            break;
+        case constants.BYZANTINE_PRECOMMIT:
+            pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
+            break;
+        default: 
+    }
+    // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
+    //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
+    //         broadcast <PREVOTE,hp,roundp,id(v)>
+    //     else
+    //         broadcast <PREVOTE,hp,roundp,nil>
+    //     stepp ← prevote
+    if(assocByzantinePhase[h_p][p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
+        if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+            && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+            broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        }
+        else {
+            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+            return broadcastPrevote(h_p, p_p, null);
+        }
+        step_p = constants.BYZANTINE_PREVOTE;
+    }
+    // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
+    //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
+    //         broadcast <PREVOTE,hp,roundp,id(v)>
+    //     else
+    //         broadcast <PREVOTE,hp,roundp,nil>
+    //     stepp ← prevote    
+    if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p][p_p].proposal.vp, 1)
+         && step_p === constants.BYZANTINE_PROPOSE 
+         && assocByzantinePhase[h_p][p_p].proposal.vp >= 0  && assocByzantinePhase[h_p][p_p].proposal.vp < p_p){
+        if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+            && (lockedPhase_p <= assocByzantinePhase[h_p][p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+            broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        }
+        else {
+            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+            return broadcastPrevote(h_p, p_p, null);
+        }
+        step_p = constants.BYZANTINE_PREVOTE;
+    }
+    // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
+    //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
+    if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
+        if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
+            h_prevote_timeout = h_p;
+            p_prevote_timeout = p_p;
+            setTimeout(OnTimeoutPrevote, getTimeout(p_p));
+        }
+    }
+    // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
+    //     if stepp = prevote then
+    //         lockedValuep ← v
+    //         lockedRoundp ← roundp
+    //         broadcast <PRECOMMIT,hp,roundp,id(v)>
+    //         stepp ← precommit
+    //     validValuep ← v
+    //     validRoundp ← roundp
+    if(PrevoteBiggerThan2f1(h_p, p_p, 1)
+        && assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+        && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
+        if(step_p === constants.BYZANTINE_PREVOTE){
+            lockedValue_p = assocByzantinePhase[h_p][p_p].proposal;
+            lockedPhase_p = p_p;
+            broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+            step_p = constants.BYZANTINE_PRECOMMIT;
+        }
+        validValue_p = assocByzantinePhase[h_p][p_p].proposal;
+        validPhase_p = p_p;
+    }
+    // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
+    //     broadcast <PRECOMMIT,hp,roundp,nil>
+    //     step p ← precommit
+    if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
+        broadcastPrecommit(h_p, p_p, null);
+        step_p = constants.BYZANTINE_PRECOMMIT;
+    }
+    // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
+    //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
+    if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
+        if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
+            h_precommit_timeout = h_p;
+            p_precommit_timeout = p_p;
+            setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
+        }
+    }
+
+    // upon <PROPOSAL,hp,r,v,∗> from proposer(hp,r) AND 2f+1 <PRECOMMIT,hp,r,id(v)> while decisionp[hp]=nil do
+    //     if valid(v) then
+    //         decisionp[hp]=v
+    //         hp ← hp+1
+    //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
+    //         StartRound(0)
+    if(assocByzantinePhase[h_p].decision === null){
+        Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+            if(assocByzantinePhase[h_p][current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
+                assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p][current_p].proposal.unit;
+                if(assocByzantinePhase[h_p][current_p].proposal.address === address_p){
+                    // compose new trustme unit
+
+                }
+                // //reset params
+                // lockedValue_p = null;
+                // lockedPhase_p = -1;
+                // validValue_p  = null;
+                // validPhase_p  = -1;
+                // h_propose_timeout   = -1;
+                // p_propose_timeout   = -1; 
+                // h_prevote_timeout   = -1;
+                // p_prevote_timeout   = -1; 
+                // h_precommit_timeout = -1;
+                // p_precommit_timeout = -1; 
+                // // start new h_p
+                // startPhase(h_p+1, 0);
+            }
+        });
+    }
+
+    // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
+    //     StartRound(round)
+    var messagesCount = 0;
+    Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+        if(current_p > p_p){
+            if(assocByzantinePhase[h_p].phase[current_p].proposal !== null)
+                messagesCount = messagesCount + 1;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
+            if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
+                startPhase(h_p, current_p);
+            }
+        }
+    });
+
+});
+// Function OnTimeoutPropose(height, round) :
+//     if height=hp ∧ round=roundp ∧ stepp=propose then
+//         broadcast <PREVOTE,hp,roundp,nil>
+//         stepp ← prevote
+function OnTimeoutPropose(){
+    if(h_propose_timeout === h_p && p_propose_timeout === p_p && step_p === constants.BYZANTINE_PROPOSE){
+        broadcastPrevote(h_p, p_p, null);
+        step_p = constants.BYZANTINE_PREVOTE;
+        h_propose_timeout = -1;
+        p_propose_timeout = -1;
+    }
+}
+// Function OnTimeoutPrevote(height, round) :
+//     if height=hp ∧ round=roundp ∧ stepp=prevote then 
+//         broadcast <PRECOMMIT,hp,roundp,nil>
+//         stepp ← precommit
+function OnTimeoutPrevote(){
+    if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
+        broadcastPrecommit(h_p, p_p, null);
+        step_p = constants.BYZANTINE_PRECOMMIT;
+        h_prevote_timeout   = -1;
+        p_prevote_timeout   = -1;
+    }
+}
+// Function OnTimeoutPrecommit(height, round) :
+//     if height=hp ∧ round=roundp then
+//         StartRound(roundp+1)
+function OnTimeoutPrecommit(){
+    if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
+        h_precommit_timeout = -1;
+        p_precommit_timeout = -1; 
+        startPhase(h_p, p_p+1);
+    }
+}
+// public function end
+
+// private function begin 
+
+function composeProposalMessage(hp, pp, proposal, vpp){
+    return {"type": constants.BYZANTINE_PROPOSE,
+            "address": address_p,
+            "h": hp,
+            "p": pp,
+            "v": proposal,
+            "vp": vpp};
+}
+function composePrevoteMessage(hp, pp, idv){
+    return {"type": constants.BYZANTINE_PREVOTE,
+            "address": address_p,
+            "h": hp,
+            "p": pp,
+            "idv": idv};
+}
+function composePrecommitMessage(hp, pp, sig, idv){
+    return {"type": constants.BYZANTINE_PRECOMMIT,
+            "address": address_p,
+            "h": hp,
+            "p": pp,
+            "sig":sig,
+            "idv": idv};
+}
+function broadcastProposal(h, p, value, vp){
+    //gossip.broadcast(composeProposalMessage(h, p, value, vp));
+}
+function broadcastPrevote(h, p, idv){
+    //gossip.broadcast(composePrevoteMessage(h, p, idv));
+}
+function broadcastPrecommit(h, p, sig, idv){
+    //gossip.broadcast(composePrecommitMessage(h, p, sig, idv));
+}
+function getTimeout(p){
+    return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
+}
+function pushByzantineProposal(h, p, joint, vp, isValid) {
+    composer.composeCoordinatorSig(address_p, joint, supernode.signerProposal, function(err, objAuthor){
+        if(err)
+            throw Error("compose coordinator sig joint err" + err);
+        var proposal = {
+            "address":joint.proposer.address,
+            "unit":joint.unit,
+            "idv":objectHash.getProposalUnitHash(joint.unit),
+            "sig":objAuthor,
+            "vp":vp,
+            "isValid":isValid
+        };
+        if(assocByzantinePhase[h].phase[p] === null){
+            assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+        }
+        else{
+            assocByzantinePhase[h].phase[p].proposal = proposal;
+        }
+    });    
+}
+// isApproved: 1 approved ; 0 opposed
+function pushByzantinePrevote(h, p, idv, address, isApproved) {
+    if(idv !== null && address !== null && assocByzantinePhase[h].phase[p].proposal.idv === idv 
+       && assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
+        if(isApproved === 1){
+            assocByzantinePhase[h].phase[p].prevote_approved.push(address);
+        }
+        else if (isApproved === 0){
+            assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
+        }
+    }    
+}
+// isApproved: 1 approved ; 0 opposed
+function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
+    var ifIncluded = false;
+    for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
+        if(assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
+            ifIncluded = true;
+            break;
+        }
+    }
+    if(idv !== null && address !== null && assocByzantinePhase[h].phase[p].proposal.idv === idv
+        && !ifIncluded && assocByzantinePhase[h].phase[p].precommit_opposed.indexOf(address) === -1){
+        if(isApproved === 1 && sig !== null && sig.address !== null && sig.address === address){
+            assocByzantinePhase[h].phase[p].precommit_approved.push(sig);
+        }
+        else if (isApproved === 0){
+            assocByzantinePhase[h].phase[p].precommit_opposed.push(address);
+        }
+    }    
+}
+function compareIfValueEqual(v1, v2){
+    return objectHash.getProposalUnitHash(v1.unit) === objectHash.getProposalUnitHash(v2.unit);
+}
+// isApproved: 1 approved ; 0 opposed; 2 all
+function PrevoteBiggerThan2f1(h, p, isApproved){
+    if(isApproved === 1)
+        return assocByzantinePhase[h].phase[p].prevote_approved.length >= constants.TOTAL_BYZANTINE*2 + 1;
+    else if(isApproved === 0)
+        return assocByzantinePhase[h].phase[p].prevote_opposed.length >= constants.TOTAL_BYZANTINE*2 + 1;
+    else if(isApproved === 2)
+        return (assocByzantinePhase[h].phase[p].prevote_approved.length + assocByzantinePhase[h].phase[p].prevote_opposed.length) >= constants.TOTAL_BYZANTINE*2 + 1;    
+    else 
+        return false;
+}
+// isApproved: 1 approved ; 0 opposed; 2 all
+function PrecommitBiggerThan2f1(h, p, isApproved){
+    if(isApproved === 1)
+        return assocByzantinePhase[h].phase[p].precommit_approved.length >= constants.TOTAL_BYZANTINE*2 + 1;
+    else if(isApproved === 0)
+        return assocByzantinePhase[h].phase[p].precommit_opposed.length >= constants.TOTAL_BYZANTINE*2 + 1;
+    else if(isApproved === 2)
+        return (assocByzantinePhase[h].phase[p].precommit_approved.length + assocByzantinePhase[h].phase[p].precommit_opposed.length) >= constants.TOTAL_BYZANTINE*2 + 1;    
+    else 
+        return false;
+}
+function decisionTrustMe(objJoint, onDone){
+    bTrustMeUnderWay = true;
+    function onError(err){
+        bTrustMeUnderWay = false;
+        throw Error(err);
+    }
+    const callbacks = composer.getSavingCallbacks({
+		ifNotEnoughFunds: onError,
+		ifError: onError,
+		ifOk: function(objJoint){
+			network.broadcastJoint(objJoint);
+			onDone();
+		}
+	})
+		
+	composer.composeTrustMEJoint(my_address, round_index, wallet.signer, callbacks);      
+}
+// private function end
 
 // cache begin
 
-// function shrinkRoundCacheObj(roundIndex, arrIndex, assocByzantinePhase){
-//     var minIndex = Math.min.apply(Math, arrIndex);
-//     if(roundIndex - minIndex > 10000){
-//         console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,delete all");
-//         assocByzantinePhase = {};
-//     }
-//     else{
-//         for (var offset = minIndex; offset < roundIndex - MAX_ROUND_IN_CACHE; offset++){
-//             console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + offset);
-//             delete assocCachedObj[offset];
-//         }
-//     }
-// }
-// function shrinkByzantineCache(){
-//     var arrByzantinePhases = Object.keys(assocByzantinePhase);
-// 	if (arrByzantinePhases.length < MAX_BYZANTINE_IN_CACHE){
-//         console.log("ByzantinePhases:shrinkByzantineCache,assocByzantinePhase.length:" + assocByzantinePhase.length);
-//         return console.log('byzantine cache is small, will not shrink');
-//     }
-//     var minIndex = Math.min.apply(Math, arrByzantinePhases);
-//     if(minIndex !== assocByzantinePhase)
-//     for (var offset = minIndex; offset < roundIndex - MAX_ROUND_IN_CACHE; offset++){
-//         console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + offset);
-//         delete assocCachedObj[offset];
-//     }
-// }
+function shrinkByzantineCache(){
+    // shrink assocByzantinePhase
+    var arrByzantinePhases = Object.keys(assocByzantinePhase);
+	if (arrByzantinePhases.length < MAX_BYZANTINE_IN_CACHE){
+        console.log("ByzantinePhaseCacheLog:shrinkByzantineCache,will not delete, assocByzantinePhase.length:" + arrByzantinePhases.length);
+        return console.log('byzantine cache is small, will not shrink');
+    }
+    var minIndexByzantinePhases = Math.min.apply(Math, arrByzantinePhases);
+    for (var offset1 = minIndexByzantinePhases; offset1 < h_p - MAX_BYZANTINE_IN_CACHE; offset1++){
+        console.log("ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp:" + offset1);
+        delete assocByzantinePhase[offset1];
+    }
+}
 
-// setInterval(shrinkByzantineCache, 500*1000);
+//setInterval(shrinkByzantineCache, 10*1000);
 
 // cache end
 
 
-/**
- *	@exports
- */
+//	@exports
 
 
-// test code
+exports.startPhase = startPhase;
+exports.getProposer = getProposer;
+
+
+// test code begin
+
 var testValue = {
     "version": "1.0",
     "alt": "1",
@@ -80,6 +519,7 @@ var testValue = {
         }
       }
     ],
+    "hp":100,
     "round_index": 100,
     "pow_type": 2,
     "parent_units": [
@@ -87,6 +527,18 @@ var testValue = {
     ],
     "last_ball": "XCcD+vZcbe025xn4VZRAwowtXBqU8JS/WIB43vYpzYA=",
     "last_ball_unit": "AxH3SWNh/9dwRpuphZVPGAzbO/Md8AJpj7Q1C6JxBM4=",
+};
+var testJoint = {
+    "unit": testValue,
+    "proposer": [
+        {
+          "address": "JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET",
+          "authentifiers": {
+            "r": "Ji/pKTJjb+bgcn+UQ2mcY89eWf/KM3n0ZdmH5KCsldIYIb1IqYlsjB4rXeQwAVkGhsdqp5oPXf6TsXuP7SWq0A=="
+          }
+        }
+       ],
+    "phase": 10
 };
 var testIdv = objectHash.getProposalUnitHash(testValue);
 var testProposal = {
@@ -133,28 +585,55 @@ var testProcommit3 = {
     }
 };
 
-var assocByzantinePhase = {
-    1000:{
-        0:{
-            proposal:testProposal,
-            prevote:[testProvote1, testProvote2, testProvote3],
-            precommit:[testProcommit1, testProcommit2],
-        }
-    }
-};
+// var assocByzantinePhase = {
+//     1000:{
+//         0:{
+//             proposal:testProposal,
+//             prevote:[testProvote1, testProvote2, testProvote3],
+//             precommit:[testProcommit1, testProcommit2],
+//         }
+//     }
+// };
 
 var hp_test=1000;
-console.log(JSON.stringify(assocByzantinePhase));
-console.log(JSON.stringify(assocByzantinePhase[hp_test]));
-console.log(JSON.stringify(assocByzantinePhase[hp_test][0].proposal));
-console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote));
-console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit));
-console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote.length));
-console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit.length));
+// console.log(JSON.stringify(assocByzantinePhase));
+// console.log(JSON.stringify(assocByzantinePhase));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test]));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].proposal));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote.length));
+// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit.length));
 
-assocByzantinePhase[hp_test][1]={
-    proposal:testProposal,
-    prevote:[testProvote1, testProvote2],
-    precommit:[testProcommit1, testProcommit2],
-};
+// assocByzantinePhase[hp_test][1]={
+//     proposal:testProposal,
+//     prevote:[testProvote1, testProvote2],
+//     precommit:[testProcommit1, testProcommit2],
+// };
 //console.log(JSON.stringify(assocByzantinePhase[hp_test]));
+
+
+// var testObj = {
+//     10: 10
+// };
+// testObj[2] = 20;
+// testObj[30] = 3;
+// testObj[5] = 5;
+// testObj[12] = 12;
+// console.log(testObj);
+// console.log(JSON.stringify(testObj));
+
+// var arrtestObj = Object.keys(testObj);
+// console.log(arrtestObj);
+// console.log(JSON.stringify(arrtestObj));
+
+// h_p = 1;
+// function addassocByzantinePhase(){
+//     assocByzantinePhase[h_p] = h_p;
+//     console.log("add phase : " + JSON.stringify(assocByzantinePhase));
+//     h_p++;
+// }
+// setInterval(addassocByzantinePhase, 2*1000);
+
+
+// test code end
