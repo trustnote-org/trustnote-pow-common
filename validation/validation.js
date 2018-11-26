@@ -795,13 +795,10 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 			return callback("authentifier too long");
 	}
 	
-	var bNonserial = false;
-	
 	var arrAddressDefinition = objAuthor.definition;
 	if (isNonemptyArray(arrAddressDefinition)){
 		// todo: check that the address is really new?
 		// Todo :deposit add: check if deposit contract, if yes, validate only one deposit contract created for supernode address
-
 		validateAuthentifiers(arrAddressDefinition);
 	}
 	else if (!("definition" in objAuthor)){
@@ -1082,53 +1079,10 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		return callback("wrong payload hash size");
 	if (typeof objMessage.payload_location !== "string")
 		return callback("no payload_location");
-	// Pow modi
-	//if (hasFieldsExcept(objMessage, ["app", "payload_hash", "payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
+	
 	if (hasFieldsExcept(objMessage, ["app", "payload_hash", "pow_equihash","payload_location", "payload", "payload_uri", "payload_uri_hash", "spend_proofs"]))
 		return callback("unknown fields in message");
 	
-	if ("spend_proofs" in objMessage){
-		if (!Array.isArray(objMessage.spend_proofs) || objMessage.spend_proofs.length === 0 || objMessage.spend_proofs.length > constants.MAX_SPEND_PROOFS_PER_MESSAGE)
-			return callback("spend_proofs must be non-empty array max "+constants.MAX_SPEND_PROOFS_PER_MESSAGE+" elements");
-		var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
-		// spend proofs are sorted in the same order as their corresponding inputs
-		//var prev_spend_proof = "";
-		for (var i=0; i<objMessage.spend_proofs.length; i++){
-			var objSpendProof = objMessage.spend_proofs[i];
-			if (typeof objSpendProof !== "object")
-				return callback("spend_proof must be object");
-			if (hasFieldsExcept(objSpendProof, ["spend_proof", "address"]))
-				return callback("unknown fields in spend_proof");
-			//if (objSpendProof.spend_proof <= prev_spend_proof)
-			//    return callback("spend_proofs not sorted");
-			
-			if (!isValidBase64(objSpendProof.spend_proof, constants.HASH_LENGTH))
-				return callback("spend proof "+objSpendProof.spend_proof+" is not a valid base64");
-			
-			var address = null;
-			if (arrAuthorAddresses.length === 1){
-				if ("address" in objSpendProof)
-					return cb("when single-authored, must not put address in spend proof");
-				address = arrAuthorAddresses[0];
-			}
-			else{
-				if (typeof objSpendProof.address !== "string")
-					return cb("when multi-authored, must put address in spend_proofs");
-				if (arrAuthorAddresses.indexOf(objSpendProof.address) === -1)
-					return cb("spend proof address "+objSpendProof.address+" is not an author");
-				address = objSpendProof.address;
-			}
-			
-			if (objValidationState.arrInputKeys.indexOf(objSpendProof.spend_proof) >= 0)
-				return cb("spend proof "+objSpendProof.spend_proof+" already used");
-			objValidationState.arrInputKeys.push(objSpendProof.spend_proof);
-			
-			//prev_spend_proof = objSpendProof.spend_proof;
-		}
-		if (objMessage.payload_location === "inline")
-			return callback("you don't need spend proofs when you have inline payload");
-	}
-
 	if (objMessage.payload_location !== "inline" && objMessage.payload_location !== "uri" && objMessage.payload_location !== "none")
 		return callback("wrong payload location: "+objMessage.payload_location);
 
