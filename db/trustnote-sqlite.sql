@@ -109,6 +109,19 @@ CREATE TABLE authentifiers (
 );
 CREATE INDEX authentifiersIndexByAddress ON authentifiers(address);
 
+-- store trust me co sign result
+CREATE TABLE coordinator_authentifiers (
+	unit CHAR(44) NOT NULL,
+	address CHAR(32) NOT NULL,
+	path VARCHAR(40) NOT NULL,
+	authentifier VARCHAR(4096) NOT NULL,
+	PRIMARY KEY (unit, address, path),
+	FOREIGN KEY (unit) REFERENCES units(unit),
+	CONSTRAINT authentifiersByAddress FOREIGN KEY (address) REFERENCES addresses(address)
+);
+CREATE INDEX authentifiersIndexByAddress ON coordinator_authentifiers(address);
+
+
 --  new table to store round 
 CREATE TABLE round(
 	round_index BIGINT NOT NULL,
