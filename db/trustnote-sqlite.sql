@@ -18,6 +18,7 @@ CREATE TABLE units (
 	is_stable TINYINT NOT NULL DEFAULT 0,
 	sequence TEXT CHECK (sequence IN('good','temp-bad','final-bad')) NOT NULL DEFAULT 'good',
 	best_parent_unit CHAR(44) NULL,
+	coordinators TEXT NULL,
 	CONSTRAINT unitsByLastBallUnit FOREIGN KEY (last_ball_unit) REFERENCES units(unit),
 	FOREIGN KEY (best_parent_unit) REFERENCES units(unit),
 	-- POW modi
