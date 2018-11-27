@@ -14,8 +14,18 @@ var assocCachedWitnesses = {};
 var assocCachedTotalCommission = {};
 var assocCachedMaxMci = {};
 var assocCachedCoinbaseRatio = {};
+var assocCachedRoundInfo = {};
+
+var round_current = 0;
+
+
+function forwardRound(roundIndex){
+    round_current = roundIndex;
+}
 
 function getCurrentRoundIndex(conn, callback){
+    if(round_current > 0)
+        return callback(round_current);
     var conn = conn || db;
     conn.query(
 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
@@ -23,22 +33,11 @@ function getCurrentRoundIndex(conn, callback){
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find current round index");
+            round_current = rows[0].round_index; 
             callback(rows[0].round_index);
 		}
 	);
 }
-
-// function getCurrentRoundIndexByDb(callback){
-//     db.query(
-// 		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
-//         [],
-// 		function(rows){
-// 			if (rows.length !== 1)
-//                 throw Error("Can not find current round index");
-//             callback(rows[0].round_index);
-// 		}
-// 	);
-// }
 
 function getCycleIdByRoundIndex(roundIndex){
     return Math.ceil(roundIndex/constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH);
@@ -82,27 +81,33 @@ function getMaxRoundIndexByCycleId(cycleId){
 }
 
 function getCurrentRoundInfo(conn, callback){
-    conn.query(
-		"SELECT * FROM round ORDER BY round_index DESC LIMIT 1", 
-        [],
-		function(rows){
-			if (rows.length !== 1)
-                throw Error("Can not find current round index");
-            callback(rows[0].round_index, rows[0].min_wl, rows[0].seed);
-		}
-	);
+    getRoundInfoByRoundIndex(conn, round_current, 
+        function(round_index, min_wl, seed){
+            callback(round_index, min_wl, seed);
+        }
+    );
 }
 
 function getRoundInfoByRoundIndex(conn, roundIndex, callback){
+    if (assocCachedRoundInfo[roundIndex]){
+        console.log("use cache getRoundInfoByRoundIndex: " + roundIndex);
+        return callback(assocCachedRoundInfo[roundIndex].round_index, assocCachedRoundInfo[roundIndex].min_wl, assocCachedRoundInfo[roundIndex].seed);
+    }
+    var conn = conn || db;
     conn.query(
 		"SELECT * FROM round WHERE round_index=?", 
         [roundIndex],
 		function(rows){
 			if (rows.length !== 1)
                 throw Error("Can not find round index");
+                assocCachedRoundInfo[roundIndex] = rows[0];
             callback(rows[0].round_index, rows[0].min_wl, rows[0].seed);
 		}
 	);
+}
+
+function removeAssocCachedRoundInfo(roundIndex){
+    delete assocCachedRoundInfo[roundIndex];
 }
 
 function getDurationByCycleId(conn, cycleId, callback){
@@ -189,31 +194,30 @@ function getSumCoinbaseByEndRoundIndex(endRoundIndex){
 
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
-    // TODO ：cache the witnesses of recent rounds
-    var conn = conn || db;
-	var witnesses  = [];
+    if (assocCachedWitnesses[roundIndex]){
+        console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
+        return callback(assocCachedWitnesses[roundIndex]);
+    }
+    var witnesses  = [];
 	if (roundIndex === 1){// first round
 		witnesses = witnesses.concat(conf.initialWitnesses);
 		if(witnesses.length != constants.COUNT_WITNESSES)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
 		return callback(witnesses);
     }
-    
-    if (assocCachedWitnesses[roundIndex]){
-        console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
-        return callback(assocCachedWitnesses[roundIndex]);
-    }
+
+    var conn = conn || db;
     conn.query(
             "SELECT distinct(address) \n\
             FROM units JOIN unit_authors using (unit)\n\
             WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
             LIMIT ?",  
-        [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
+        [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.TOTAL_COORDINATORS],
 		function(rows){
-			if (rows.length !==  constants.COUNT_POW_WITNESSES)
+			if (rows.length !==  constants.TOTAL_COORDINATORS)
                 throw Error("Can not find enough witnesses of round" + roundIndex);
             witnesses = rows.map(function(row) { return row.address; } );
-            witnesses.push(constants.FOUNDATION_ADDRESS);
+            // witnesses.push(constants.FOUNDATION_ADDRESS);
             console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
             assocCachedWitnesses[roundIndex] = witnesses;
             callback(witnesses);
@@ -221,42 +225,29 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
 	);
 }
 
-
-// function getWitnessesByRoundIndexByDb(roundIndex, callback){
-// 	// TODO ：cache the witnesses of recent rounds
-// 	var witnesses  = [];
-// 	if (roundIndex === 1){// first round
-// 		witnesses = witnesses.concat(conf.initialWitnesses);
-// 		if(witnesses.length != constants.COUNT_WITNESSES)
-// 			throw Error("Can not find enough witnesses in conf initialWitnesses");
-// 		return  callback(witnesses);
-//     }
+function getRoundIndexByNewMci(conn, mci, callback){
+    if(!validationUtils.isPositiveInteger(mci))
+        throw Error("param mci is not a positive integer");
+    if(mci <= 1)
+        return callback(1);
     
-//     if (assocCachedWitnesses[roundIndex]){
-//         console.log("RoundCacheLog:use:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
-//         return callback(assocCachedWitnesses[roundIndex]);
-//     }
-     
-//     db.query(
-// 		"SELECT distinct(address) \n\
-// 		FROM units JOIN unit_authors using (unit)\n\
-//         WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-//         LIMIT ?", 
-//         [constants.POW_TYPE_POW_EQUHASH, roundIndex - 1, constants.COUNT_POW_WITNESSES],
-// 		function(rows){
-// 			if (rows.length !==  constants.COUNT_POW_WITNESSES)
-//                 throw Error("Can not find enough witnesses ");
-//             witnesses = rows.map(function(row) { return row.address; } );
-//             witnesses.push(constants.FOUNDATION_ADDRESS);
-//             console.log("RoundCacheLog:push:getWitnessesByRoundIndex->assocCachedWitnesses,roundIndex:" + roundIndex);
-//             assocCachedWitnesses[roundIndex] = witnesses;
-//             callback(witnesses);
-// 		}
-// 	);
-// }
+    conn.query(
+        "SELECT round_index FROM units \n\
+		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? AND main_chain_index=? \n\
+		LIMIT 1",  
+    [constants.POW_TYPE_TRUSTME, mci - 1],
+    function(rows){
+        if (rows.length !== 1)
+            throw Error("Can not find right witnesses of mci" + mci);
+        var roundIndexOfLastMci = rows[0].round_index;
+        if(roundIndexOfLastMci === round_current)
+            callback(roundIndexOfLastMci);
+        else
+            callback(roundIndexOfLastMci+1);
+    });
+}
 
 function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
-    // TODO ：cache the witnesses of recent rounds
     conn.query(
 		"SELECT  units.unit \n\
 		FROM units JOIN unit_authors using (unit)\n\
@@ -269,7 +260,6 @@ function checkIfCoinBaseUnitByRoundIndexAndAddressExists(conn, roundIndex, addre
 }
 
 function checkIfPowUnitByRoundIndexAndAddressExists(conn, roundIndex, address, callback){
-    // TODO ：cache the witnesses of recent rounds
     conn.query(
 		"SELECT units.unit \n\
 		FROM units JOIN unit_authors using (unit)\n\
@@ -551,7 +541,7 @@ function getLastCoinbaseUnitRoundIndex(conn, address, cb){
         return cb("param address is not a valid address");
         conn.query(
         "SELECT round_index FROM units JOIN unit_authors USING(unit)  \n\
-        WHERE is_stable=1 AND sequence!='good' AND pow_type=? \n\
+        WHERE is_stable=1 AND sequence='good' AND pow_type=? \n\
          AND address=? ORDER BY round_index DESC LIMIT 1", 
          [constants.POW_TYPE_COIN_BASE, address],
         function(rows){
@@ -564,15 +554,15 @@ function getLastCoinbaseUnitRoundIndex(conn, address, cb){
 
 // cache begin
 function shrinkRoundCacheObj(roundIndex, arrIndex, assocCachedObj){
-    console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + roundIndex);
+    console.log("shrink Round Cache , begin roundIndex:" + roundIndex);
     var minIndex = Math.min.apply(Math, arrIndex);
     if(roundIndex - minIndex > 10000){
-        console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,delete all");
+        console.log("shrink Round Cache, remove all");
         assocCachedObj = {};
     }
     else{
         for (var offset = minIndex; offset < roundIndex - MAX_ROUND_IN_CACHE; offset++){
-            console.log("RoundCacheLog:shrinkRoundCacheObj:assocCachedObj,roundIndex:" + offset);
+            console.log("shrink Round Cache, remove roundIndex:" + offset);
             delete assocCachedObj[offset];
         }
     }
@@ -581,13 +571,15 @@ function shrinkRoundCache(){
     var arrWitnesses = Object.keys(assocCachedWitnesses);
 	var arrTotalCommission = Object.keys(assocCachedTotalCommission);
 	var arrMaxMci = Object.keys(assocCachedMaxMci);
-	var arrCoinbaseRatio = Object.keys(assocCachedCoinbaseRatio);
+    var arrCoinbaseRatio = Object.keys(assocCachedCoinbaseRatio);
+    var arrRoundInfo = Object.keys(assocCachedRoundInfo);
     if (arrWitnesses.length < MAX_ROUND_IN_CACHE && arrTotalCommission.length < MAX_ROUND_IN_CACHE && 
         arrMaxMci.length < MAX_ROUND_IN_CACHE && arrCoinbaseRatio.length < MAX_ROUND_IN_CACHE){
-        console.log("RoundCacheLog:shrinkRoundCache,arrWitnesses.length:" + arrWitnesses.length +
+        console.log("shrink Round Cache, arrWitnesses.length:" + arrWitnesses.length +
                 ",arrTotalCommission.length:" + arrTotalCommission.length +
                 ",arrMaxMci.length:" + arrMaxMci.length +
-                ",arrCoinbaseRatio.length:" + arrCoinbaseRatio.length);
+                ",arrCoinbaseRatio.length:" + arrCoinbaseRatio.length +
+                ",arrRoundInfo.length:" + arrRoundInfo.length);
         return console.log('round cache is small, will not shrink');
     }
 	getCurrentRoundIndex(db, function(roundIndex){
@@ -595,6 +587,7 @@ function shrinkRoundCache(){
         shrinkRoundCacheObj(roundIndex, arrTotalCommission, assocCachedTotalCommission);        
         shrinkRoundCacheObj(roundIndex, arrMaxMci, assocCachedMaxMci);        
         shrinkRoundCacheObj(roundIndex, arrCoinbaseRatio, assocCachedCoinbaseRatio);        
+        shrinkRoundCacheObj(roundIndex, arrRoundInfo, assocCachedRoundInfo);     
 	});
 }
 
@@ -606,8 +599,8 @@ setInterval(shrinkRoundCache, 1000*1000);
 /**
  *	@exports
  */
+exports.forwardRound = forwardRound;
 exports.getCurrentRoundIndex = getCurrentRoundIndex;
-//exports.getCurrentRoundIndexByDb = getCurrentRoundIndexByDb;
 exports.getMinWlByRoundIndex = getMinWlByRoundIndex;
 exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
@@ -620,9 +613,10 @@ exports.getAverageDifficultyByCycleId = getAverageDifficultyByCycleId;
 
 exports.getCurrentRoundInfo = getCurrentRoundInfo;
 exports.getRoundInfoByRoundIndex = getRoundInfoByRoundIndex;
+exports.removeAssocCachedRoundInfo = removeAssocCachedRoundInfo;
 
 exports.getWitnessesByRoundIndex = getWitnessesByRoundIndex;
-//exports.getWitnessesByRoundIndexByDb = getWitnessesByRoundIndexByDb;
+exports.getRoundIndexByNewMci = getRoundIndexByNewMci;
 exports.checkIfCoinBaseUnitByRoundIndexAndAddressExists = checkIfCoinBaseUnitByRoundIndexAndAddressExists;
 exports.checkIfPowUnitByRoundIndexAndAddressExists = checkIfPowUnitByRoundIndexAndAddressExists;
 
@@ -636,3 +630,20 @@ exports.getSumCoinbaseByEndRoundIndex	= getSumCoinbaseByEndRoundIndex;
 
 exports.getLastCoinbaseUnitRoundIndex	= getLastCoinbaseUnitRoundIndex;
 
+
+// var roundIndex =1;
+
+// setInterval(shrinkRoundCache, 10*1000);
+
+// function addshrinkRoundCache(){
+//     assocCachedWitnesses[roundIndex] = roundIndex;
+//     console.log("add assocCachedWitnesses       : " + JSON.stringify(assocCachedWitnesses));
+//     assocCachedTotalCommission[roundIndex] = roundIndex;
+//     console.log("add assocCachedTotalCommission : " + JSON.stringify(assocCachedTotalCommission));
+//     assocCachedMaxMci[roundIndex] = roundIndex;
+//     console.log("add assocCachedMaxMci          : " + JSON.stringify(assocCachedMaxMci));
+//     assocCachedCoinbaseRatio[roundIndex] = roundIndex;
+//     console.log("add assocCachedCoinbaseRatio   : " + JSON.stringify(assocCachedCoinbaseRatio));
+//     roundIndex++;
+// }
+// setInterval(addshrinkRoundCache, 1*1000);
