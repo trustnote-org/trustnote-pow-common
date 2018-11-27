@@ -1258,23 +1258,6 @@ function filterNewOrUnstableUnits(arrUnits, handleFilteredUnits){
 // for unit that is not saved to the db yet
 // function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
 function determineBestParent(conn, objUnit, handleBestParent){
-	// POW modi remove witness compatitiblity
-	// choose best parent among compatible parents only
-	// conn.query(
-	// 	"SELECT unit \n\
-	// 	FROM units AS parent_units \n\
-	// 	WHERE unit IN(?) \n\
-	// 		AND (witness_list_unit=? OR ( \n\
-	// 			SELECT COUNT(*) \n\
-	// 			FROM unit_witnesses AS parent_witnesses \n\
-	// 			WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) AND address IN(?) \n\
-	// 		)>=?) \n\
-	// 	ORDER BY witnessed_level DESC, \n\
-	// 		level-witnessed_level ASC, \n\
-	// 		unit ASC \n\
-	// 	LIMIT 1", 
-	// 	[objUnit.parent_units, objUnit.witness_list_unit, 
-	// 	arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT unit \n\
 		FROM units  \n\
@@ -1297,38 +1280,6 @@ function determineBestParent(conn, objUnit, handleBestParent){
 function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWitnessLevel){
 	var arrCollectedWitnesses = [];
 	var arrAuthorAddresses = objNewUnit.authors.map(function(author) { return author.address; } );
-	if (objNewUnit.pow_type === constants.POW_TYPE_TRUSTME){ // count self as wl start point
-		arrCollectedWitnesses = arrCollectedWitnesses.concat(arrAuthorAddresses);
-	}
-	function addWitnessesAndGoUp(start_unit){
-		readStaticUnitProps(conn, start_unit, function(props){
-			profiler.stop('write-wl-select-bp');
-			var best_parent_unit = props.best_parent_unit;
-			var level = props.level;
-			if (level === null)
-				throw Error("null level in updateWitnessedLevel");
-			if (level === 0) // genesis
-				return handleWitnessLevel(0);
-			if(props.pow_type === constants.POW_TYPE_TRUSTME){
-				readUnitAuthors(conn, start_unit, function(arrAuthors){
-					for (var i=0; i<arrAuthors.length; i++){
-						var address = arrAuthors[i];
-						if (arrCollectedWitnesses.indexOf(address) === -1)
-							arrCollectedWitnesses.push(address);
-					}
-					(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
-						? addWitnessesAndGoUp(best_parent_unit) : handleWitnessLevel(level);
-				});
-			}
-			else{
-				addWitnessesAndGoUp(best_parent_unit);
-			}
-		});
-		}
-		// find best parent ,then go up to count trust me addresses .
-		//determineBestParent(conn,objUnit,function(best_parent_unit){
-		addWitnessesAndGoUp(bestParentOfNewUnit);
-		//});
 		
 }
 
@@ -1359,32 +1310,6 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 // 		);
 // 	});
 // }
-
-// the MC for this function is the MC built from this unit, not our current MC
-function buildListOfMcUnitsWithPotentiallyDifferentWitnesslists(conn, objUnit, last_ball_unit, arrWitnesses, handleList){
-
-	function addAndGoUp(unit){
-		readStaticUnitProps(conn, unit, function(props){
-			// the parent has the same witness list and the parent has already passed the MC compatibility test
-			if (objUnit.witness_list_unit && objUnit.witness_list_unit === props.witness_list_unit)
-				return handleList(true, arrMcUnits);
-			else
-				arrMcUnits.push(unit);
-			if (unit === last_ball_unit)
-				return handleList(true, arrMcUnits);
-			if (!props.best_parent_unit)
-				throw Error("no best parent of unit "+unit+"?");
-			addAndGoUp(props.best_parent_unit);
-		});
-	}
-
-	var arrMcUnits = [];
-	determineBestParent(conn, objUnit, arrWitnesses, function(best_parent_unit){
-		if (!best_parent_unit)
-			return handleList(false);
-		addAndGoUp(best_parent_unit);
-	});
-}
 
 
 function readStaticUnitProps(conn, unit, handleProps){
