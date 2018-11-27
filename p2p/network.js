@@ -2,7 +2,7 @@
 "use strict";
 
 const WebSocket			= process.browser ? global.WebSocket : require('ws');
-const socks			= process.browser ? null : require('socks' + '');
+const socks			= process.browser ? null : require( 'socks' + '' );
 const WebSocketServer		= WebSocket.Server;
 const crypto			= require('crypto');
 const _				= require('lodash');
@@ -145,168 +145,255 @@ function sendError( ws, error )
 	sendJustsaying( ws, 'error', error );
 }
 
-function sendInfo(ws, content) {
-	sendJustsaying(ws, 'info', content);
+function sendInfo( ws, content )
+{
+	sendJustsaying( ws, 'info', content );
 }
 
-function sendResult(ws, content) {
-	sendJustsaying(ws, 'result', content);
+function sendResult( ws, content )
+{
+	sendJustsaying( ws, 'result', content );
 }
 
-function sendErrorResult(ws, unit, error) {
-	sendResult(ws, {unit: unit, result: 'error', error: error});
+function sendErrorResult( ws, unit, error )
+{
+	sendResult( ws, { unit : unit, result : 'error', error : error } );
 }
 
-function sendVersion(ws) {
+function sendVersion( ws )
+{
 	let libraryPackageJson = require('../package.json');
 
-	_round.getCurrentRoundIndex(null, function (nCurrentRoundIndex) {
-		sendJustsaying
-		(
-			ws,
-			'version',
-			{
-				protocol_version: constants.version,
-				alt: constants.alt,
-				library: libraryPackageJson.name,
-				library_version: libraryPackageJson.version,
-				program: conf.program,
-				program_version: conf.program_version,
-				last_round_index: nCurrentRoundIndex,
-			}
-		);
-	});
+	_round.getCurrentRoundIndex
+	(
+		null,
+		nCurrentRoundIndex =>
+		{
+			sendJustsaying
+			(
+				ws,
+				'version',
+				{
+					protocol_version: constants.version,
+					alt: constants.alt,
+					library: libraryPackageJson.name,
+					library_version: libraryPackageJson.version,
+					program: conf.program,
+					program_version: conf.program_version,
+					last_round_index: nCurrentRoundIndex,
+				}
+			);
+		}
+	);
 }
 
-function sendResponse(ws, tag, response) {
-	delete ws.assocInPreparingResponse[tag];
-	sendMessage(ws, 'response', {tag: tag, response: response});
+function sendResponse( ws, tag, response )
+{
+	delete ws.assocInPreparingResponse[ tag ];
+	sendMessage( ws, 'response', { tag : tag, response : response } );
 }
 
-function sendErrorResponse(ws, tag, error) {
-	sendResponse(ws, tag, {error: error});
+function sendErrorResponse( ws, tag, error )
+{
+	sendResponse( ws, tag, { error : error } );
 }
+
 
 //
 //	if a 2nd identical request is issued before we receive a response to the 1st request, then:
 //	1. its responseHandler will be called too but no second request will be sent to the wire
 //	2. bReroutable flag must be the same
 //
-function sendRequest(ws, command, params, bReroutable, responseHandler) {
+function sendRequest( ws, command, params, bReroutable, responseHandler )
+{
 	let request = {command: command};
-	if (params)
+	if ( params )
+	{
 		request.params = params;
-	let content = _.clone(request);
-	let tag = objectHash.getBase64Hash(request);
+	}
+
+	let content	= _.clone( request );
+	let tag		= objectHash.getBase64Hash( request );
+
 	//if (ws.assocPendingRequests[tag]) // ignore duplicate requests while still waiting for response from the same peer
 	//    return console.log("will not send identical "+command+" request");
-	if (ws.assocPendingRequests[tag]) {
+	if ( ws.assocPendingRequests[ tag ] )
+	{
 		console.log('already sent a ' + command + ' request to ' + ws.peer + ', will add one more response handler rather than sending a duplicate request to the wire');
 		ws.assocPendingRequests[tag].responseHandlers.push(responseHandler);
 	}
-	else {
+	else
+	{
 		content.tag = tag;
 
 		//
 		//	after STALLED_TIMEOUT, reroute the request to another peer
 		//	it'll work correctly even if the current peer is already disconnected when the timeout fires
 		//
-		let reroute = !bReroutable ? null : function () {
+		let reroute = ! bReroutable ? null : function()
+		{
 			console.log('will try to reroute a ' + command + ' request stalled at ' + ws.peer);
-			if (!ws.assocPendingRequests[tag])
+			if ( ! ws.assocPendingRequests[ tag ] )
+			{
 				return console.log('will not reroute - the request was already handled by another peer');
+			}
 
 			ws.assocPendingRequests[tag].bRerouted = true;
-			findNextPeer(ws, function (next_ws) {
+			findNextPeer( ws, function( next_ws )
+			{
 				//	the callback may be called much later if findNextPeer has to wait for connection
-				if (!ws.assocPendingRequests[tag])
+				if ( ! ws.assocPendingRequests[ tag ] )
+				{
 					return console.log('will not reroute after findNextPeer - the request was already handled by another peer');
+				}
 
-				if (next_ws === ws || assocReroutedConnectionsByTag[tag] && assocReroutedConnectionsByTag[tag].indexOf(next_ws) >= 0) {
+				if ( next_ws === ws || assocReroutedConnectionsByTag[ tag ] && assocReroutedConnectionsByTag[ tag ].indexOf( next_ws ) >= 0 )
+				{
 					console.log('will not reroute ' + command + ' to the same peer, will rather wait for a new connection');
-					eventBus.once('connected_to_source', function (oNewWs) {
-						//	try again
-						if (oNewWs) {
-							console.log(`got new connection, retrying to reroute ${ command }`);
-							reroute();
+					eventBus.once
+					(
+						'connected_to_source',
+						function ( oNewWs )
+						{
+							//	try again
+							if ( oNewWs )
+							{
+								console.log(`got new connection, retrying to reroute ${ command }`);
+								reroute();
+							}
+							else
+							{
+								console.log(`no connection received, just release memory on rerouting command ${ command }`);
+							}
 						}
-						else {
-							console.log(`no connection received, just release memory on rerouting command ${ command }`);
-						}
-					});
+					);
 					return;
 				}
-				console.log('rerouting ' + command + ' from ' + ws.peer + ' to ' + next_ws.peer);
-				ws.assocPendingRequests[tag].responseHandlers.forEach(function (rh) {
-					sendRequest(next_ws, command, params, bReroutable, rh);
-				});
-				if (!assocReroutedConnectionsByTag[tag])
-					assocReroutedConnectionsByTag[tag] = [ws];
-				assocReroutedConnectionsByTag[tag].push(next_ws);
+
+				console.log( 'rerouting ' + command + ' from ' + ws.peer + ' to ' + next_ws.peer );
+				ws.assocPendingRequests[ tag ].responseHandlers.forEach
+				(
+					function( rh )
+					{
+						sendRequest( next_ws, command, params, bReroutable, rh );
+					}
+				);
+				if ( ! assocReroutedConnectionsByTag[ tag ] )
+				{
+					assocReroutedConnectionsByTag[ tag ] = [ ws ];
+				}
+				assocReroutedConnectionsByTag[ tag ].push( next_ws );
 			});
 		};
-		let reroute_timer = !bReroutable ? null : setTimeout(reroute, STALLED_TIMEOUT);
-		let cancel_timer = bReroutable ? null : setTimeout(function () {
-			ws.assocPendingRequests[tag].responseHandlers.forEach(function (rh) {
-				rh(ws, request, {error: "[internal] response timeout"});
-			});
-			delete ws.assocPendingRequests[tag];
-		}, RESPONSE_TIMEOUT);
-		ws.assocPendingRequests[tag] = {
-			request: request,
-			responseHandlers: [responseHandler],
-			reroute: reroute,
-			reroute_timer: reroute_timer,
-			cancel_timer: cancel_timer
+
+		let reroute_timer	= ! bReroutable ? null : setTimeout( reroute, STALLED_TIMEOUT );
+		let cancel_timer	= bReroutable ? null : setTimeout
+		(
+			function()
+			{
+				ws.assocPendingRequests[ tag ].responseHandlers.forEach
+				(
+					function( rh )
+					{
+						rh( ws, request, { error : "[internal] response timeout" } );
+					}
+				);
+				delete ws.assocPendingRequests[ tag ];
+			},
+			RESPONSE_TIMEOUT
+		);
+		ws.assocPendingRequests[ tag ] =
+		{
+			request			: request,
+			responseHandlers	: [ responseHandler ],
+			reroute			: reroute,
+			reroute_timer		: reroute_timer,
+			cancel_timer		: cancel_timer
 		};
-		sendMessage(ws, 'request', content);
+		sendMessage( ws, 'request', content );
 	}
 }
 
-function handleResponse(ws, tag, response) {
-	let pendingRequest = ws.assocPendingRequests[tag];
-	if (!pendingRequest) // was canceled due to timeout or rerouted and answered by another peer
-	//throw "no req by tag "+tag;
-		return console.log("no req by tag " + tag);
-	pendingRequest.responseHandlers.forEach(function (responseHandler) {
-		process.nextTick(function () {
-			responseHandler(ws, pendingRequest.request, response);
-		});
-	});
+function handleResponse( ws, tag, response )
+{
+	let pendingRequest	= ws.assocPendingRequests[ tag ];
+	if ( ! pendingRequest )
+	{
+		//
+		//	was canceled due to timeout or rerouted and answered by another peer
+		//	throw "no req by tag "+tag;
+		//
+		return console.log( `no req by tag ${ tag }` );
+	}
 
-	clearTimeout(pendingRequest.reroute_timer);
-	clearTimeout(pendingRequest.cancel_timer);
-	delete ws.assocPendingRequests[tag];
+	pendingRequest.responseHandlers.forEach
+	(
+		function( responseHandler )
+		{
+			process.nextTick
+			(
+				function()
+				{
+					responseHandler( ws, pendingRequest.request, response );
+				}
+			);
+		}
+	);
 
-	// if the request was rerouted, cancel all other pending requests
-	if (assocReroutedConnectionsByTag[tag]) {
-		assocReroutedConnectionsByTag[tag].forEach(function (client) {
-			if (client.assocPendingRequests[tag]) {
-				clearTimeout(client.assocPendingRequests[tag].reroute_timer);
-				clearTimeout(client.assocPendingRequests[tag].cancel_timer);
-				delete client.assocPendingRequests[tag];
+	clearTimeout( pendingRequest.reroute_timer );
+	clearTimeout( pendingRequest.cancel_timer );
+	delete ws.assocPendingRequests[ tag ];
+
+	//
+	//	if the request was rerouted, cancel all other pending requests
+	//
+	if ( assocReroutedConnectionsByTag[ tag ] )
+	{
+		assocReroutedConnectionsByTag[ tag ].forEach
+		(
+			function( client )
+			{
+				if ( client.assocPendingRequests[ tag ] )
+				{
+					clearTimeout( client.assocPendingRequests[ tag ].reroute_timer );
+					clearTimeout( client.assocPendingRequests[ tag ].cancel_timer );
+					delete client.assocPendingRequests[ tag ];
+				}
 			}
-		});
+		);
 		delete assocReroutedConnectionsByTag[tag];
 	}
 }
 
-function cancelRequestsOnClosedConnection(ws) {
+function cancelRequestsOnClosedConnection( ws )
+{
 	console.log("websocket closed, will complete all outstanding requests");
-	for (let tag in ws.assocPendingRequests) {
-		let pendingRequest = ws.assocPendingRequests[tag];
+	for ( let tag in ws.assocPendingRequests )
+	{
+		let pendingRequest = ws.assocPendingRequests[ tag ];
+
 		clearTimeout(pendingRequest.reroute_timer);
 		clearTimeout(pendingRequest.cancel_timer);
-		if (pendingRequest.reroute) { // reroute immediately, not waiting for STALLED_TIMEOUT
-			if (!pendingRequest.bRerouted)
+
+		if ( pendingRequest.reroute )
+		{
+			// reroute immediately, not waiting for STALLED_TIMEOUT
+			if ( ! pendingRequest.bRerouted )
+			{
 				pendingRequest.reroute();
+			}
 			// we still keep ws.assocPendingRequests[tag] because we'll need it when we find a peer to reroute to
 		}
-		else {
-			pendingRequest.responseHandlers.forEach(function (rh) {
-				rh(ws, pendingRequest.request, {error: "[internal] connection closed"});
-			});
-			delete ws.assocPendingRequests[tag];
+		else
+		{
+			pendingRequest.responseHandlers.forEach
+			(
+				function( rh )
+				{
+					rh( ws, pendingRequest.request, {error: "[internal] connection closed"} );
+				}
+			);
+			delete ws.assocPendingRequests[ tag ];
 		}
 	}
 	printConnectionStatus();
@@ -1063,17 +1150,22 @@ function rerequestLostJoints() {
 	});
 }
 
-function requestNewMissingJoints(ws, arrUnits) {
+function requestNewMissingJoints( ws, arrUnits )
+{
 	let arrNewUnits = [];
+
 	async.eachSeries
 	(
 		arrUnits,
-		function (unit, cb) {
-			if (assocUnitsInWork[unit])
+		function( sUnit, cb )
+		{
+			if ( assocUnitsInWork[ sUnit ] )
+			{
 				return cb();
-
-			if (havePendingJointRequest(unit)) {
-				console.log("unit " + unit + " was already requested");
+			}
+			if ( havePendingJointRequest( sUnit ) )
+			{
+				console.log("unit " + sUnit + " was already requested");
 				return cb();
 			}
 
@@ -1087,25 +1179,29 @@ function requestNewMissingJoints(ws, arrUnits) {
 			 *                unhandled_joints,
 			 *                known_bad_joints.
 			 */
-			joint_storage.checkIfNewUnit(unit,
+			joint_storage.checkIfNewUnit( sUnit,
 				{
-					ifNew: function () {
+					ifNew: function ()
+					{
 						//
 						//	not exists in tables [units], [unhandled_joints], [known_bad_joints]
 						//
-						arrNewUnits.push(unit);
+						arrNewUnits.push(sUnit);
 						cb();
 					},
-					ifKnown: function () {
+					ifKnown: function ()
+					{
 						console.log("known");
 						cb();
-					}, // it has just been handled
-					ifKnownUnverified: function () {
+					},	//	it has just been handled
+					ifKnownUnverified: function ()
+					{
 						console.log("known unverified");
 						cb();
-					}, // I was already waiting for it
-					ifKnownBad: function (error) {
-						throw Error("known bad " + unit + ": " + error);
+					},	//	I was already waiting for it
+					ifKnownBad: function( error )
+					{
+						throw Error( "known bad " + sUnit + ": " + error );
 					}
 				});
 		},
@@ -2479,12 +2575,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 {
 	switch ( sSubject )
 	{
-		case 'gossip' :
-			{
-
-			}
-			break;
-
 		case 'refresh':
 			if ( bCatchingUp )
 			{
@@ -3243,6 +3333,9 @@ function onWebSocketMessage( sMessage )
 
 		switch ( sMessageType )
 		{
+			case 'gossiper':
+				return null;
+
 			case 'justsaying':
 				return handleJustsaying( oWs, oJSONContent.subject, oJSONContent.body );
 
