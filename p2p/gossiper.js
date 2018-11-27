@@ -1,11 +1,11 @@
-const _net			= require( 'net' );
+//const _net			= require( 'net' );
 //const _msgPack		= require( 'msgpack' );
 const { EventEmitter }		= require( 'events' );
 const { DeUtilsCore }		= require( 'deutils.js' );
-const { DeUtilsNetwork }	= require( 'deutils.js' );
 
 const { GossiperPeer }		= require( './gossiper-peer' );
 const { GossiperScuttle }	= require( './gossiper-scuttle' );
+const { GossiperUtils }		= require( './gossiper-utils' );
 
 
 
@@ -53,9 +53,6 @@ const SECOND_RESPONSE		= 2;
 
 
 
-
-
-
 /**
  *	@class Gossiper over Web Socket
  */
@@ -63,6 +60,7 @@ class Gossiper extends EventEmitter
 {
 	/**
 	 *	@constructor
+	 *
 	 *	@param	{object}	oOptions
 	 *	@param	{number}	oOptions.interval	- interval in milliseconds for gossiper communication
 	 *	@param	{string}	oOptions.ip		- local ip address, '127.0.0.1' or undefined
@@ -78,43 +76,32 @@ class Gossiper extends EventEmitter
 		//	...
 		this.m_nInterval	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'interval' ) ? oOptions.interval : DEFAULT_INTERVAL;
 
-		this.m_sPeerName	= null;
+		//
+		//	initializing peers
+		//
+		this.m_arrInitPeers	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'seeds' ) ? oOptions.seeds : [];
 		this.m_oPeers		= {};
 
 		//
 		//	local
 		//
-		this.m_sLocalIp		= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'ip' ) ? oOptions.ip : null;
-		this.m_nLocalPort	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'port' ) ? oOptions.port : null;
-		this.m_nLocalAddress	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'address' ) ? oOptions.address : '';
-		this.m_nLocalSigner	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'signer' ) ? oOptions.signer : null;
-
-		//
-		//	initializing peers
-		//
-		this.m_arrInitPeers	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'seeds' ) ? oOptions.seeds : [];
-
-		//
-		//	local
-		//
-		this.m_oLocalPeer	= new GossiperPeer();
+		this.m_oLocalPeer	= new GossiperPeer( oOptions );
 		this.m_oScuttle		= new GossiperScuttle( this.m_oPeers, this.m_oLocalPeer );
 
+		//
+		//	handle new peers
+		//
 		this._handleNewPeers( this.m_arrInitPeers );
 	}
 
+
 	/**
 	 * 	start
-	 *	@param	{object}	oSocket
-	 *	@param	{function}	pfnCallback
+	 *	@param	{function}	pfnCallback( err )
+	 *	@return	{*}
 	 */
-	start( oSocket, pfnCallback )
+	start( pfnCallback )
 	{
-		if ( ! oSocket )
-		{
-			return pfnCallback( `call start with invalid oSocket: ${ JSON.stringify( oSocket ) }` );
-		}
-
 		//
 		//	try to initialize with initializing peers
 		//
@@ -143,6 +130,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	stop
+	 *	@return	{void}
 	 */
 	stop()
 	{
@@ -157,19 +145,91 @@ class Gossiper extends EventEmitter
 
 
 	/**
-	 * 	handle message given by caller
-	 *
+	 *	handle message given by caller
 	 *	* I AM A CALLEE, THE MESSAGE WAS DELIVERED BY CALLER
 	 *
 	 *	@param	{object}	oSocket
 	 *	@param	{object}	oMessage
+	 *	@param	{number}	oMessage.type
+	 *	@param	{object}	[oMessage.digest=]
+	 *	@param	{object}	[oMessage.request_digest=]
+	 *	@param	{array}		[oMessage.updates=]
 	 *	@return	{*}
 	 */
 	onMessage( oSocket, oMessage )
 	{
-		return this._handleMessage( oSocket, oMessage );
-	}
+		if ( ! oSocket )
+		{
+			return this._emitErrorLog( `call onMessage with invalid oSocket: ${ JSON.stringify( oSocket ) }.` );
+		}
+		if ( ! DeUtilsCore.isPlainObjectWithKeys( oMessage, 'type' ) )
+		{
+			return this._emitErrorLog( `call onMessage with invalid oMessage: ${ JSON.stringify( oMessage ) }.` );
+		}
+		if ( ! this.isValidMessageType( oMessage.type ) )
+		{
+			return this._emitErrorLog( `call onMessage with invalid oMessage.type: ${ JSON.stringify( oMessage.type ) }.` );
+		}
 
+		//
+		//	handle message by type
+		//
+		switch ( oMessage.type )
+		{
+			case REQUEST:
+				//
+				//	oMsg.digest :
+				//	{
+				//		'127.0.0.1:9011'	: m_nMaxVersionSeen,
+				//		'127.0.0.1:9012'	: m_nMaxVersionSeen,
+				//		...
+				//	}
+				//
+				this._sendMessage( oSocket, this._firstResponseMessage( oMessage.digest ) );
+				break;
+
+			case FIRST_RESPONSE:
+				//
+				//	first response from other peers
+				//
+				//
+				//
+				//	oMsg.updates
+				//	[
+				//		[ sPeerName, key, value, version ],
+				//		[ sPeerName, key, value, version ],
+				//		...
+				// 	],
+				//	oMsg.request_digest
+				//	{
+				// 		sPeerName	: 0,
+				// 		sPeerName	: nLocalMaxVersion,
+				//		...
+				//	}
+				//
+				this.m_oScuttle.updateKnownState( oMessage.updates );
+				this._sendMessage( oSocket, this._secondResponseMessage( oMessage.request_digest ) );
+				break;
+
+			case SECOND_RESPONSE:
+				//
+				//	second response from other peers
+				//
+				//	oMsg.updates
+				//	[
+				//		[ sPeerName, sKey, vValue, nVersion ],
+				//		[ sPeerName, sKey, vValue, nVersion ],
+				//		...
+				// 	]
+				//
+				this.m_oScuttle.updateKnownState( oMessage.updates );
+				break;
+
+			default:
+				//	shit went bad
+				break;
+		}
+	}
 
 	/**
 	 * 	check if the nType is a valid message type
@@ -180,31 +240,6 @@ class Gossiper extends EventEmitter
 	{
 		return DeUtilsCore.isNumeric( nType ) &&
 			[ REQUEST, FIRST_RESPONSE, SECOND_RESPONSE ].includes( nType );
-	}
-
-	/**
-	 * 	check if the sPeerName is a valid peer name
-	 *	@param	{string}	sPeerName	- '127.0.0.1:8000'
-	 *	@return	{boolean}
-	 */
-	isValidPeerName( sPeerName )
-	{
-		let bRet = false;
-
-		if ( DeUtilsCore.isExistingString( sPeerName ) )
-		{
-			let arrPeerSplit = sPeerName.split( ":" );
-			if ( Array.isArray( arrPeerSplit ) && arrPeerSplit.length >= 2 )
-			{
-				if ( DeUtilsNetwork.isValidIpV4( arrPeerSplit[ 0 ] ) &&
-					DeUtilsNetwork.isValidPort( arrPeerSplit[ 1 ] ) )
-				{
-					bRet = true;
-				}
-			}
-		}
-
-		return bRet;
 	}
 
 	/**
@@ -231,10 +266,11 @@ class Gossiper extends EventEmitter
 	 */
 	createPeer( sPeerName )
 	{
+		let oPeerName	= GossiperUtils.parsePeerName( sPeerName );
 		let oPeer	= null;
 		let bExists	= false;
 
-		if ( DeUtilsCore.isExistingString( sPeerName ) )
+		if ( null !== oPeerName.ip && null !== oPeerName.port )
 		{
 			if ( this.m_oPeers[ sPeerName ] )
 			{
@@ -250,7 +286,7 @@ class Gossiper extends EventEmitter
 				//	create new
 				//
 				bExists	= false;
-				this.m_oPeers[ sPeerName ] = new GossiperPeer( sPeerName );
+				this.m_oPeers[ sPeerName ] = new GossiperPeer( oPeerName );
 				oPeer	= this.m_oPeers[ sPeerName ];
 
 				//
@@ -399,10 +435,6 @@ class Gossiper extends EventEmitter
 	}
 
 
-
-
-
-
 	/**
 	 *	The method of choosing which peer(s) to gossip to is borrowed from Cassandra.
 	 *	They seemed to have worked out all of the edge cases
@@ -488,7 +520,7 @@ class Gossiper extends EventEmitter
 	 */
 	_gossipToPeer( sPeerName )
 	{
-		if ( ! this.isValidPeerName( sPeerName ) )
+		if ( ! GossiperUtils.isValidPeerName( sPeerName ) )
 		{
 			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerName: ${ JSON.stringify( sPeerName ) }` );
 		}
@@ -504,92 +536,6 @@ class Gossiper extends EventEmitter
 		else
 		{
 			this._emitErrorLog( `Peer not found by sPeerName: ${ JSON.stringify( sPeerName ) }` );
-		}
-	}
-
-	/**
-	 *	handle message
-	 *
-	 *	@param	{object}	oSocket
-	 *	@param	{object}	oMessage
-	 *	@param	{number}	oMessage.type
-	 *	@param	{object}	[oMessage.digest=]
-	 *	@param	{object}	[oMessage.request_digest=]
-	 *	@param	{array}		[oMessage.updates=]
-	 *	@return	{*}
-	 */
-	_handleMessage( oSocket, oMessage )
-	{
-		if ( ! oSocket )
-		{
-			return this._emitErrorLog( `call _handleMessage with invalid oSocket: ${ JSON.stringify( oSocket ) }.` );
-		}
-		if ( ! DeUtilsCore.isPlainObjectWithKeys( oMessage, 'type' ) )
-		{
-			return this._emitErrorLog( `call _handleMessage with invalid oMessage: ${ JSON.stringify( oMessage ) }.` );
-		}
-		if ( ! this.isValidMessageType( oMessage.type ) )
-		{
-			return this._emitErrorLog( `call _handleMessage with invalid oMessage.type: ${ JSON.stringify( oMessage.type ) }.` );
-		}
-
-		//
-		//	handle message by type
-		//
-		switch ( oMessage.type )
-		{
-			case REQUEST:
-				//
-				//	oMsg.digest :
-				//	{
-				//		'127.0.0.1:9011'	: m_nMaxVersionSeen,
-				//		'127.0.0.1:9012'	: m_nMaxVersionSeen,
-				//		...
-				//	}
-				//
-				this._sendMessage( oSocket, this._firstResponseMessage( oMessage.digest ) );
-				break;
-
-			case FIRST_RESPONSE:
-				//
-				//	first response from other peers
-				//
-				//
-				//
-				//	oMsg.updates
-				//	[
-				//		[ sPeerName, key, value, version ],
-				//		[ sPeerName, key, value, version ],
-				//		...
-				// 	],
-				//	oMsg.request_digest
-				//	{
-				// 		sPeerName	: 0,
-				// 		sPeerName	: nLocalMaxVersion,
-				//		...
-				//	}
-				//
-				this.m_oScuttle.updateKnownState( oMessage.updates );
-				this._sendMessage( oSocket, this._secondResponseMessage( oMessage.request_digest ) );
-				break;
-
-			case SECOND_RESPONSE:
-				//
-				//	second response from other peers
-				//
-				//	oMsg.updates
-				//	[
-				//		[ sPeerName, sKey, vValue, nVersion ],
-				//		[ sPeerName, sKey, vValue, nVersion ],
-				//		...
-				// 	]
-				//
-				this.m_oScuttle.updateKnownState( oMessage.updates );
-				break;
-
-			default:
-				//	shit went bad
-				break;
 		}
 	}
 
@@ -633,9 +579,10 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	listen to peer
+	 *
 	 *	@param oPeer
 	 */
-	_listenToPeer(oPeer )
+	_listenToPeer( oPeer )
 	{
 		if ( ! oPeer )
 		{
@@ -648,7 +595,7 @@ class Gossiper extends EventEmitter
 			'update',
 			( sKey, vValue ) =>
 			{
-				this.emit( 'update', oPeer.getPeerName(), sKey, vValue );
+				this.emit( 'update', oPeer.getName(), sKey, vValue );
 			}
 		);
 		oPeer.on
@@ -656,7 +603,7 @@ class Gossiper extends EventEmitter
 			'peer_alive',
 			() =>
 			{
-				this.emit( 'peer_alive', oPeer.getPeerName() );
+				this.emit( 'peer_alive', oPeer.getName() );
 			}
 		);
 		oPeer.on
@@ -664,7 +611,7 @@ class Gossiper extends EventEmitter
 			'peer_failed',
 			() =>
 			{
-				this.emit( 'peer_failed', oPeer.getPeerName() );
+				this.emit( 'peer_failed', oPeer.getName() );
 			}
 		);
 
@@ -696,6 +643,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	first response
+	 *
 	 *	@param	oPeerDigest
 	 *		all peers( ip:port ) known by the peer and the max version of data stored in the peer.
 	 *		for example:
@@ -740,6 +688,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 * 	second response
+	 *
 	 *	@param	oRequests
 	 *	@return {{type: number, updates: Array}}
 	 */
@@ -811,6 +760,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	emit an info to caller
+	 *
 	 *	@param	{}	vData
 	 *	@private
 	 */
@@ -821,6 +771,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	emit an error to caller
+	 *
 	 *	@param	{}	vData
 	 *	@private
 	 */
@@ -831,6 +782,7 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	emit a message to caller
+	 *
 	 *	@param	{string}	sType
 	 *	@param	{any}		vData
 	 *	@private
