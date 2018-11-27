@@ -3,7 +3,7 @@ const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
 
 const { GossiperDetector }	= require( './gossiper-detector' );
-
+const { GossiperUtils }		= require( './gossiper-utils' );
 
 
 /**
@@ -19,12 +19,26 @@ const MAX_PHI		=  8;
  */
 class GossiperPeer extends EventEmitter
 {
-	constructor( sName )
+	/**
+	 *	@constructor
+	 *
+	 *	@param	{object}	oOptions
+	 *	@param	{string}	[oOptions.ip=]		- local ip address, '127.0.0.1' or undefined
+	 *	@param	{number}	[oOptions.port=]	- local port number
+	 *	@param	{string}	[oOptions.address=]	- local super node address
+	 *	@param	{function}	[oOptions.signer=]	- local signer function provided by super node
+	 */
+	constructor( oOptions )
 	{
 		super();
 
 		//	...
-		this.m_sName			= sName;
+		this.m_sIp			= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'ip' ) ? oOptions.ip : null;
+		this.m_nPort			= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'port' ) ? oOptions.port : null;
+		this.m_sAddress			= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'address' ) ? oOptions.address : null;
+		this.m_pfnSigner		= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'signer' ) ? oOptions.signer : null;
+
+		this.m_sName			= GossiperUtils.assemblePeerName( this.m_sIp, this.m_nPort );
 		this.m_oSocket			= null;
 		this.m_bAlive			= true;
 
@@ -36,23 +50,49 @@ class GossiperPeer extends EventEmitter
 	}
 
 	/**
+	 *	get ip
+	 *	@return	{string}
+	 */
+	getIp()
+	{
+		return this.m_sIp;
+	}
+
+	/**
+	 * 	get port
+	 *	@return {number}
+	 */
+	getPort()
+	{
+		return this.m_nPort;
+	}
+
+	/**
 	 * 	get peer name
 	 *	@return {string}	'127.0.0.1:5001'
 	 */
-	getPeerName()
+	getName()
 	{
 		return this.m_sName;
 	}
 
 	/**
-	 * 	set peer name
-	 *	@param	{string}	sName
+	 *	get address
+	 *	@return {string}
 	 */
-	setPeerName( sName )
+	getAddress()
 	{
-		this.m_sName = sName;
+		return this.m_sAddress;
 	}
 
+	/**
+	 *	get signer
+	 *	@return {function}
+	 */
+	getSigner()
+	{
+		return this.m_pfnSigner;
+	}
 
 	/**
 	 * 	get socket
