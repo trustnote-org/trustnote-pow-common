@@ -473,13 +473,13 @@ function validateProposalJoint(objJoint, callbacks){
 			function(cb){
 				// validate proposer ID
 				byzantine.getProposer(conn, objUnit.hp, objJoint.phase, function(err, proposer, round_index){
-					if(proposer !== objJoint.proposer.address)
-						return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objJoint.proposer.address);
+					if(proposer !== objJoint.proposer[0].address)
+						return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objJoint.proposer[0].address);
 					if(round_index !== objUnit.round_index)
 						return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
 					objValidationState.unit_hash_to_sign = objectHash.getUnitHashToSign(objUnit);
 					//validate proposer signature
-					validateProposer(conn, objJoint.proposer, objUnit, objValidationState, cb);
+					validateProposer(conn, objJoint.proposer[0], objUnit, objValidationState, cb);
 				});
 			},
 			function(cb){ // check timestamp is near to mine in data feed message 
@@ -517,5 +517,5 @@ function validateProposalJoint(objJoint, callbacks){
 }
 
 
-exports.validate = validate;
+exports.validateParents = validateParents;
 exports.hasValidHashes = hasValidHashes;
