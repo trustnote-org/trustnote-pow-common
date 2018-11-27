@@ -97,10 +97,10 @@ class Gossiper extends EventEmitter
 
 	/**
 	 * 	start
-	 *	@param	{function}	pfnCallback( err )
-	 *	@return	{*}
+	 *
+	 *	@return	{void}
 	 */
-	start( pfnCallback )
+	start()
 	{
 		//
 		//	try to initialize with initializing peers
