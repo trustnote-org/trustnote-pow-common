@@ -7,12 +7,12 @@ var Mnemonic = require('bitcore-mnemonic');
 var Bitcore = require('bitcore-lib');
 var readline = require('readline');
 
-var conf = require('trustnote-pow-common/config/conf.js');
-var objectHash = require('trustnote-pow-common/base/object_hash.js');
-var db = require('trustnote-pow-common/db/db.js');
-var ecdsaSig = require('trustnote-pow-common/encrypt/signature.js');
-var constants = require('trustnote-pow-common/config/constants.js');
-var desktopApp = require('trustnote-pow-common/base/desktop_app.js');
+var conf = require('../config/conf.js');
+var objectHash = require('../base/object_hash.js');
+var db = require('..chat_storage');
+var ecdsaSig = require('../encrypt/signature.js');
+var constants = require('../config/constants.js');
+var desktopApp = require('../base/desktop_app.js');
 
 var appDataDir = desktopApp.getAppDataDir();
 var KEYS_FILENAME = appDataDir + '/' + (conf.KEYS_FILENAME || 'keys.json');
@@ -119,10 +119,10 @@ function writeKeys(mnemonic_phrase, deviceTempPrivKey, devicePrevTempPrivKey, on
  */
 function createWallet(xPrivKey, onDone){
 	var devicePrivKey = xPrivKey.derive("m/1'").privateKey.bn.toBuffer({size:32});
-	var device = require('trustnote-pow-common/wallet/device.js');
+	var device = require('../wallet/device.js');
 	device.setDevicePrivateKey(devicePrivKey); // we need device address before creating a wallet
 	var strXPubKey = Bitcore.HDPublicKey(xPrivKey.derive("m/44'/0'/0'")).toString();
-	var walletDefinedByKeys = require('trustnote-pow-common/wallet/wallet_defined_by_keys.js');
+	var walletDefinedByKeys = require('../wallet/wallet_defined_by_keys.js');
 	walletDefinedByKeys.createWalletByDevices(strXPubKey, 0, 1, [], 'any walletName', function(wallet_id){
 		walletDefinedByKeys.issueNextAddress(wallet_id, 0, function(){
 			onDone();
