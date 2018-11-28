@@ -625,7 +625,7 @@ function getMaxMci(conn, handleResult){
 	var conn = conn || db;
 	conn.query(
 		"SELECT MAX(main_chain_index) FROM units"
-		[],
+		, [],
 		function(rows){
 			IF(rows.length !== 1)
 				throw Error("getMaxMci method can not got one mci  ")
