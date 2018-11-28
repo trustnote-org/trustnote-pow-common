@@ -897,7 +897,7 @@ function markMcIndexStable(conn, mci, onDone){
 			},
 			ifFound: function(objJoint){
 				var content_hash = objectHash.getUnitContentHash(objJoint.unit);
-				conn.query("UPDATE units SET content_hash=? WHERE unit=?", [content_hash, unit], function(){
+				conn.query("UPDATE units SET content_hash=?,headers_commission=0,payload_commission=0 WHERE unit=?", [content_hash, unit], function(){
 					onSet();
 				});
 			}
