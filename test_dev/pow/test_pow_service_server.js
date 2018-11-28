@@ -14,6 +14,11 @@ const _oOptions		= {
 		}
 
 		console.log( `TEST >> socket server started:${ oWsServer }.` );
+		console.log(
+			oWsServer.options.host,
+			oWsServer.options.port,
+			oWsServer.options.handleProtocols,
+			oWsServer.options.path );
 	},
 	onConnection	: ( err, oWs ) =>
 	{
