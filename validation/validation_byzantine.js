@@ -33,155 +33,6 @@ var isNonemptyArray = ValidationUtils.isNonemptyArray;
 var isValidAddress = ValidationUtils.isValidAddress;
 var isValidBase64 = ValidationUtils.isValidBase64;
 
-function validate(objJoint, callbacks) {
-	
-	var objUnit = objJoint.unit;
-	if (typeof objUnit !== "object" || objUnit === null)
-		throw Error("no unit object");
-	if (!objUnit.unit)
-		throw Error("no unit");
-	
-	console.log("\nvalidating joint identified by unit "+objJoint.unit.unit);
-	
-	if (!isStringOfLength(objUnit.unit, constants.HASH_LENGTH))
-		return callbacks.ifJointError("wrong unit length");
-	
-	try{
-		// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
-		if (objectHash.getUnitHash(objUnit) !== objUnit.unit)
-			return callbacks.ifJointError("wrong unit hash: "+objectHash.getUnitHash(objUnit)+" != "+objUnit.unit);
-	}
-	catch(e){
-		return callbacks.ifJointError("failed to calc unit hash: "+e);
-	}
-	
-	if (objJoint.unsigned){
-		if (hasFieldsExcept(objJoint, ["unit", "unsigned"]))
-			return callbacks.ifJointError("unknown fields in unsigned unit-joint");
-	}
-	else if ("ball" in objJoint){
-		if (!isStringOfLength(objJoint.ball, constants.HASH_LENGTH))
-			return callbacks.ifJointError("wrong ball length");
-		//if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units", "arrShareDefinition"])) // Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objJoint, ["unit", "ball", "skiplist_units"])) // Victor ShareAddress add arrShareDefinition field
-			return callbacks.ifJointError("unknown fields in ball-joint");
-		if ("skiplist_units" in objJoint){
-			if (!isNonemptyArray(objJoint.skiplist_units))
-				return callbacks.ifJointError("missing or empty skiplist array");
-			//if (objUnit.unit.charAt(0) !== "0")
-			//    return callbacks.ifJointError("found skiplist while unit doesn't start with 0");
-		}
-	}
-	else{
-		//if (hasFieldsExcept(objJoint, ["unit","arrShareDefinition"]))   // Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objJoint, ["unit"]))   // Victor ShareAddress add arrShareDefinition field
-			return callbacks.ifJointError("unknown fields in unit-joint");
-	}
-	
-	if ("content_hash" in objUnit){ // nonserial and stripped off content
-		if (!isStringOfLength(objUnit.content_hash, constants.HASH_LENGTH))
-			return callbacks.ifUnitError("wrong content_hash length");
-		// Pow modi
-		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
-		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit"]))
-		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "witnesses", "content_hash", "parent_units", "last_ball", "last_ball_unit", "arrShareDefinition"]))
-		return callbacks.ifUnitError("unknown fields in nonserial unit");
-		if (!objJoint.ball)
-			return callbacks.ifJointError("content_hash allowed only in finished ball");
-	}
-	else{ // serial
-		// Pow modi
-		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
-		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
-		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
-			return callbacks.ifUnitError("unknown fields in unit");
-
-		if (typeof objUnit.headers_commission !== "number")
-			return callbacks.ifJointError("no headers_commission");
-		if (typeof objUnit.payload_commission !== "number")
-			return callbacks.ifJointError("no payload_commission");
-		//Pow add:
-		if (objUnit.pow_type){
-			if (typeof objUnit.round_index !== "number")
-				return callbacks.ifJointError("no round index");
-			if (typeof objUnit.pow_type !== "number")
-				return callbacks.ifJointError("no unit type");
-
-			// unity type should be in range of [1,3]
-			if ( objUnit.pow_type < 1 || objUnit.pow_type > 3)
-				return callbacks.ifJointError("invalid unit type");
-			// unity round index should be in range of [1,4204800]
-			if ( objUnit.round_index < 1 || objUnit.round_index > 4204800)
-				return callbacks.ifJointError("invalid unit round index");
-		}
-
-
-		if (!isNonemptyArray(objUnit.messages))
-			return callbacks.ifUnitError("missing or empty messages array");
-		if (objUnit.messages.length > constants.MAX_MESSAGES_PER_UNIT)
-			return callbacks.ifUnitError("too many messages");
-
-		if (objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
-			return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
-		if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
-			console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
-			console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
-			console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
-			return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
-		}
-	}
-	
-	if (!isNonemptyArray(objUnit.authors))
-		return callbacks.ifUnitError("missing or empty authors array");
-	
-
-	if (objUnit.version !== constants.version)
-		return callbacks.ifUnitError("wrong version");
-	if (objUnit.alt !== constants.alt)
-		return callbacks.ifUnitError("wrong alt");
-
-	
-	if (!storage.isGenesisUnit(objUnit.unit)){
-		if (!isNonemptyArray(objUnit.parent_units))
-			return callbacks.ifUnitError("missing or empty parent units array");
-		
-		if (!isStringOfLength(objUnit.last_ball, constants.HASH_LENGTH))
-			return callbacks.ifUnitError("wrong length of last ball");
-		if (!isStringOfLength(objUnit.last_ball_unit, constants.HASH_LENGTH))
-			return callbacks.ifUnitError("wrong length of last ball unit");
-	}
-	
-	// pow del
-	// if ("witness_list_unit" in objUnit && "witnesses" in objUnit)
-	// 	return callbacks.ifUnitError("ambiguous witnesses");
-		
-	var arrAuthorAddresses = objUnit.authors ? objUnit.authors.map(function(author) { return author.address; } ) : [];
-	
-	var objValidationState = {
-		arrAdditionalQueries: [],
-		arrDoubleSpendInputs: [],
-		arrInputKeys: []
-	};
-	if (objJoint.unsigned)
-		objValidationState.bUnsigned = true;
-	
-	if (conf.bLight){
-		if (!isPositiveInteger(objUnit.timestamp) && !objJoint.unsigned)
-			return callbacks.ifJointError("bad timestamp");
-		if (objJoint.ball)
-			return callbacks.ifJointError("I'm light, can't accept stable unit "+objUnit.unit+" without proof");
-		return objJoint.unsigned 
-			? callbacks.ifOkUnsigned(true) 
-			: callbacks.ifOk({sequence: 'good', arrDoubleSpendInputs: [], arrAdditionalQueries: []}, function(){});
-	}
-	else{
-		if ("timestamp" in objUnit && !isPositiveInteger(objUnit.timestamp))
-			return callbacks.ifJointError("bad timestamp");
-	}
-}
-
 function validateParents(conn, objJoint, objValidationState, callback){
 	function checkLastBallDidNotRetreat(){
 		conn.query(
@@ -194,6 +45,27 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
 					//checkRoundIndexDidNotRetreat();
+					checkRoundIndexDidNotRetreat();
+			}
+		);
+	}
+
+	function checkRoundIndexDidNotRetreat(){
+		if(!objUnit.pow_type)
+			return callback();
+		conn.query(
+			"SELECT unit,round_index, level, pow_type,main_chain_index\n\
+			FROM units  \n\
+			WHERE unit IN(?)", 
+			[objUnit.parent_units], 
+			function(rows){
+				if (rows.length !==  objNewUnit.parent_units.length)
+					return callback("got wrong number of parents units");
+				var parent_trustme = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
+				if(parent_trustme.length !== 1)
+					return callback("units contains not one trust me unit as parents");
+				if(parent_trustme[0].round_index > objUnit.round_index)
+					return callback("unit round_index is retreated, less than its parents' ");
 				callback();
 			}
 		);
@@ -518,4 +390,4 @@ function validateProposalJoint(objJoint, callbacks){
 
 
 exports.validateParents = validateParents;
-exports.hasValidHashes = hasValidHashes;
+exports.validateProposalJoint = validateProposalJoint;

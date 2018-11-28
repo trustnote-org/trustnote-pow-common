@@ -106,7 +106,7 @@ function validate(objJoint, callbacks) {
 		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
 			return callbacks.ifUnitError("unknown fields in unit");
 
 		if (typeof objUnit.headers_commission !== "number")
@@ -163,10 +163,9 @@ function validate(objJoint, callbacks) {
 		if (!isStringOfLength(objUnit.last_ball_unit, constants.HASH_LENGTH))
 			return callbacks.ifUnitError("wrong length of last ball unit");
 	}
-	
-	// pow del
-	// if ("witness_list_unit" in objUnit && "witnesses" in objUnit)
-	// 	return callbacks.ifUnitError("ambiguous witnesses");
+
+	if((!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_TRUSTME) && objUnit.coordinators)
+		return callbacks.ifUnitError("non trust me unit with coordinators body");
 		
 	var arrAuthorAddresses = objUnit.authors ? objUnit.authors.map(function(author) { return author.address; } ) : [];
 	
@@ -252,7 +251,7 @@ function validate(objJoint, callbacks) {
 				function(cb){
 					profiler.stop('validation-authors');
 					profiler.start();
-					objUnit.pow_type == constants.POW_TYPE_TRUSTME ? ValidateCoordinatorsAndTrustmeWithoutFork(conn, objUnit.messages, objUnit, objValidationState, cb) : cb();
+					objUnit.pow_type == constants.POW_TYPE_TRUSTME ? ValidateCoordinatorsAndTrustmeWithoutFork(conn, objUnit.coordinators, objUnit, objValidationState, cb) : cb();
 				}
 			], 
 			function(err){
@@ -416,52 +415,6 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			}
 		);
 	}
-
-	function checkRoundIndexDidNotRetreat(){
-		if (!objUnit.pow_type)
-			return callback();
-		function getMaxRoundIndexForAnyTypeUnit(unit, handleMaxRound){
-			storage.readStaticUnitProps(conn, unit, function (unitPros){
-				if(unitPros.round_index)
-					return handleMaxRound(unitPros.round_index);
-				var maxRoundIndex = 0;
-				conn.query(
-					"SELECT  parent_unit \n\
-					FROM parenthoods \n\
-					WHERE unit = ? ",
-					[unit],
-					function(rows){
-						async.eachSeries(
-							rows,
-							function(parent, cb){
-								getMaxRoundIndexForAnyTypeUnit(parent, function(roundIndex){
-									if (roundIndex > maxRoundIndex)
-										maxRoundIndex = roundIndex;
-									cb();
-								});
-							},
-							function(err){
-								handleMaxRound(maxRoundIndex);
-							});
-					});
-			});
-		}
-
-		async.eachSeries(
-			objUnit.parent_units,
-			function(parent_unit, cb){
-				getMaxRoundIndexForAnyTypeUnit(parent_unit, function (roundIndex){
-					if (objUnit.round_index < roundIndex)
-						cb("round index of unit retreated ")
-				});
-			},
-			function(err){
-				if (err)
-					return callback(err);
-				callback();
-			});
-	}
-
 
 	function checkPOWTypeUnitsInRightRound(){
 		if (!objUnit.pow_type)
@@ -644,12 +597,29 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 			return callback("author addresses not sorted");
 		prev_address = objAuthor.address;
 	}
-	
+
 	objValidationState.unit_hash_to_sign = objectHash.getUnitHashToSign(objUnit);
+		//pow add: check trust me author must come from pow unit authors of last round
+	if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
+		// validate proposer ID
+		if(objUnit.authors.length !== 1)
+			return cb("trust me unit consist of more than one author")
+		// getProposer method can ensure prop[oser is among top 10 pow unit address.]
+		byzantine.getProposer(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index){
+			if(proposer !== objUnit.authors[0].address)
+				return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
+			if(round_index !== objUnit.round_index)
+				return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
+			async.eachSeries(arrAuthors, function(objAuthor, cb){
+				validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+			}, callback);
+		});
+	}else{
+		async.eachSeries(arrAuthors, function(objAuthor, cb){
+			validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+		}, callback);
+	}
 	
-	async.eachSeries(arrAuthors, function(objAuthor, cb){
-		validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
-	}, callback);
 }
 
 function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
@@ -702,29 +672,9 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 					return callback("authentifier verification failed");
 				// pow modi
 				//checkSerialAddressUse();
-				checkTrustMeAuthor();
+				checkNoPendingChangeOfDefinitionChash();
 			}
 		);
-	}
-
-	//pow add: check trust me author must come from pow unit authors of last round
-	function checkTrustMeAuthor(){
-		if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
-				// validate proposer ID
-				if(objUnit.authors.length !== 1)
-					return cb("trust me unit consist of more than one author")
-				// getProposer method can ensure prop[oser is among top 10 pow unit address.]
-				byzantine.getProposer(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index){
-					if(proposer !== objUnit.authors[0].address)
-						return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
-					if(round_index !== objUnit.round_index)
-						return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
-					checkNoPendingChangeOfDefinitionChash(); 
-				});
-
-		}else{
-			checkNoPendingChangeOfDefinitionChash();
-		}
 	}
 	
 	// in byzantine mode ,we don't need to make sure unit serial any more
@@ -980,11 +930,11 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, callback) {
 	console.log("validating witness level");
 	if (!objUnit.parent_units) {//gensis un;
-		objValidationState.best_parent_unit = null;
+		//objValidationState.best_parent_unit = null;
 		objValidationState.witnessed_level = 0;
 		return callback();
 	}
-	var unit_best_parent;
+	var unit_limci;
 	var unit_witenessed_level;
 	async.series(
 		[
@@ -997,11 +947,12 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 			// 	});
 			// },
 			function(cb){
-				if(!objUnit.pow_type)
-					return cb();
-				storage.determinewitnessedLevel(conn,objUnit,unit_best_parent, function(witenessed_level){
+				storage.determinewitnessedLevelAndLimci(conn,objUnit, function(err,witenessed_level,limci){
+					if(err)
+						return cb(err);
 					unit_witenessed_level = witenessed_level;
-					objValidationState.witnessed_level= witenessed_level;
+					objValidationState.witenessed_level = limci;
+					objValidationState.limci = limci;
 					cb();
 				});
 			},
@@ -1069,91 +1020,40 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 	})
 }
 
-// byzantine add :validate coordinators and trustme unit fork condition
-function ValidateCoordinatorsAndTrustmeWithoutFork(conn, objUnit, objValidationState, callback) {
+// byzantine add :
+// validate coordinators and trustme unit fork condition
+function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, objValidationState, callback) {
 	console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
-	
-	var unit_best_parent;
-	var unit_witenessed_level;
-	async.series(
-		[
-			function(cb){
-				//check only single main chain without fork ,there is no two trust me units with same mci
-				storage.determineBestParent(conn,objUnit, function(best_parent_unit){
-					unit_best_parent = best_parent_unit;
-					objValidationState.best_parent_unit = best_parent_unit;
-					cb();
-				});
-			},
-			function(cb){
-				storage.determinewitnessedLevel(conn,objUnit,unit_best_parent, function(witenessed_level){
-					unit_witenessed_level = witenessed_level;
-					objValidationState.witnessed_level= witenessed_level;
-					cb();
-				});
-			},
-			function(cb){
-				if(!objUnit.pow_type)
-					return cb();
-				if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
-					// check there is no trust me unit in this round
-					conn.query("SELECT 1 FROM units WHERE round_index=? AND pow_type = ? ", [objUnit.round_index,constants.POW_TYPE_TRUSTME], function(rows){
-						if (rows.length === 0)
-							return cb("the first unit is not trust me unit of round "+ objUnit.round_index );
-						return cb();
-					});
-				}else{
-					return cb();
-				}
-			},
-			function(cb){
-				if(!objUnit.pow_type)
-					return cb();
-				// for only pow related units,validate wl
-				round.getMinWlByRoundIndex(conn, objUnit.round_index, function(min_wl){
-					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
-						// in this condition, we check wl is bigger than last round 's max wl.
-						if (objUnit.round_index === 1){//first round
-							if(unit_witenessed_level < 0)
-								return cb("unit witness level is negative in first round")
 
-							return cb();
-						}
-
-						round.getMinWlByRoundIndex(conn, objUnit.round_index-1, function(last_round_min_wl){
-							if (last_round_min_wl === null){
-								return cb("last_round_min_wl or last_round_min_wl is null ");
-							}
-						
-							return cb();
-						});
-					}
-					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
-						if(unit_witenessed_level < min_wl){
-							return cb("unit witnessed level " + unit_witenessed_level + "is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
-						}
-						return cb();
-					}
-				});
-			},
-			function(cb){// check no bad joints to ensure supernode is not doing bad
-				if(!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
-					return cb();
-				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
-					if(err)
-						return cb(err);
-					if(invalid)
-						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + objUnit.pow_type);
-					return cb();
-				});
-			}
-	],
-	function(err){
-		if (err){
-			return callback("error occured during validation witnessed_level" + err);
+	//check only single main chain without fork ,there is no two trust me units with same mci
+	storage.getUnitsInfoWithMci(conn,objUnit.hp, function(units){
+		if(units.length > 0)
+			return callback("duplicated trust me units with same MCI !")
+		if(coordinators.length <  ( 2 * constants.TOTAL_BYZANTINE + 1) )
+			return callback("not enough coordinators, not reach to 2f + 1 threshold ");
+		if(coordinators.length > constants.TOTAL_COORDINATORS )
+			return callback("too many coordinators ");
+		
+			// check coordinators are sorted and no duplicated
+		var prev_address = "";
+		for (var i=0; i<coordinators.length; i++){
+			var objCoodinator = coordinators[i];
+			if (objCoodinator.address <= prev_address)
+				return callback("coordinator addresses not sorted");
+			prev_address = objCoodinator.address;
 		}
-		return callback();
-	})
+		
+		async.eachSeries(coordinators, function(coordinator, cb){
+			// Make sure all coordinators are correct witness of round
+			round.getWitnessesByRoundIndex(objUnit.round_index, function(witnesses){
+				if(witnesses.indexOf(coordinator.address) === -1)
+					return cb("Incorrect coordinator deteced :" + coordinator.address);
+				// Validate signature
+				objValidationState.unit_hash_to_sign = objectHash.getProposalHashToSign(objUnit);
+				validateAuthor(conn, coordinator, objUnit, objValidationState, cb);
+			});
+		}, callback);
+	});
 }
 
 
@@ -2300,3 +2200,4 @@ exports.hasValidHashes = hasValidHashes;
 exports.validateAuthorSignaturesWithoutReferences = validateAuthorSignaturesWithoutReferences;
 exports.validatePayment = validatePayment;
 exports.initPrivatePaymentValidationState = initPrivatePaymentValidationState;
+exports.validateProposalJoint = validation_byzantine.validateProposalJoint;
