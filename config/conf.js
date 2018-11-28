@@ -16,7 +16,7 @@ exports.debug		= true;
 /**
  *	for pow
  */
-exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 100000;
+exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 50;
 
 
 
