@@ -120,7 +120,7 @@ function startPhase(hp, phase){
                 broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
             }
             else{
-                composer.composeProposalJoint(proposer, roundIndex, h_p, supernode.signerProposal, 
+                composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
                     function(err, objJoint){
                         if(err)
                             throw Error("startPhase compose proposal joint err" + err);
@@ -265,27 +265,32 @@ eventBus.on('byzantine_gossip', function(gossipMessage){
     //         hp ← hp+1
     //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
     //         StartRound(0)
+    function onDecisionError(phase){
+        startPhase(h_p, phase+1);          
+    }
+    function onDecisionDone(){
+        //reset params
+        lockedValue_p = null;
+        lockedPhase_p = -1;
+        validValue_p  = null;
+        validPhase_p  = -1;
+        h_propose_timeout   = -1;
+        p_propose_timeout   = -1; 
+        h_prevote_timeout   = -1;
+        p_prevote_timeout   = -1; 
+        h_precommit_timeout = -1;
+        p_precommit_timeout = -1; 
+        // start new h_p
+        startPhase(h_p+1, 0);
+    }
     if(assocByzantinePhase[h_p].decision === null){
         Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
             if(assocByzantinePhase[h_p][current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
                 assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p][current_p].proposal.unit;
                 if(assocByzantinePhase[h_p][current_p].proposal.address === address_p){
                     // compose new trustme unit
-
+                    decisionTrustMe(assocByzantinePhase[h_p][current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
                 }
-                // //reset params
-                // lockedValue_p = null;
-                // lockedPhase_p = -1;
-                // validValue_p  = null;
-                // validPhase_p  = -1;
-                // h_propose_timeout   = -1;
-                // p_propose_timeout   = -1; 
-                // h_prevote_timeout   = -1;
-                // p_prevote_timeout   = -1; 
-                // h_precommit_timeout = -1;
-                // p_precommit_timeout = -1; 
-                // // start new h_p
-                // startPhase(h_p+1, 0);
             }
         });
     }
@@ -457,22 +462,23 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
     else 
         return false;
 }
-function decisionTrustMe(objJoint, onDone){
+function decisionTrustMe(objUnit, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
     bTrustMeUnderWay = true;
-    function onError(err){
+    function onError(){
         bTrustMeUnderWay = false;
-        throw Error(err);
-    }
+        onDecisionError(phase);
+	}
     const callbacks = composer.getSavingCallbacks({
 		ifNotEnoughFunds: onError,
 		ifError: onError,
 		ifOk: function(objJoint){
-			network.broadcastJoint(objJoint);
-			onDone();
+            network.broadcastJoint(objJoint);
+            bTrustMeUnderWay = false;
+            onDecisionDone();
 		}
-	})
+	});
 		
-	composer.composeTrustMEJoint(my_address, round_index, wallet.signer, callbacks);      
+	composer.composeCoordinatorTrustMe(address_p, objUnit, phase, approvedCoordinators, supernode.signer, callbacks);      
 }
 // private function end
 
