@@ -86,31 +86,36 @@ class Gossiper extends EventEmitter
 		this.m_nInterval	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'interval' ) ? oOptions.interval : DEFAULT_INTERVAL;
 
 		//
-		//	initializing peers
-		//
-		this.m_oSeeds		= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'seeds' ) ? oOptions.seeds : {};
-		this.m_oPeers		= {};
-
-		//
 		//	local
 		//
 		this.m_oLocalPeer	= new GossiperPeer( oOptions );
-		this.m_oScuttle		= new GossiperScuttle( this.m_oPeers, this.m_oLocalPeer );
-
-		//
-		//	handle new peers
-		//
-		this._handleNewPeers( this.m_oSeeds );
+		this.m_oOtherPeers	= {};
+		this.m_oScuttle		= new GossiperScuttle( this.m_oOtherPeers, this.m_oLocalPeer );
 	}
 
 
 	/**
 	 * 	start
 	 *
+	 *	@param	{object}	oSeeds
+	 *		{
+	 *			'127.0.0.1:60001'	: {
+	 *				ip	: '',
+	 *				port	: 0,
+	 *				address	: '',
+	 *				socket	: null
+	 *			},
+	 *			...
+	 *		}
 	 *	@return	{void}
 	 */
-	start()
+	start( oSeeds )
 	{
+		//
+		//	initializing peers
+		//
+		this.m_oSeeds = DeUtilsCore.isPlainObject( oSeeds ) ? oSeeds : {};
+
 		//
 		//	try to initialize with initializing peers
 		//
@@ -262,7 +267,7 @@ class Gossiper extends EventEmitter
 
 		if ( DeUtilsCore.isExistingString( sPeerName ) )
 		{
-			oPeer = this.m_oPeers[ sPeerName ];
+			oPeer = this.m_oOtherPeers[ sPeerName ];
 		}
 
 		return oPeer;
@@ -282,13 +287,13 @@ class Gossiper extends EventEmitter
 
 		if ( null !== oPeerName.ip && null !== oPeerName.port )
 		{
-			if ( this.m_oPeers[ sPeerName ] )
+			if ( this.m_oOtherPeers[ sPeerName ] )
 			{
 				//
 				//	already exists
 				//
 				bExists	= true;
-				oPeer	= this.m_oPeers[ sPeerName ];
+				oPeer	= this.m_oOtherPeers[ sPeerName ];
 			}
 			else
 			{
@@ -298,8 +303,8 @@ class Gossiper extends EventEmitter
 				bExists	= false;
 
 				let oPeerOptions = Object.assign( {}, oPeerName, oPeerConfig );
-				this.m_oPeers[ sPeerName ] = new GossiperPeer( oPeerOptions );
-				oPeer	= this.m_oPeers[ sPeerName ];
+				this.m_oOtherPeers[ sPeerName ] = new GossiperPeer( oPeerOptions );
+				oPeer	= this.m_oOtherPeers[ sPeerName ];
 
 				//
 				//	emit events and listen
@@ -345,7 +350,7 @@ class Gossiper extends EventEmitter
 	getPeerAllKeys( sPeerName )
 	{
 		let arrKeys	= null;
-		let oPeer	= this.m_oPeers[ sPeerName ];
+		let oPeer	= this.m_oOtherPeers[ sPeerName ];
 
 		if ( oPeer )
 		{
@@ -365,7 +370,7 @@ class Gossiper extends EventEmitter
 	getPeerValue( sPeerName, sKey )
 	{
 		let vValue	= null;
-		let oPeer	= this.m_oPeers[ sPeerName ];
+		let oPeer	= this.m_oOtherPeers[ sPeerName ];
 
 		if ( oPeer )
 		{
@@ -381,7 +386,7 @@ class Gossiper extends EventEmitter
 	 *	@return {Array}
 	 *
 	 * 	@description
-	 *	this.m_oPeers
+	 *	this.m_oOtherPeers
 	 *	{
 	 *		peer_name_1	: { ... },
 	 *		peer_name_2	: { ... },
@@ -391,7 +396,7 @@ class Gossiper extends EventEmitter
 	{
 		let arrPeerNames = [];
 
-		for ( let sPeerName in this.m_oPeers )
+		for ( let sPeerName in this.m_oOtherPeers )
 		{
 			arrPeerNames.push( sPeerName );
 		}
@@ -411,9 +416,9 @@ class Gossiper extends EventEmitter
 	{
 		let arrPeerNames = [];
 
-		for ( let sPeerName in this.m_oPeers )
+		for ( let sPeerName in this.m_oOtherPeers )
 		{
-			if ( this.m_oPeers[ sPeerName ].isAlive() )
+			if ( this.m_oOtherPeers[ sPeerName ].isAlive() )
 			{
 				arrPeerNames.push( sPeerName );
 			}
@@ -434,9 +439,9 @@ class Gossiper extends EventEmitter
 	{
 		let arrPeerNames = [];
 
-		for ( let sPeerName in this.m_oPeers )
+		for ( let sPeerName in this.m_oOtherPeers )
 		{
-			if ( ! this.m_oPeers[ sPeerName ].isAlive() )
+			if ( ! this.m_oOtherPeers[ sPeerName ].isAlive() )
 			{
 				arrPeerNames.push( sPeerName );
 			}
@@ -486,17 +491,17 @@ class Gossiper extends EventEmitter
 		{
 			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerNames().length ) )
 			{
-				let arrCertainPeerName	= this._chooseRandom( Object.keys( this.m_oPeers ) );
+				let arrCertainPeerName	= this._chooseRandom( Object.keys( this.m_oOtherPeers ) );
 				this._gossipToPeer( arrCertainPeerName );
 			}
 		}
 
 		//
-		//	Check health of m_oPeers
+		//	Check health of m_oOtherPeers
 		//
-		for ( let i in this.m_oPeers )
+		for ( let i in this.m_oOtherPeers )
 		{
-			let oPeer = this.m_oPeers[ i ];
+			let oPeer = this.m_oOtherPeers[ i ];
 			if ( oPeer !== this.m_oLocalPeer )
 			{
 				oPeer.checkIfSuspect();
