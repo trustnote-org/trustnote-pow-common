@@ -317,7 +317,7 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
             getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
                 conn.query(
                     "select sum(headers_commission+payload_commission) AS total_commission from units \n\
-                    where  is_stable=1 \n\
+                    where is_stable=1 \n\
                     AND main_chain_index>? AND main_chain_index<=?", 
                     [lastRoundMaxMci, currentRoundMaxMci],
                     function(rows){
