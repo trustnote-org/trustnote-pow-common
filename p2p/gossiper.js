@@ -67,7 +67,16 @@ class Gossiper extends EventEmitter
 	 *	@param	{number}	oOptions.port		- local port number
 	 *	@param	{string}	oOptions.address	- local super node address
 	 *	@param	{function}	oOptions.signer		- local signer function provided by super node
-	 *	@param	{array}		oOptions.seeds		- [ '127.0.0.1:60001', ... ]
+	 *	@param	{object}	oOptions.seeds		- seeds for initializing Gossiper
+	 *		{
+	 *			'127.0.0.1:60001'	: {
+	 *				ip	: '',
+	 *				port	: 0,
+	 *				address	: '',
+	 *				socket	: null
+	 *			},
+	 *			...
+	 *		}
 	 */
 	constructor( oOptions )
 	{
@@ -79,7 +88,7 @@ class Gossiper extends EventEmitter
 		//
 		//	initializing peers
 		//
-		this.m_arrInitPeers	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'seeds' ) ? oOptions.seeds : [];
+		this.m_oSeeds		= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'seeds' ) ? oOptions.seeds : {};
 		this.m_oPeers		= {};
 
 		//
@@ -91,7 +100,7 @@ class Gossiper extends EventEmitter
 		//
 		//	handle new peers
 		//
-		this._handleNewPeers( this.m_arrInitPeers );
+		this._handleNewPeers( this.m_oSeeds );
 	}
 
 
@@ -105,7 +114,7 @@ class Gossiper extends EventEmitter
 		//
 		//	try to initialize with initializing peers
 		//
-		this._handleNewPeers( this.m_arrInitPeers );
+		this._handleNewPeers( this.m_oSeeds );
 
 		//
 		//	start gossip
@@ -262,9 +271,10 @@ class Gossiper extends EventEmitter
 	/**
 	 *	create a new peer or return existed instance
 	 *	@param	{string}	sPeerName
+	 *	@param	{object}	oPeerConfig
 	 *	@return {*}
 	 */
-	createPeer( sPeerName )
+	createPeer( sPeerName, oPeerConfig )
 	{
 		let oPeerName	= GossiperUtils.parsePeerName( sPeerName );
 		let oPeer	= null;
@@ -286,7 +296,9 @@ class Gossiper extends EventEmitter
 				//	create new
 				//
 				bExists	= false;
-				this.m_oPeers[ sPeerName ] = new GossiperPeer( oPeerName );
+
+				let oPeerOptions = Object.assign( {}, oPeerName, oPeerConfig );
+				this.m_oPeers[ sPeerName ] = new GossiperPeer( oPeerOptions );
 				oPeer	= this.m_oPeers[ sPeerName ];
 
 				//
@@ -469,10 +481,10 @@ class Gossiper extends EventEmitter
 		//
 		//	Gossip to seed under certain conditions
 		//
-		if ( sLivePeerName && ! this.m_arrInitPeers[ sLivePeerName ] &&
-			arrLivePeerNames.length < this.m_arrInitPeers.length )
+		if ( sLivePeerName && ! this.m_oSeeds[ sLivePeerName ] &&
+			arrLivePeerNames.length < this.m_oSeeds.length )
 		{
-			if ( Math.random() < ( this.m_arrInitPeers.length / this.getAllPeerNames().length ) )
+			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerNames().length ) )
 			{
 				let arrCertainPeerName	= this._chooseRandom( Object.keys( this.m_oPeers ) );
 				this._gossipToPeer( arrCertainPeerName );
@@ -543,12 +555,22 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	handle new peers
-	 *	@param	{array}	arrNewPeers
+	 *
+	 *	@param	{object}	oNewPeers
+	 *		{
+	 *			'127.0.0.1:60001'	: {
+	 *				ip	: '',
+	 *				port	: 0,
+	 *				address	: '',
+	 *				socket	: null
+	 *			},
+	 *			...
+	 *		}
 	 *	@return	{number}
 	 */
-	_handleNewPeers(arrNewPeers )
+	_handleNewPeers( oNewPeers )
 	{
-		if ( ! Array.isArray( arrNewPeers ) )
+		if ( ! DeUtilsCore.isPlainObject( oNewPeers ) )
 		{
 			return 0;
 		}
@@ -561,13 +583,24 @@ class Gossiper extends EventEmitter
 		//		...
 		// 	]
 		//
-		let nCount = 0;
-		for ( let i = 0; i < arrNewPeers.length; i ++ )
+		let nCount		= 0;
+		let arrPeerNames	= Object.keys( oNewPeers );
+
+		for ( let i = 0; i < arrPeerNames.length; i ++ )
 		{
-			let oPeerData	= this.createPeer( arrNewPeers[ i ] );
-			if ( ! oPeerData.exists )
+			let sPeerName	= arrPeerNames[ i ];
+			let oPeerConfig	= oNewPeers[ sPeerName ];
+
+			if ( GossiperUtils.isValidPeerName( sPeerName ) )
 			{
-				nCount ++;
+				let oPeerData	= this.createPeer( sPeerName, oPeerConfig );
+				if ( oPeerData.peer )
+				{
+					if ( ! oPeerData.exists )
+					{
+						nCount ++;
+					}
+				}
 			}
 		}
 
@@ -675,7 +708,12 @@ class Gossiper extends EventEmitter
 		//
 		let oScuttle = this.m_oScuttle.scuttle( oPeerDigest );
 
+		//
+		//	TODO
+		//	to handle new peers
+		//
 		this._handleNewPeers( oScuttle.new_peers );
+
 		return {
 			type		: FIRST_RESPONSE,
 			request_digest	: oScuttle.requests,
