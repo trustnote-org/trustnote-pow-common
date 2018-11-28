@@ -67,7 +67,7 @@ class Gossiper extends EventEmitter
 	 *	@param	{number}	oOptions.port		- local port number
 	 *	@param	{string}	oOptions.address	- local super node address
 	 *	@param	{function}	oOptions.signer		- local signer function provided by super node
-	 *	@param	{array}		oOptions.seeds		- [ '127.0.0.1:60001' ]
+	 *	@param	{array}		oOptions.seeds		- [ '127.0.0.1:60001', ... ]
 	 */
 	constructor( oOptions )
 	{
@@ -324,7 +324,6 @@ class Gossiper extends EventEmitter
 		return this.m_oLocalPeer.getValue( sKey );
 	}
 
-
 	/**
 	 *	get peer keys
 	 *
@@ -469,8 +468,6 @@ class Gossiper extends EventEmitter
 
 		//
 		//	Gossip to seed under certain conditions
-		//	TODO
-		//	- have too many bugs
 		//
 		if ( sLivePeerName && ! this.m_arrInitPeers[ sLivePeerName ] &&
 			arrLivePeerNames.length < this.m_arrInitPeers.length )
