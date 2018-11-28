@@ -624,12 +624,22 @@ function readJointWithBall(conn, unit, handleJoint) {
 function getMaxMci(conn, handleResult){
 	var conn = conn || db;
 	conn.query(
-		"SELECT MAX(main_chain_index) FROM units"
-		[],
+		"SELECT MAX(main_chain_index) FROM units",
 		function(rows){
 			IF(rows.length !== 1)
 				throw Error("getMaxMci method can not got one mci  ")
 			handleResult(rows[0].main_chain_index);
+		}
+	);
+}
+
+function getUnitsInfoWithMci(conn, mci,handleResult){
+	var conn = conn || db;
+	conn.query(
+		"SELECT unit,pow_type FROM units WHERE main_chain_index = ?"
+		[mci],
+		function(rows){
+			handleResult(rows);
 		}
 	);
 }
@@ -1275,12 +1285,24 @@ function determineBestParent(conn, objUnit, handleBestParent){
 		}
 	);
 }
-//POW add:
+// POW add:
 // objNewUnit has not saved to db yet 
-function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWitnessLevel){
-	var arrCollectedWitnesses = [];
-	var arrAuthorAddresses = objNewUnit.authors.map(function(author) { return author.address; } );
-		
+function determinewitnessedLevelAndLimci(conn, objNewUnit, callback){
+	conn.query(
+		"SELECT unit, level, pow_type,main_chain_index\n\
+		FROM units  \n\
+		WHERE unit IN(?)", 
+		[objUnit.parent_units], 
+		function(rows){
+			if (rows.length !==  objNewUnit.parent_units.length)
+				return callback("got wrong number of parents units");
+			var parent_trustme = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
+			if(parent_trustme.length !== 1)
+				return callback("units contains not one trust me unit as parents");
+
+			callback(null, rows[0].level,rows[0].main_chain_index);
+		}
+	);
 }
 
 // POW modi : we donn't need to check witness mutation in pow mode
@@ -1437,7 +1459,9 @@ exports.setUnitIsKnown = setUnitIsKnown;
 exports.forgetUnit = forgetUnit;
 
 exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
-exports.determinewitnessedLevel = determinewitnessedLevel;
+exports.determinewitnessedLevelAndLimci = determinewitnessedLevelAndLimci;
 exports.determineBestParent = determineBestParent;
 exports.getMaxMci = getMaxMci;
+exports.getUnitsInfoWithMci = getUnitsInfoWithMci;
+
 
