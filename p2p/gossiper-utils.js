@@ -37,7 +37,7 @@ class GossiperUtils
 	 * 	parse peer name
 	 *
 	 *	@param	{string}	sName
-	 *	@return	{ { ip : {string}, port : {number} } }
+	 *	@return	{ { ip : {string}, port : {number} }|null }
 	 */
 	static parsePeerName( sName )
 	{
