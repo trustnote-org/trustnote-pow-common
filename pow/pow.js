@@ -1176,6 +1176,7 @@ function calculateBitsValueByRoundIndexWithDeposit( oConn, uRoundIndex, dblDepos
 			uTimeUsed,
 			uTimeStandard,
 			dblDeposit,
+			_conf.POW_BOMB_EXPLODING_ROUND_INDEX,
 			uRoundIndex,
 			function( err, oData )
 			{

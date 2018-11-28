@@ -14,6 +14,13 @@ function mergeExports(anotherModule){
 exports.debug		= true;
 
 
+/**
+ *	for pow
+ */
+exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 100000;
+
+
+
 
 // port we are listening on.  Set to null to disable accepting connections
 // recommended port for livenet: 6655
