@@ -95,10 +95,17 @@ class GossiperPeer extends EventEmitter
 	 */
 	updateConfig( oOptions )
 	{
-		this.updateConfigItem( oOptions, 'url' );
-		this.updateConfigItem( oOptions, 'address' );
-		this.updateConfigItem( oOptions, 'signer' );
-		this.updateConfigItem( oOptions, 'socket' );
+		if ( ! DeUtilsCore.isPlainObject( oOptions ) )
+		{
+			return false;
+		}
+
+		this.updateConfigItem( 'url', oOptions.url );
+		this.updateConfigItem( 'address', oOptions.address );
+		this.updateConfigItem( 'signer', oOptions.signer );
+		this.updateConfigItem( 'socket', oOptions.socket );
+
+		return true;
 	}
 
 	/**
@@ -123,19 +130,18 @@ class GossiperPeer extends EventEmitter
 	/**
 	 *	update config item by key
 	 *
-	 *	@param	{object}	oOptions
 	 *	@param	{string}	sKey
+	 *	@param	{}		vValue
 	 *	@return	{boolean}
 	 */
-	updateConfigItem( oOptions, sKey )
+	updateConfigItem( sKey, vValue )
 	{
 		let bRet = false;
 
-		if ( DeUtilsCore.isExistingString( sKey ) &&
-			DeUtilsCore.isPlainObjectWithKeys( oOptions, sKey ) )
+		if ( DeUtilsCore.isExistingString( sKey ) )
 		{
 			bRet = true;
-			this.m_oConfig[ sKey ] = oOptions[ sKey ];
+			this.m_oConfig[ sKey ] = vValue;
 		}
 
 		return bRet;
@@ -253,7 +259,7 @@ class GossiperPeer extends EventEmitter
 		}
 
 		this.m_oAttributes[ sKey ] = [ vValue, nVersion ];
-		this.emit( 'update', sKey, vValue );
+		this.emit( 'peer_update', sKey, vValue );
 
 		//	...
 		pfnCallback( null );
@@ -367,6 +373,9 @@ class GossiperPeer extends EventEmitter
 		this.updateLocalValue( '__heartbeat__', this.m_nHeartbeatVersion, err =>
 		{
 		});
+
+		//	...
+		//console.log( `${ new Date().toString() } :: __heartbeat__` );
 	}
 
 }

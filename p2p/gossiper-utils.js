@@ -15,26 +15,6 @@ class GossiperUtils
 	}
 
 	/**
-	 *	assemble peer name
-	 *
-	 *	@param	{string}	sIp
-	 *	@param	{number}	nPort
-	 *	@return {string}
-	 */
-	static assemblePeerName( sIp, nPort )
-	{
-		let sRet	= null;
-
-		if ( DeUtilsNetwork.isValidIpV4( sIp ) &&
-			DeUtilsNetwork.isValidPort( nPort ) )
-		{
-			sRet = `${ String( sIp ) }:${ String( nPort ) }`;
-		}
-
-		return sRet;
-	}
-
-	/**
 	 * 	parse peer url
 	 *
 	 *	@param	{string}	sUrl
@@ -88,7 +68,9 @@ class GossiperUtils
 	static isValidPeerUrl( sPeerUrl )
 	{
 		let oPeerUrl = this.parsePeerUrl( sPeerUrl );
-		return null !== oPeerUrl.hostname && null !== oPeerUrl.port && null !== oPeerUrl.protocol;
+		return DeUtilsCore.isExistingString( oPeerUrl.hostname ) &&
+			DeUtilsNetwork.isValidPort( oPeerUrl.port ) &&
+			DeUtilsCore.isExistingString( oPeerUrl.protocol );
 	}
 
 
