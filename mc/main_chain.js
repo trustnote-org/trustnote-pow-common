@@ -7,11 +7,8 @@ var constants = require("../config/constants.js");
 var storage = require('../db/storage.js');
 var graph = require('../mc/graph.js');
 var objectHash = require("../base/object_hash.js");
-var mutex = require('../base/mutex.js');
 var eventBus = require('../base/event_bus.js');
 var pow = require('../pow/pow.js');
-var profiler = require('../base/profiler.js');
-var breadcrumbs = require('../base/breadcrumbs.js');
 var round = require('../pow/round.js');
 
 
@@ -36,15 +33,16 @@ function updateUnitsStable(conn, last_trustme_unit, last_mci, onDone){
 		}
 		function updateMc(){
 			var strUnitList = arrUnits.map(db.escape).join(', ');
-			conn.query("UPDATE units SET main_chain_index=? WHERE unit IN("+strUnitList+")", [last_mci], function(){
-				markMcIndexStable(conn, last_mci, finish);
+			conn.query("UPDATE units SET main_chain_index=?, is_on_main_chain=0, is_stable=1 WHERE is_stable=0 AND unit IN("+strUnitList+")", [last_mci], function(){
+				conn.query("UPDATE units SET is_on_main_chain=1 WHERE unit=?", [last_trustme_unit], function(){
+					markMcIndexStable(conn, last_mci, finish);
+				});
 			});
 		}
 		goUp(arrUnits);
 	}
 		
 	function finish(){
-		profiler.stop('mc-stableFlag');
 		console.log("done updating MC\n");
 		if (onDone)
 			onDone();
@@ -52,20 +50,10 @@ function updateUnitsStable(conn, last_trustme_unit, last_mci, onDone){
 	
 	console.log("\nwill update MC");
 	goUpAndUpdateMci();
-	
 }
 
 function markMcIndexStable(conn, mci, onDone){
-	profiler.start();
-	conn.query(
-		"UPDATE units SET is_stable=1 WHERE is_stable=0 AND main_chain_index=?", 
-		[mci], 
-		function(){
-			// next op
-			handlePowUnits();
-		}
-	);
-
+	handlePowUnits();
 	// pow add
 	function handlePowUnits(){
 		round.getCurrentRoundInfo(conn, function(round_index, min_wl){
@@ -80,12 +68,12 @@ function markMcIndexStable(conn, mci, onDone){
 						function(rowTrustME){
 							if (rowTrustME.length === 0)
 								return cb(); // next op
-							eventBus.emit("launch_pow", round_index);
-							round.removeAssocCachedRoundInfo(round_index);
 							conn.query(
 								"UPDATE round SET min_wl=? WHERE round_index=?", 
 								[rowTrustME[0].witnessed_level, round_index], 
-								function(){									
+								function(){			
+									round.removeAssocCachedRoundInfo(round_index);						
+									eventBus.emit("launch_pow", round_index);									
 									cb();
 								}
 							);
@@ -110,7 +98,6 @@ function markMcIndexStable(conn, mci, onDone){
 											"INSERT INTO round (round_index, min_wl, seed) VALUES (?, null, ?)", 
 											[round_index+1, newSeed], 
 											function(){
-												round.forwardRound(round_index+1);
 												cb1();
 											}
 										);
@@ -134,6 +121,7 @@ function markMcIndexStable(conn, mci, onDone){
 								}
 							], 
 							function(err){
+								round.forwardRound(round_index+1);
 								eventBus.emit("round_switch", round_index+1);
 								cb();
 							});	
@@ -302,7 +290,6 @@ function markMcIndexStable(conn, mci, onDone){
 
 	function updateRetrievable(){
 		storage.updateMinRetrievableMciAfterStabilizingMci(conn, mci, function(min_retrievable_mci){
-			profiler.stop('mc-mark-stable');
 			process.nextTick(function(){ // don't call it synchronously with event emitter
 				eventBus.emit("mci_became_stable", mci);
 			});

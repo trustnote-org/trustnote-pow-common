@@ -14,8 +14,6 @@ var composer = require('../unit/composer.js');
 var round = require('../pow/round.js');
 var supernode = require('../wallet/supernode.js');
 
-var MAX_GST_ = 3000;
-var EACH_DELTA = 500;
 var MAX_BYZANTINE_IN_CACHE = 10;
 
 // Initialization:
@@ -37,6 +35,8 @@ var p_precommit_timeout = -1;
 
 var assocByzantinePhase = {};
 
+var maxGossipHp = 0;
+var bByzantineUnderWay = false;
 var bTrustMeUnderWay = false;
 
 // init function begin
@@ -45,6 +45,8 @@ var bTrustMeUnderWay = false;
  * init byzantine, executes at startup
  */
 function initByzantine(){
+    if(bByzantineUnderWay)
+        return;
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -62,30 +64,39 @@ function initByzantine(){
                     var hp = 1;     // just after genesis or catchup from fresh start
                     if (rows.length === 1){  
                         hp = rows[0].main_chain_index + 1;
-                    }            
-                    startPhase(hp, 0);
+                    }        
+                    if(maxGossipHp === hp) {
+                        startPhase(hp, 0);
+                    }
+                    else {
+                        setTimeout(function(){
+                            initByzantine();
+                        }, 3000);
+                    }
                 }
             );
         }
     );
 }
-
 initByzantine();
-
 // init function end
 
 // public function begin
 
 /**
- * Get round index and a proposer by hp and phase
+ * Get proposer witnesses and round index by hp and phase
  * 
  * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
  * @param   {Integer}   hp
  * @param   {Integer}   phase
- * @param   {function}	callback( err, roundIndex, address ) callback function
+ * @param   {function}	callback( err, proposer, roundIndex, witnesses ) callback function
  *                      
  */
-function getProposer(conn, hp, phase, cb){
+function getCoordinators(conn, hp, phase, cb){
+    if (assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
+        var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
+        return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
+    }
     if(!validationUtils.isPositiveInteger(hp))
         return cb("param hp is not a positive integer");
     if(!validationUtils.isNonnegativeInteger(phase))
@@ -93,26 +104,44 @@ function getProposer(conn, hp, phase, cb){
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
+            assocByzantinePhase[hp].roundIndex = roundIndex;
+            assocByzantinePhase[hp].witnesses = witnesses;
             var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
-            cb(null, witnesses[pIndex], roundIndex);
+            cb(null, witnesses[pIndex], roundIndex, witnesses);
         });        
     });
 }
 
-/**
- * start a new phase
- */
+// Function StartRound(round):
+//     round p ← round
+//     step p ← propose    
+//     if proposer(hp,roundp)=p then
+//         if validValuep != nil then
+//             proposal ← validValuep
+//         else
+//             proposal ← getValue()
+//         broadcast <PROPOSAL,hp,roundp,proposal,validRoundp>
+//     else
+//         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
-    if(!validationUtils.isValidAddress(address_p))
-        throw Error("startPhase address_p is not a valid address");
+    if(!validationUtils.isValidAddress(address_p)){
+        console.log("address_p not known yet");
+		setTimeout(function(){
+			startPhase(hp, phase);
+		}, 1000);
+		return;    
+    }
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
-    getProposer(null, h_p, p_p, function(err, proposer, roundIndex){
+    getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
+        if(witnesses.indexOf(address_p) === -1)
+            return ;
         if(err)
             throw Error("startPhase get proposer err" + err);
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
+        bByzantineUnderWay = true;
         if(proposer === address_p){
             if(validValue_p !== null){
                 pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
@@ -153,165 +182,174 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(gossipMessage){
-    switch(gossipMessage.type){
-        case constants.BYZANTINE_PROPOSE: 
-            validation.validateProposalJoint(gossipMessage.v, {
-                ifInvalid: function(){
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0);
-                },
-                ifNeedWaiting: function(){
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1);
-                },
-                ifOk: function(){
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1);
-                }
-            });            
-            break;
-        case constants.BYZANTINE_PREVOTE: 
-            pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
-            break;
-        case constants.BYZANTINE_PRECOMMIT:
-            pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
-            break;
-        default: 
-    }
-    // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
-    //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
-    //         broadcast <PREVOTE,hp,roundp,id(v)>
-    //     else
-    //         broadcast <PREVOTE,hp,roundp,nil>
-    //     stepp ← prevote
-    if(assocByzantinePhase[h_p][p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
-        if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
-            && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
-            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-            broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+    if(maxGossipHp < gossipMessage.h)  // update max gossip h
+        maxGossipHp = gossipMessage.h;
+    if(!bByzantineUnderWay || gossipMessage.h < h_p)
+        return;
+    if(!validationUtils.isValidAddress(address_p))
+        return;    
+    getCoordinators(null, gossipMessage, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
+        if(witnesses.indexOf(address_p) === -1)
+            return;
+        switch(gossipMessage.type){
+            case constants.BYZANTINE_PROPOSE: 
+                validation.validateProposalJoint(gossipMessage.v, {
+                    ifInvalid: function(){
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0);
+                    },
+                    ifNeedWaiting: function(){
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1);
+                    },
+                    ifOk: function(){
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1);
+                    }
+                });            
+                break;
+            case constants.BYZANTINE_PREVOTE: 
+                pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
+                break;
+            case constants.BYZANTINE_PRECOMMIT:
+                pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
+                break;
+            default: 
         }
-        else {
-            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-            return broadcastPrevote(h_p, p_p, null);
+        // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
+        //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
+        //         broadcast <PREVOTE,hp,roundp,id(v)>
+        //     else
+        //         broadcast <PREVOTE,hp,roundp,nil>
+        //     stepp ← prevote
+        if(assocByzantinePhase[h_p][p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
+            if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+                && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+            }
+            else {
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+                return broadcastPrevote(h_p, p_p, null);
+            }
+            step_p = constants.BYZANTINE_PREVOTE;
         }
-        step_p = constants.BYZANTINE_PREVOTE;
-    }
-    // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
-    //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
-    //         broadcast <PREVOTE,hp,roundp,id(v)>
-    //     else
-    //         broadcast <PREVOTE,hp,roundp,nil>
-    //     stepp ← prevote    
-    if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p][p_p].proposal.vp, 1)
-         && step_p === constants.BYZANTINE_PROPOSE 
-         && assocByzantinePhase[h_p][p_p].proposal.vp >= 0  && assocByzantinePhase[h_p][p_p].proposal.vp < p_p){
-        if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
-            && (lockedPhase_p <= assocByzantinePhase[h_p][p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
-            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-            broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
+        //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
+        //         broadcast <PREVOTE,hp,roundp,id(v)>
+        //     else
+        //         broadcast <PREVOTE,hp,roundp,nil>
+        //     stepp ← prevote    
+        if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p][p_p].proposal.vp, 1)
+            && step_p === constants.BYZANTINE_PROPOSE 
+            && assocByzantinePhase[h_p][p_p].proposal.vp >= 0  && assocByzantinePhase[h_p][p_p].proposal.vp < p_p){
+            if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+                && (lockedPhase_p <= assocByzantinePhase[h_p][p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+            }
+            else {
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+                return broadcastPrevote(h_p, p_p, null);
+            }
+            step_p = constants.BYZANTINE_PREVOTE;
         }
-        else {
-            pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-            return broadcastPrevote(h_p, p_p, null);
+        // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
+        //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
+        if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
+            if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
+                h_prevote_timeout = h_p;
+                p_prevote_timeout = p_p;
+                setTimeout(OnTimeoutPrevote, getTimeout(p_p));
+            }
         }
-        step_p = constants.BYZANTINE_PREVOTE;
-    }
-    // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
-    //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
-    if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
-        if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
-            h_prevote_timeout = h_p;
-            p_prevote_timeout = p_p;
-            setTimeout(OnTimeoutPrevote, getTimeout(p_p));
+        // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
+        //     if stepp = prevote then
+        //         lockedValuep ← v
+        //         lockedRoundp ← roundp
+        //         broadcast <PRECOMMIT,hp,roundp,id(v)>
+        //         stepp ← precommit
+        //     validValuep ← v
+        //     validRoundp ← roundp
+        if(PrevoteBiggerThan2f1(h_p, p_p, 1)
+            && assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+            && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
+            if(step_p === constants.BYZANTINE_PREVOTE){
+                lockedValue_p = assocByzantinePhase[h_p][p_p].proposal;
+                lockedPhase_p = p_p;
+                broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                step_p = constants.BYZANTINE_PRECOMMIT;
+            }
+            validValue_p = assocByzantinePhase[h_p][p_p].proposal;
+            validPhase_p = p_p;
         }
-    }
-    // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
-    //     if stepp = prevote then
-    //         lockedValuep ← v
-    //         lockedRoundp ← roundp
-    //         broadcast <PRECOMMIT,hp,roundp,id(v)>
-    //         stepp ← precommit
-    //     validValuep ← v
-    //     validRoundp ← roundp
-    if(PrevoteBiggerThan2f1(h_p, p_p, 1)
-        && assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
-        && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
-        if(step_p === constants.BYZANTINE_PREVOTE){
-            lockedValue_p = assocByzantinePhase[h_p][p_p].proposal;
-            lockedPhase_p = p_p;
-            broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
+        //     broadcast <PRECOMMIT,hp,roundp,nil>
+        //     step p ← precommit
+        if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
+            broadcastPrecommit(h_p, p_p, null);
             step_p = constants.BYZANTINE_PRECOMMIT;
         }
-        validValue_p = assocByzantinePhase[h_p][p_p].proposal;
-        validPhase_p = p_p;
-    }
-    // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
-    //     broadcast <PRECOMMIT,hp,roundp,nil>
-    //     step p ← precommit
-    if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
-        broadcastPrecommit(h_p, p_p, null);
-        step_p = constants.BYZANTINE_PRECOMMIT;
-    }
-    // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
-    //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
-    if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
-        if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
-            h_precommit_timeout = h_p;
-            p_precommit_timeout = p_p;
-            setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
+        // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
+        //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
+        if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
+            if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
+                h_precommit_timeout = h_p;
+                p_precommit_timeout = p_p;
+                setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
+            }
         }
-    }
 
-    // upon <PROPOSAL,hp,r,v,∗> from proposer(hp,r) AND 2f+1 <PRECOMMIT,hp,r,id(v)> while decisionp[hp]=nil do
-    //     if valid(v) then
-    //         decisionp[hp]=v
-    //         hp ← hp+1
-    //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
-    //         StartRound(0)
-    function onDecisionError(phase){
-        startPhase(h_p, phase+1);          
-    }
-    function onDecisionDone(){
-        //reset params
-        lockedValue_p = null;
-        lockedPhase_p = -1;
-        validValue_p  = null;
-        validPhase_p  = -1;
-        h_propose_timeout   = -1;
-        p_propose_timeout   = -1; 
-        h_prevote_timeout   = -1;
-        p_prevote_timeout   = -1; 
-        h_precommit_timeout = -1;
-        p_precommit_timeout = -1; 
-        // start new h_p
-        startPhase(h_p+1, 0);
-    }
-    if(assocByzantinePhase[h_p].decision === null){
+        // upon <PROPOSAL,hp,r,v,∗> from proposer(hp,r) AND 2f+1 <PRECOMMIT,hp,r,id(v)> while decisionp[hp]=nil do
+        //     if valid(v) then
+        //         decisionp[hp]=v
+        //         hp ← hp+1
+        //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
+        //         StartRound(0)
+        function onDecisionError(phase){
+            startPhase(h_p, phase+1);          
+        }
+        function onDecisionDone(){
+            //reset params
+            lockedValue_p = null;
+            lockedPhase_p = -1;
+            validValue_p  = null;
+            validPhase_p  = -1;
+            h_propose_timeout   = -1;
+            p_propose_timeout   = -1; 
+            h_prevote_timeout   = -1;
+            p_prevote_timeout   = -1; 
+            h_precommit_timeout = -1;
+            p_precommit_timeout = -1; 
+            // start new h_p
+            startPhase(h_p+1, 0);
+        }
+        if(assocByzantinePhase[h_p].decision === null){
+            Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+                if(assocByzantinePhase[h_p][current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
+                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p][current_p].proposal.unit;
+                    if(assocByzantinePhase[h_p][current_p].proposal.address === address_p){
+                        // compose new trustme unit
+                        decisionTrustMe(assocByzantinePhase[h_p][current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                    }
+                }
+            });
+        }
+
+        // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
+        //     StartRound(round)
+        var messagesCount = 0;
         Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-            if(assocByzantinePhase[h_p][current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
-                assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p][current_p].proposal.unit;
-                if(assocByzantinePhase[h_p][current_p].proposal.address === address_p){
-                    // compose new trustme unit
-                    decisionTrustMe(assocByzantinePhase[h_p][current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+            if(current_p > p_p){
+                if(assocByzantinePhase[h_p].phase[current_p].proposal !== null)
+                    messagesCount = messagesCount + 1;
+                messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
+                messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
+                messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
+                messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
+                if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
+                    startPhase(h_p, current_p);
                 }
             }
         });
-    }
-
-    // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
-    //     StartRound(round)
-    var messagesCount = 0;
-    Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-        if(current_p > p_p){
-            if(assocByzantinePhase[h_p].phase[current_p].proposal !== null)
-                messagesCount = messagesCount + 1;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
-            if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
-                startPhase(h_p, current_p);
-            }
-        }
     });
-
 });
 // Function OnTimeoutPropose(height, round) :
 //     if height=hp ∧ round=roundp ∧ stepp=propose then
@@ -505,10 +543,7 @@ function shrinkByzantineCache(){
 
 //	@exports
 
-
-exports.startPhase = startPhase;
-exports.getProposer = getProposer;
-
+exports.getCoordinators = getCoordinators;
 
 // test code begin
 
