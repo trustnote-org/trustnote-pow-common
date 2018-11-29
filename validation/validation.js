@@ -910,20 +910,21 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		}
 	}
 	
-	function validateSpendProofs(cb){
-		if (!("spend_proofs" in objMessage))
-			return cb();
-		var arrEqs = objMessage.spend_proofs.map(function(objSpendProof){
-			return "spend_proof="+conn.escape(objSpendProof.spend_proof)+
-				" AND address="+conn.escape(objSpendProof.address ? objSpendProof.address : objUnit.authors[0].address);
-		});
-		checkForDoublespends(conn, "spend proof", 
-			"SELECT address, unit, main_chain_index, sequence FROM spend_proofs JOIN units USING(unit) WHERE unit != ? AND ("+arrEqs.join(" OR ")+")",
-			[objUnit.unit], 
-			objUnit, objValidationState, function(cb2){ cb2(); }, cb);
-	}
-	
-	async.series([validateSpendProofs, validatePayload], callback);
+	// byzantine remove
+	// function validateSpendProofs(cb){
+	// 	if (!("spend_proofs" in objMessage))
+	// 		return cb();
+	// 	var arrEqs = objMessage.spend_proofs.map(function(objSpendProof){
+	// 		return "spend_proof="+conn.escape(objSpendProof.spend_proof)+
+	// 			" AND address="+conn.escape(objSpendProof.address ? objSpendProof.address : objUnit.authors[0].address);
+	// 	});
+	// 	checkForDoublespends(conn, "spend proof", 
+	// 		"SELECT address, unit, main_chain_index, sequence FROM spend_proofs JOIN units USING(unit) WHERE unit != ? AND ("+arrEqs.join(" OR ")+")",
+	// 		[objUnit.unit], 
+	// 		objUnit, objValidationState, function(cb2){ cb2(); }, cb);
+	// }
+	//async.series([validateSpendProofs, validatePayload], callback);
+	async.series([validatePayload], callback);
 }
 
 // pow add :
@@ -1062,7 +1063,7 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 		sql, 
 		arrSqlArgs,
 		function(rows){
-			if (rows.length === 0)
+			if (rows.length === 0) //no double spend, skip it 
 				return cb();
 			var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
 			async.eachSeries(
@@ -1100,6 +1101,8 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 					if (err)
 						return cb(err);
 					// byzantine add
+					// here mean double spend units found and units are non serial
+					console.log("Double spend unit found: " + objUnit.unit);
 					var arrUnstableConflictingUnitProps = rows.filter(function(objConflictingUnitProps){
 						return (objConflictingUnitProps.is_stable === 0);
 					});
