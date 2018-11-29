@@ -45,14 +45,9 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 		return;
 	}
 	//profiler.start();
-	// pow modi
-	// conn.query(
-	// 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, \n\
-	// 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
-	// 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 	conn.query(
 		 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, round_index, pow_type, \n\
-		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
+		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp, phase \n\
 		 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 		[unit], 
 		function(unit_rows){
@@ -63,6 +58,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 			var objUnit = unit_rows[0];
 			var objJoint = {unit: objUnit};
 			var main_chain_index = objUnit.main_chain_index;
+			objUnit.hp = objUnit.main_chain_index;
 			//delete objUnit.main_chain_index;
 			objUnit.timestamp = parseInt(objUnit.timestamp);
 			var bFinalBad = !!objUnit.content_hash;
@@ -124,28 +120,6 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 						callback();
 					});
 				},
-				// pow del
-				// function(callback){ // witnesses
-				// 	conn.query("SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", [unit], function(rows){
-				// 		if (rows.length > 0)
-				// 			objUnit.witnesses = rows.map(function(row){ return row.address; });
-				// 		callback();
-				// 	});
-				// },
-				// function(callback){ // earned_headers_commission_recipients
-				// 	if (bVoided)
-				// 		return callback();
-					// pow del
-					// conn.query("SELECT address, earned_headers_commission_share FROM earned_headers_commission_recipients \
-					// 	WHERE unit=? ORDER BY address", 
-					// 	[unit], 
-					// 	function(rows){
-					// 		if (rows.length > 0)
-					// 			objUnit.earned_headers_commission_recipients = rows;
-					// 		callback();
-					// 	}
-					// );
-				//},
 				function(callback){ // authors
 					conn.query("SELECT address, definition_chash FROM unit_authors WHERE unit=? ORDER BY address", [unit], function(rows){
 						objUnit.authors = [];
@@ -183,6 +157,40 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 										}
 										else
 											onAuthorDone();
+									}
+								);
+							}, 
+							function(){
+								callback();
+							}
+						);
+					});
+				},
+				function(callback){ // coordinators
+					if(objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
+						return callback();
+					conn.query("SELECT address FROM coordinator_authentifiers WHERE unit=? ORDER BY address", [unit], function(rows){
+						objUnit.coordinators = [];
+						async.eachSeries(
+							rows, 
+							function(row, cb){
+								var coordinator = {address: row.address};
+
+								function onCoordinatorDone(){
+									objUnit.coordinators.push(coordinator);
+									cb();
+								}
+
+								if (bVoided)
+									return onCoordinatorDone();
+								coordinator.authentifiers = {};
+								conn.query(
+									"SELECT path, authentifier FROM coordinator_authentifiers WHERE unit=? AND address=?", 
+									[unit, coordinator.address], 
+									function(sig_rows){
+										for (var i=0; i<sig_rows.length; i++)
+											coordinator.authentifiers[sig_rows[i].path] = sig_rows[i].authentifier;
+										onCoordinatorDone();
 									}
 								);
 							}, 
