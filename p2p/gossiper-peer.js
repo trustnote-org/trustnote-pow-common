@@ -3,7 +3,7 @@ const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
 
 const { GossiperDetector }	= require( './gossiper-detector' );
-
+const { GossiperUtils }		= require( './gossiper-utils' );
 
 
 /**
@@ -19,13 +19,37 @@ const MAX_PHI		=  8;
  */
 class GossiperPeer extends EventEmitter
 {
-	constructor( sName )
+	/**
+	 *	@constructor
+	 *
+	 *	@param	{object}	oOptions
+	 *	@param	{string}	[oOptions.ip=]		- local ip address, '127.0.0.1' or undefined
+	 *	@param	{number}	[oOptions.port=]	- local port number
+	 *	@param	{string}	[oOptions.address=]	- local super node address
+	 *	@param	{function}	[oOptions.signer=]	- local signer function provided by super node
+	 *	@param	{object}	[oOptions.socket=]	- socket handle which connect to the super node
+	 */
+	constructor( oOptions )
 	{
 		super();
 
-		//	...
-		this.m_sName			= sName;
-		this.m_oSocket			= null;
+		//
+		//	configurations
+		//
+		this.m_oConfig =
+			{
+				ip	: '',
+				port	: 0,
+				address	: '',
+				singer	: null,
+				socket	: null,
+				name	: '',
+			};
+		this.updateConfig( oOptions );
+
+		//
+		//	attributes
+		//
 		this.m_bAlive			= true;
 
 		this.m_oAttributes		= {};
@@ -37,42 +61,94 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 * 	get peer name
-	 *	@return {string}	'127.0.0.1:5001'
+	 *	@return {string|null}	'127.0.0.1:5001'
 	 */
-	getPeerName()
+	getName()
 	{
-		return this.m_sName;
+		return this.getConfigItem( 'name' );
 	}
 
 	/**
-	 * 	set peer name
-	 *	@param	{string}	sName
-	 */
-	setPeerName( sName )
-	{
-		this.m_sName = sName;
-	}
-
-
-	/**
-	 * 	get socket
-	 *	@return {object}
+	 *	get socket handle
+	 *	@return {*}
 	 */
 	getSocket()
 	{
-		return this.m_oSocket;
+		return this.getConfigItem( 'socket' );
 	}
 
 	/**
-	 * 	set socket
-	 *	@param	{object}	oSocket
-	 *	@return	{void}
+	 *	get config
+	 *	@return {{ip: string, port: number, address: string, singer: null, socket: null, name: string}}
 	 */
-	setSocket( oSocket )
+	getConfig()
 	{
-		this.m_oSocket = oSocket;
+		return this.m_oConfig;
 	}
 
+	/**
+	 *	update configurations
+	 *
+	 *	@param	{object}	oOptions
+	 *	@param	{string}	[oOptions.ip=]		- local ip address, '127.0.0.1' or undefined
+	 *	@param	{number}	[oOptions.port=]	- local port number
+	 *	@param	{string}	[oOptions.address=]	- local super node address
+	 *	@param	{function}	[oOptions.signer=]	- local signer function provided by super node
+	 *	@param	{object}	[oOptions.socket=]	- socket handle which connect to the super node
+	 */
+	updateConfig( oOptions )
+	{
+		let bIpUpdated		= this.updateConfigItem( oOptions, 'ip' );
+		let bPortUpdated	= this.updateConfigItem( oOptions, 'port' );
+		this.updateConfigItem( oOptions, 'address' );
+		this.updateConfigItem( oOptions, 'signer' );
+		this.updateConfigItem( oOptions, 'socket' );
+
+		if ( bIpUpdated || bPortUpdated )
+		{
+			this.m_oConfig.name = GossiperUtils.assemblePeerName( this.m_oConfig.ip, this.m_oConfig.port );
+		}
+	}
+
+	/**
+	 *	get config item
+	 *
+	 *	@param	{string}	sKey
+	 *	@return {*}
+	 */
+	getConfigItem( sKey )
+	{
+		let vRet = null;
+
+		if ( DeUtilsCore.isExistingString( sKey ) &&
+			DeUtilsCore.isPlainObjectWithKeys( this.m_oConfig, sKey ) )
+		{
+			vRet = this.m_oConfig[ sKey ];
+		}
+
+		return vRet;
+	}
+
+	/**
+	 *	update config item by key
+	 *
+	 *	@param	{object}	oOptions
+	 *	@param	{string}	sKey
+	 *	@return	{boolean}
+	 */
+	updateConfigItem( oOptions, sKey )
+	{
+		let bRet = false;
+
+		if ( DeUtilsCore.isExistingString( sKey ) &&
+			DeUtilsCore.isPlainObjectWithKeys( oOptions, sKey ) )
+		{
+			bRet = true;
+			this.m_oConfig[ sKey ] = oOptions[ sKey ];
+		}
+
+		return bRet;
+	}
 
 	/**
 	 * 	get status of a this peer: alive or not

@@ -35,6 +35,7 @@ class GossiperScuttle
 		{
 			let sPeerName		= arrPeerNames[ i ];
 			let oPeer		= this.m_oPeers[ sPeerName ];
+
 			oDigest[ sPeerName ]	= oPeer.m_nMaxVersionSeen;
 		}
 
