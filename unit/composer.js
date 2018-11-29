@@ -836,7 +836,11 @@ function composeJoint(params){
 					objUnit.unit = objectHash.getUnitHash(objUnit);
 					if (bGenesis)
 						objJoint.ball = objectHash.getBallHash(objUnit.unit);
-					console.log(require('util').inspect(objJoint, {depth:null}));
+
+					console.log( `////////////////////////////// COMPOSE NEW JOINT START //////////////////////////////` );
+					console.log( require('util').inspect( objJoint, { depth : null } ) );
+					console.log( `////////////////////////////// COMPOSE NEW JOINT END //////////////////////////////` );
+
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					if (Object.keys(assocPrivatePayloads).length === 0)
 						assocPrivatePayloads = null;
