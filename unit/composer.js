@@ -848,6 +848,7 @@ function composeJoint(params){
 					// if (params.arrShareDefinition)
 					// 	objJoint.arrShareDefinition = params.arrShareDefinition;
 					//profiler.stop('compose');
+					console.log( `will call callbacks.ifOk( objJoint, assocPrivatePayloads, unlock_callback );` );
 					callbacks.ifOk(objJoint, assocPrivatePayloads, unlock_callback);
 				}
 			);
