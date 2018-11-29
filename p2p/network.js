@@ -788,19 +788,13 @@ function getHostByPeer( sPeer )
 
 	if ( Array.isArray( arrMatches ) && arrMatches.length >= 2 )
 	{
-		if ( arrMatches )
-		{
-			sPeer = arrMatches[ 1 ];
-		}
+		sPeer = arrMatches[ 1 ];
+	}
 
-		arrMatches = sPeer.match(/^(.*?)[:\/]/);
-		if ( Array.isArray( arrMatches ) && arrMatches.length >= 2 )
-		{
-			//
-			//	...
-			//
-			sRet = arrMatches[ 1 ];
-		}
+	arrMatches = sPeer.match(/^(.*?)[:\/]/);
+	if ( Array.isArray( arrMatches ) && arrMatches.length >= 2 )
+	{
+		sRet = arrMatches[ 1 ];
 	}
 
 	return sRet;

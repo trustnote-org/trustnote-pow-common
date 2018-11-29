@@ -1,3 +1,4 @@
+const UrlParser			= require( 'url-parse' );
 const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
 
@@ -36,17 +37,39 @@ class GossiperUtils
 	/**
 	 * 	parse peer name
 	 *
-	 *	@param	{string}	sName
+	 *	@param	{string}	sUrl
 	 *	@return	{ { ip : {string}, port : {number} }|null }
 	 */
-	static parsePeerName( sName )
+	static parsePeerName( sUrl )
 	{
 		let sIp		= null;
 		let nPort	= null;
 
-		if ( DeUtilsCore.isExistingString( sName ) )
+		if ( DeUtilsCore.isExistingString( sUrl ) )
 		{
-			let arrPeerSplit = sName.split( ":" );
+			//
+			//	{
+			// 		slashes: true,
+			//		protocol: 'ws:',
+			//		hash: '',
+			//		query: '',
+			//		pathname: '/',
+			//		auth: '',
+			//		host: '127.0.0.1:9000',
+			//		port: '9000',
+			//		hostname: '127.0.0.1',
+			//		password: '',
+			//		username: '',
+			//		origin: 'ws://127.0.0.1:9000',
+			//		href: 'ws://127.0.0.1:9000/'
+			// 	}
+			//
+			let oUrl = new UrlParser( sUrl );
+
+
+
+
+			let arrPeerSplit = sUrl.split( ":" );
 			if ( Array.isArray( arrPeerSplit ) && arrPeerSplit.length >= 2 )
 			{
 				if ( DeUtilsNetwork.isValidIpV4( arrPeerSplit[ 0 ] ) &&
