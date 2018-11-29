@@ -344,7 +344,7 @@ function validateProposalJoint(objJoint, callbacks){
 			// },
 			function(cb){
 				// validate proposer ID
-				byzantine.getProposer(conn, objUnit.hp, objJoint.phase, function(err, proposer, round_index, witnesses){
+				byzantine.getProposer(conn, objUnit.hp, objJoint.phase, function(err, proposer, round_index, witnesses){				
 					if(proposer !== objJoint.proposer[0].address)
 						return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objJoint.proposer[0].address);
 					if(round_index !== objUnit.round_index)
