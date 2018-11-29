@@ -78,8 +78,8 @@ class Gossiper extends EventEmitter
 		//	local
 		//
 		this.m_oLocalPeer	= new GossiperPeer( oOptions );
-		this.m_oOtherPeers	= {};
-		this.m_oScuttle		= new GossiperScuttle( this.m_oOtherPeers, this.m_oLocalPeer );
+		this.m_oRemotePeers	= {};
+		this.m_oScuttle		= new GossiperScuttle( this.m_oRemotePeers, this.m_oLocalPeer );
 	}
 
 
@@ -265,7 +265,7 @@ class Gossiper extends EventEmitter
 
 		if ( DeUtilsCore.isExistingString( sPeerUrl ) )
 		{
-			oPeer = this.m_oOtherPeers[ sPeerUrl ];
+			oPeer = this.m_oRemotePeers[ sPeerUrl ];
 		}
 
 		return oPeer;
@@ -280,19 +280,19 @@ class Gossiper extends EventEmitter
 	 */
 	createPeer( sPeerUrl, oPeerConfig )
 	{
-		let oPeerName	= GossiperUtils.parsePeerName( sPeerUrl );
+		let oPeerName	= GossiperUtils.parsePeerUrl( sPeerUrl );
 		let oPeer	= null;
 		let bExists	= false;
 
 		if ( null !== oPeerName.ip && null !== oPeerName.port )
 		{
-			if ( this.m_oOtherPeers[ sPeerUrl ] )
+			if ( this.m_oRemotePeers[ sPeerUrl ] )
 			{
 				//
 				//	already exists
 				//
 				bExists	= true;
-				oPeer	= this.m_oOtherPeers[ sPeerUrl ];
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 			}
 			else
 			{
@@ -302,8 +302,8 @@ class Gossiper extends EventEmitter
 				bExists	= false;
 
 				let oPeerOptions = Object.assign( {}, oPeerName, oPeerConfig );
-				this.m_oOtherPeers[ sPeerUrl ] = new GossiperPeer( oPeerOptions );
-				oPeer	= this.m_oOtherPeers[ sPeerUrl ];
+				this.m_oRemotePeers[ sPeerUrl ] = new GossiperPeer( oPeerOptions );
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 				//
 				//	emit events and listen
@@ -349,7 +349,7 @@ class Gossiper extends EventEmitter
 	getPeerAllKeys( sPeerUrl )
 	{
 		let arrKeys	= null;
-		let oPeer	= this.m_oOtherPeers[ sPeerUrl ];
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 		if ( oPeer )
 		{
@@ -369,7 +369,7 @@ class Gossiper extends EventEmitter
 	getPeerValue( sPeerUrl, sKey )
 	{
 		let vValue	= null;
-		let oPeer	= this.m_oOtherPeers[ sPeerUrl ];
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 		if ( oPeer )
 		{
@@ -385,17 +385,17 @@ class Gossiper extends EventEmitter
 	 *	@return {Array}
 	 *
 	 * 	@description
-	 *	this.m_oOtherPeers
+	 *	this.m_oRemotePeers
 	 *	{
-	 *		peer_name_1	: { ... },
-	 *		peer_name_2	: { ... },
+	 *		peer_url_1	: { ... },
+	 *		peer_url_2	: { ... },
 	 *	}
 	 */
 	getAllPeerUrls()
 	{
 		let arrUrls = [];
 
-		for ( let sPeerUrl in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
 			arrUrls.push( sPeerUrl );
 		}
@@ -415,9 +415,9 @@ class Gossiper extends EventEmitter
 	{
 		let arrUrls = [];
 
-		for ( let sPeerUrl in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
-			if ( this.m_oOtherPeers[ sPeerUrl ].isAlive() )
+			if ( this.m_oRemotePeers[ sPeerUrl ].isAlive() )
 			{
 				arrUrls.push( sPeerUrl );
 			}
@@ -438,9 +438,9 @@ class Gossiper extends EventEmitter
 	{
 		let arrUrls = [];
 
-		for ( let sPeerUrl in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
-			if ( ! this.m_oOtherPeers[ sPeerUrl ].isAlive() )
+			if ( ! this.m_oRemotePeers[ sPeerUrl ].isAlive() )
 			{
 				arrUrls.push( sPeerUrl );
 			}
@@ -490,17 +490,17 @@ class Gossiper extends EventEmitter
 		{
 			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerUrls().length ) )
 			{
-				let arrCertainPeerUrl	= this._chooseRandom( Object.keys( this.m_oOtherPeers ) );
+				let arrCertainPeerUrl	= this._chooseRandom( Object.keys( this.m_oRemotePeers ) );
 				this._gossipToPeer( arrCertainPeerUrl );
 			}
 		}
 
 		//
-		//	Check health of m_oOtherPeers
+		//	Check health of m_oRemotePeers
 		//
-		for ( let i in this.m_oOtherPeers )
+		for ( let i in this.m_oRemotePeers )
 		{
-			let oPeer = this.m_oOtherPeers[ i ];
+			let oPeer = this.m_oRemotePeers[ i ];
 			if ( oPeer !== this.m_oLocalPeer )
 			{
 				oPeer.checkIfSuspect();
@@ -533,7 +533,7 @@ class Gossiper extends EventEmitter
 	 */
 	_gossipToPeer( sPeerUrl )
 	{
-		if ( ! GossiperUtils.isValidPeerName( sPeerUrl ) )
+		if ( ! GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 		{
 			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerUrl: ${ JSON.stringify( sPeerUrl ) }` );
 		}
@@ -595,7 +595,7 @@ class Gossiper extends EventEmitter
 			let sPeerUrl	= arrPeerNames[ i ];
 			let oPeerConfig	= oNewPeers[ sPeerUrl ];
 
-			if ( GossiperUtils.isValidPeerName( sPeerUrl ) )
+			if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 			{
 				let oPeerData	= this.createPeer( sPeerUrl, oPeerConfig );
 				if ( oPeerData.peer )
@@ -629,7 +629,7 @@ class Gossiper extends EventEmitter
 			'update',
 			( sKey, vValue ) =>
 			{
-				this.emit( 'update', oPeer.getName(), sKey, vValue );
+				this.emit( 'update', oPeer.getUrl(), sKey, vValue );
 			}
 		);
 		oPeer.on
@@ -637,7 +637,7 @@ class Gossiper extends EventEmitter
 			'peer_alive',
 			() =>
 			{
-				this.emit( 'peer_alive', oPeer.getName() );
+				this.emit( 'peer_alive', oPeer.getUrl() );
 			}
 		);
 		oPeer.on
@@ -645,7 +645,7 @@ class Gossiper extends EventEmitter
 			'peer_failed',
 			() =>
 			{
-				this.emit( 'peer_failed', oPeer.getName() );
+				this.emit( 'peer_failed', oPeer.getUrl() );
 			}
 		);
 
