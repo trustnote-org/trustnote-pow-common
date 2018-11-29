@@ -9,9 +9,9 @@ const { DeUtilsNetwork }	= require( 'deutils.js' );
  */
 class GossiperScuttle
 {
-	constructor( oPeers, oLocalPeer )
+	constructor( oRemotePeers, oLocalPeer )
 	{
-		this.m_oPeers		= oPeers;
+		this.m_oRemotePeers	= oRemotePeers;
 		this.m_oLocalPeer	= oLocalPeer;
 	}
 
@@ -21,20 +21,20 @@ class GossiperScuttle
 	 *
 	 * 	@return
 	 * 	{
-	 * 		'127.0.0.1:9011'	: m_nMaxVersionSeen,
-	 * 		'127.0.0.1:9012'	: m_nMaxVersionSeen,
+	 * 		'wss://127.0.0.1:9011'	: m_nMaxVersionSeen,
+	 * 		'wss://127.0.0.1:9012'	: m_nMaxVersionSeen,
 	 * 		...
 	 * 	}
 	 */
 	digest()
 	{
 		let oDigest	= {};
-		let arrPeerUrls	= Object.keys( this.m_oPeers );
+		let arrPeerUrls	= Object.keys( this.m_oRemotePeers );
 
 		for ( let i = 0; i < arrPeerUrls.length; i ++ )
 		{
 			let sPeerUrl	= arrPeerUrls[ i ];
-			let oPeer	= this.m_oPeers[ sPeerUrl ];
+			let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 			oDigest[ sPeerUrl ]	= oPeer.m_nMaxVersionSeen;
 		}
@@ -61,67 +61,70 @@ class GossiperScuttle
 		let oRequests		= {};
 		let arrNewPeers		= [];
 
-		for ( let sPeerUrl in oDigest )
+		if ( DeUtilsCore.isPlainObject( oDigest ) )
 		{
-			if ( ! oDigest.hasOwnProperty( sPeerUrl ) )
+			for ( let sPeerUrl in oDigest )
 			{
-				continue;
-			}
+				if ( ! oDigest.hasOwnProperty( sPeerUrl ) )
+				{
+					continue;
+				}
 
-			//
-			//	sPeerName	- 'ip:port'
-			//
-			let oLocalPeer		= this.m_oPeers[ sPeerUrl ];
-			let nLocalMaxVersion	= this.getMaxVersionSeenOfPeer( sPeerUrl );
-			let nDigestMaxVersion	= oDigest[ sPeerUrl ];
+				//
+				//	sPeerName	- 'ip:port'
+				//
+				let oLocalPeer		= this.m_oRemotePeers[ sPeerUrl ];
+				let nLocalMaxVersion	= this.getMaxVersionSeenOfPeer( sPeerUrl );
+				let nDigestMaxVersion	= oDigest[ sPeerUrl ];
 
-			if ( ! this.m_oPeers[ sPeerUrl ] )
-			{
-				//
-				//	We don't know about this peer.
-				// 	Request all information.
-				//
-				oRequests[ sPeerUrl ]	= 0;
-				arrNewPeers.push( sPeerUrl );
-			}
-			else if ( nLocalMaxVersion > nDigestMaxVersion )
-			{
-				//
-				//	We have more recent information for this peer.
-				// 	Build up deltas.
-				//
-				//	{
-				//		peer	: peer name,
-				//		deltas	:
-				//		[
-				//			[ sKey, vValue, nVersion ],
-				//			[ sKey, vValue, nVersion ],
-				//			[ sKey, vValue, nVersion ],
-				// 		]
-				// 	}
-				//
-				//
-				arrDeltasWithPeer.push
-				(
-					{
-						peer	: sPeerUrl,
-						deltas	: oLocalPeer.getDeltasAfterVersion( nDigestMaxVersion )
-					}
-				);
-			}
-			else if ( nLocalMaxVersion < nDigestMaxVersion )
-			{
-				//
-				//	They have more recent information.
-				// 	Request it.
-				//
-				oRequests[ sPeerUrl ] = nLocalMaxVersion;
-			}
-			else
-			{
-				//
-				//	Everything is the same.
-				//
+				if ( ! this.m_oRemotePeers[ sPeerUrl ] )
+				{
+					//
+					//	We don't know about this peer.
+					// 	Request all information.
+					//
+					oRequests[ sPeerUrl ]	= 0;
+					arrNewPeers.push( sPeerUrl );
+				}
+				else if ( nLocalMaxVersion > nDigestMaxVersion )
+				{
+					//
+					//	We have more recent information for this peer.
+					// 	Build up deltas.
+					//
+					//	{
+					//		peer	: peer name,
+					//		deltas	:
+					//		[
+					//			[ sKey, vValue, nVersion ],
+					//			[ sKey, vValue, nVersion ],
+					//			[ sKey, vValue, nVersion ],
+					// 		]
+					// 	}
+					//
+					//
+					arrDeltasWithPeer.push
+					(
+						{
+							peer	: sPeerUrl,
+							deltas	: oLocalPeer.getDeltasAfterVersion( nDigestMaxVersion )
+						}
+					);
+				}
+				else if ( nLocalMaxVersion < nDigestMaxVersion )
+				{
+					//
+					//	They have more recent information.
+					// 	Request it.
+					//
+					oRequests[ sPeerUrl ] = nLocalMaxVersion;
+				}
+				else
+				{
+					//
+					//	Everything is the same.
+					//
+				}
 			}
 		}
 
@@ -227,15 +230,16 @@ class GossiperScuttle
 	 */
 	getMaxVersionSeenOfPeer( sPeerUrl )
 	{
-		let nRet	= 0;
-
-		if ( DeUtilsCore.isExistingString( sPeerUrl ) &&
-			DeUtilsCore.isPlainObject( this.m_oPeers[ sPeerUrl ] ) )
+		if ( ! DeUtilsCore.isExistingString( sPeerUrl ) )
 		{
-			nRet = this.m_oPeers[ sPeerUrl ].m_nMaxVersionSeen;
+			return 0;
+		}
+		if ( ! DeUtilsCore.isPlainObject( this.m_oRemotePeers[ sPeerUrl ] ) )
+		{
+			return 0;
 		}
 
-		return nRet;
+		return this.m_oRemotePeers[ sPeerUrl ].m_nMaxVersionSeen;
 	}
 
 	/**
@@ -272,7 +276,7 @@ class GossiperScuttle
 			let sPeerUrl	= arrDelta.shift();
 			if ( DeUtilsCore.isExistingString( sPeerUrl ) )
 			{
-				let oDeltaPeer	= this.m_oPeers[ sPeerUrl ];
+				let oDeltaPeer	= this.m_oRemotePeers[ sPeerUrl ];
 				if ( oDeltaPeer )
 				{
 					let sKey	= arrDelta[ 0 ];
@@ -328,7 +332,7 @@ class GossiperScuttle
 				continue;
 			}
 
-			let oPeer = this.m_oPeers[ sPeerUrl ];
+			let oPeer = this.m_oRemotePeers[ sPeerUrl ];
 			if ( oPeer )
 			{
 				//
