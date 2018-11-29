@@ -35,15 +35,16 @@ class GossiperUtils
 	}
 
 	/**
-	 * 	parse peer name
+	 * 	parse peer url
 	 *
 	 *	@param	{string}	sUrl
-	 *	@return	{ { ip : {string}, port : {number} }|null }
+	 *	@return	{ { hostname : {string}, port : {number}, protocol : {string} }|null }
 	 */
-	static parsePeerName( sUrl )
+	static parsePeerUrl( sUrl )
 	{
-		let sIp		= null;
+		let sHostname	= null;
 		let nPort	= null;
+		let sProtocol	= null;
 
 		if ( DeUtilsCore.isExistingString( sUrl ) )
 		{
@@ -64,39 +65,30 @@ class GossiperUtils
 			//		href: 'ws://127.0.0.1:9000/'
 			// 	}
 			//
-			let oUrl = new UrlParser( sUrl );
+			let oUrl	= new UrlParser( sUrl );
 
-
-
-
-			let arrPeerSplit = sUrl.split( ":" );
-			if ( Array.isArray( arrPeerSplit ) && arrPeerSplit.length >= 2 )
-			{
-				if ( DeUtilsNetwork.isValidIpV4( arrPeerSplit[ 0 ] ) &&
-					DeUtilsNetwork.isValidPort( arrPeerSplit[ 1 ] ) )
-				{
-					sIp	= String( arrPeerSplit[ 0 ] );
-					nPort	= parseInt( arrPeerSplit[ 1 ] );
-				}
-			}
+			sHostname	= oUrl.hostname;
+			nPort		= oUrl.port;
+			sProtocol	= oUrl.protocol;
 		}
 
 		return {
-			ip	: sIp,
-			port	: nPort,
+			hostname	: sHostname,
+			port		: nPort,
+			protocol	: sProtocol,
 		};
 	}
 
 	/**
-	 * 	check if the sPeerName is a valid peer name
+	 * 	check if the sPeerUrl is a valid peer name
 	 *
-	 *	@param	{string}	sPeerName	- '127.0.0.1:8000'
+	 *	@param	{string}	sPeerUrl	- 'wss://127.0.0.1:8000'
 	 *	@return	{boolean}
 	 */
-	static isValidPeerName( sPeerName )
+	static isValidPeerUrl( sPeerUrl )
 	{
-		let oPeerName	= this.parsePeerName( sPeerName );
-		return null !== oPeerName.ip && null !== oPeerName.port;
+		let oPeerUrl = this.parsePeerUrl( sPeerUrl );
+		return null !== oPeerUrl.hostname && null !== oPeerUrl.port && null !== oPeerUrl.protocol;
 	}
 
 
