@@ -401,9 +401,10 @@ function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 
 // pow add Coinbase joint
 function composeCoinbaseJoint(from_address, coinbase_address, round_index, coinbase_amount, signer, callbacks){
+	var coinbase_foundation_amount = Math.floor(coinbase_amount*constants.FOUNDATION_RATIO);
 	composeJoint({
 		paying_addresses: [from_address],
-		outputs: [{address: coinbase_address, amount: 0}],
+		outputs: [{address: coinbase_address, amount: 0}, {address: constants.FOUNDATION_ADDRESS, amount: coinbase_foundation_amount}],
 		//inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
 		inputs: [{type: "coinbase", amount: coinbase_amount}],
 		round_index: round_index,
@@ -985,43 +986,11 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 			});
 		},
 		function(cb){
-			function setDefinition(){
-				signer.readDefinition(conn, coordinator_address, function(err, arrDefinition){
-					if (err)
-						return cb(err);
-					objAuthor.definition = arrDefinition;
-					cb();
-				});
-			}
 			signer.readSigningPaths(conn, coordinator_address, function(assocLengthsBySigningPaths){
 				var arrSigningPaths = Object.keys(assocLengthsBySigningPaths);
 				assocSigningPaths[coordinator_address] = arrSigningPaths;
 				for (var j=0; j<arrSigningPaths.length; j++)
 					objAuthor.authentifiers[arrSigningPaths[j]] = repeatString("-", assocLengthsBySigningPaths[arrSigningPaths[j]]);
-				conn.query(
-					"SELECT 1 FROM unit_authors CROSS JOIN units USING(unit) \n\
-					WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
-					LIMIT 1", 
-					[coordinator_address, last_ball_mci], 
-					function(rows){
-						if (rows.length === 0) // first message from this address
-							return setDefinition();
-						// try to find last stable change of definition, then check if the definition was already disclosed
-						conn.query(
-							"SELECT definition \n\
-							FROM address_definition_changes CROSS JOIN units USING(unit) LEFT JOIN definitions USING(definition_chash) \n\
-							WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
-							ORDER BY level DESC LIMIT 1", 
-							[coordinator_address, last_ball_mci],
-							function(rows){
-								if (rows.length === 0) // no definition changes at all
-									return cb();
-								var row = rows[0];
-								row.definition ? cb() : setDefinition(); // if definition not found in the db, add it into the json
-							}
-						);
-					}
-				);
 			});
 		}
 	], function(err){
@@ -1100,7 +1069,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 	}
 
 	objJoint.unit.phase = phase;
-	objJoint.unit.coordinators = approvedCoordinators;
+	objJoint.unit.coordinators = approvedCoordinators.sort();
 
 	async.series([
 		function(cb){ // lock

@@ -45,14 +45,9 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 		return;
 	}
 	//profiler.start();
-	// pow modi
-	// conn.query(
-	// 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, \n\
-	// 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
-	// 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 	conn.query(
 		 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, round_index, pow_type, \n\
-		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp \n\
+		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp, phase \n\
 		 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 		[unit], 
 		function(unit_rows){
@@ -63,6 +58,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 			var objUnit = unit_rows[0];
 			var objJoint = {unit: objUnit};
 			var main_chain_index = objUnit.main_chain_index;
+			objUnit.hp = objUnit.main_chain_index;
 			//delete objUnit.main_chain_index;
 			objUnit.timestamp = parseInt(objUnit.timestamp);
 			var bFinalBad = !!objUnit.content_hash;
@@ -124,28 +120,6 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 						callback();
 					});
 				},
-				// pow del
-				// function(callback){ // witnesses
-				// 	conn.query("SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", [unit], function(rows){
-				// 		if (rows.length > 0)
-				// 			objUnit.witnesses = rows.map(function(row){ return row.address; });
-				// 		callback();
-				// 	});
-				// },
-				// function(callback){ // earned_headers_commission_recipients
-				// 	if (bVoided)
-				// 		return callback();
-					// pow del
-					// conn.query("SELECT address, earned_headers_commission_share FROM earned_headers_commission_recipients \
-					// 	WHERE unit=? ORDER BY address", 
-					// 	[unit], 
-					// 	function(rows){
-					// 		if (rows.length > 0)
-					// 			objUnit.earned_headers_commission_recipients = rows;
-					// 		callback();
-					// 	}
-					// );
-				//},
 				function(callback){ // authors
 					conn.query("SELECT address, definition_chash FROM unit_authors WHERE unit=? ORDER BY address", [unit], function(rows){
 						objUnit.authors = [];
@@ -183,6 +157,40 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 										}
 										else
 											onAuthorDone();
+									}
+								);
+							}, 
+							function(){
+								callback();
+							}
+						);
+					});
+				},
+				function(callback){ // coordinators
+					if(objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
+						return callback();
+					conn.query("SELECT address FROM coordinator_authentifiers WHERE unit=? ORDER BY address", [unit], function(rows){
+						objUnit.coordinators = [];
+						async.eachSeries(
+							rows, 
+							function(row, cb){
+								var coordinator = {address: row.address};
+
+								function onCoordinatorDone(){
+									objUnit.coordinators.push(coordinator);
+									cb();
+								}
+
+								if (bVoided)
+									return onCoordinatorDone();
+								coordinator.authentifiers = {};
+								conn.query(
+									"SELECT path, authentifier FROM coordinator_authentifiers WHERE unit=? AND address=?", 
+									[unit, coordinator.address], 
+									function(sig_rows){
+										for (var i=0; i<sig_rows.length; i++)
+											coordinator.authentifiers[sig_rows[i].path] = sig_rows[i].authentifier;
+										onCoordinatorDone();
 									}
 								);
 							}, 
@@ -624,12 +632,22 @@ function readJointWithBall(conn, unit, handleJoint) {
 function getMaxMci(conn, handleResult){
 	var conn = conn || db;
 	conn.query(
-		"SELECT MAX(main_chain_index) FROM units"
-		, [],
+		"SELECT MAX(main_chain_index) FROM units",
 		function(rows){
 			IF(rows.length !== 1)
 				throw Error("getMaxMci method can not got one mci  ")
 			handleResult(rows[0].main_chain_index);
+		}
+	);
+}
+
+function getUnitsInfoWithMci(conn, mci,handleResult){
+	var conn = conn || db;
+	conn.query(
+		"SELECT unit,pow_type FROM units WHERE main_chain_index = ?"
+		[mci],
+		function(rows){
+			handleResult(rows);
 		}
 	);
 }
@@ -1258,23 +1276,6 @@ function filterNewOrUnstableUnits(arrUnits, handleFilteredUnits){
 // for unit that is not saved to the db yet
 // function determineBestParent(conn, objUnit, arrWitnesses, handleBestParent){
 function determineBestParent(conn, objUnit, handleBestParent){
-	// POW modi remove witness compatitiblity
-	// choose best parent among compatible parents only
-	// conn.query(
-	// 	"SELECT unit \n\
-	// 	FROM units AS parent_units \n\
-	// 	WHERE unit IN(?) \n\
-	// 		AND (witness_list_unit=? OR ( \n\
-	// 			SELECT COUNT(*) \n\
-	// 			FROM unit_witnesses AS parent_witnesses \n\
-	// 			WHERE parent_witnesses.unit IN(parent_units.unit, parent_units.witness_list_unit) AND address IN(?) \n\
-	// 		)>=?) \n\
-	// 	ORDER BY witnessed_level DESC, \n\
-	// 		level-witnessed_level ASC, \n\
-	// 		unit ASC \n\
-	// 	LIMIT 1", 
-	// 	[objUnit.parent_units, objUnit.witness_list_unit, 
-	// 	arrWitnesses, constants.COUNT_WITNESSES - constants.MAX_WITNESS_LIST_MUTATIONS], 
 	conn.query(
 		"SELECT unit \n\
 		FROM units  \n\
@@ -1292,44 +1293,24 @@ function determineBestParent(conn, objUnit, handleBestParent){
 		}
 	);
 }
-//POW add:
+// POW add:
 // objNewUnit has not saved to db yet 
-function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWitnessLevel){
-	var arrCollectedWitnesses = [];
-	var arrAuthorAddresses = objNewUnit.authors.map(function(author) { return author.address; } );
-	if (objNewUnit.pow_type === constants.POW_TYPE_TRUSTME){ // count self as wl start point
-		arrCollectedWitnesses = arrCollectedWitnesses.concat(arrAuthorAddresses);
-	}
-	function addWitnessesAndGoUp(start_unit){
-		readStaticUnitProps(conn, start_unit, function(props){
-			profiler.stop('write-wl-select-bp');
-			var best_parent_unit = props.best_parent_unit;
-			var level = props.level;
-			if (level === null)
-				throw Error("null level in updateWitnessedLevel");
-			if (level === 0) // genesis
-				return handleWitnessLevel(0);
-			if(props.pow_type === constants.POW_TYPE_TRUSTME){
-				readUnitAuthors(conn, start_unit, function(arrAuthors){
-					for (var i=0; i<arrAuthors.length; i++){
-						var address = arrAuthors[i];
-						if (arrCollectedWitnesses.indexOf(address) === -1)
-							arrCollectedWitnesses.push(address);
-					}
-					(arrCollectedWitnesses.length < constants.MAJORITY_OF_WITNESSES) 
-						? addWitnessesAndGoUp(best_parent_unit) : handleWitnessLevel(level);
-				});
-			}
-			else{
-				addWitnessesAndGoUp(best_parent_unit);
-			}
-		});
+function determinewitnessedLevelAndLimci(conn, objNewUnit, callback){
+	conn.query(
+		"SELECT unit, level, pow_type,main_chain_index\n\
+		FROM units  \n\
+		WHERE unit IN(?)", 
+		[objUnit.parent_units], 
+		function(rows){
+			if (rows.length !==  objNewUnit.parent_units.length)
+				return callback("got wrong number of parents units");
+			var parent_trustme = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
+			if(parent_trustme.length !== 1)
+				return callback("units contains not one trust me unit as parents");
+
+			callback(null, rows[0].level,rows[0].main_chain_index);
 		}
-		// find best parent ,then go up to count trust me addresses .
-		//determineBestParent(conn,objUnit,function(best_parent_unit){
-		addWitnessesAndGoUp(bestParentOfNewUnit);
-		//});
-		
+	);
 }
 
 // POW modi : we donn't need to check witness mutation in pow mode
@@ -1359,32 +1340,6 @@ function determinewitnessedLevel(conn, objNewUnit, bestParentOfNewUnit, handleWi
 // 		);
 // 	});
 // }
-
-// the MC for this function is the MC built from this unit, not our current MC
-function buildListOfMcUnitsWithPotentiallyDifferentWitnesslists(conn, objUnit, last_ball_unit, arrWitnesses, handleList){
-
-	function addAndGoUp(unit){
-		readStaticUnitProps(conn, unit, function(props){
-			// the parent has the same witness list and the parent has already passed the MC compatibility test
-			if (objUnit.witness_list_unit && objUnit.witness_list_unit === props.witness_list_unit)
-				return handleList(true, arrMcUnits);
-			else
-				arrMcUnits.push(unit);
-			if (unit === last_ball_unit)
-				return handleList(true, arrMcUnits);
-			if (!props.best_parent_unit)
-				throw Error("no best parent of unit "+unit+"?");
-			addAndGoUp(props.best_parent_unit);
-		});
-	}
-
-	var arrMcUnits = [];
-	determineBestParent(conn, objUnit, arrWitnesses, function(best_parent_unit){
-		if (!best_parent_unit)
-			return handleList(false);
-		addAndGoUp(best_parent_unit);
-	});
-}
 
 
 function readStaticUnitProps(conn, unit, handleProps){
@@ -1512,7 +1467,9 @@ exports.setUnitIsKnown = setUnitIsKnown;
 exports.forgetUnit = forgetUnit;
 
 exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
-exports.determinewitnessedLevel = determinewitnessedLevel;
+exports.determinewitnessedLevelAndLimci = determinewitnessedLevelAndLimci;
 exports.determineBestParent = determineBestParent;
 exports.getMaxMci = getMaxMci;
+exports.getUnitsInfoWithMci = getUnitsInfoWithMci;
+
 

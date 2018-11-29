@@ -19,6 +19,8 @@ var breadcrumbs = require('../base/breadcrumbs.js');
 var round = require('../pow/round.js');
 var pow = require('../pow/pow.js');
 var deposit = require('../sc/deposit.js');
+var validation_byzantine  = require("../validation/validation_byzantine.js");
+var byzantine  = require('../mc/byzantine.js');
 
 var MAX_INT32 = Math.pow(2, 31) - 1;
 
@@ -104,7 +106,7 @@ function validate(objJoint, callbacks) {
 		// if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "timestamp", "authors", "messages", "witness_list_unit", "witnesses", "earned_headers_commission_recipients", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 		//if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "witness_list_unit", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission"]))
 		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
 			return callbacks.ifUnitError("unknown fields in unit");
 
 		if (typeof objUnit.headers_commission !== "number")
@@ -161,10 +163,9 @@ function validate(objJoint, callbacks) {
 		if (!isStringOfLength(objUnit.last_ball_unit, constants.HASH_LENGTH))
 			return callbacks.ifUnitError("wrong length of last ball unit");
 	}
-	
-	// pow del
-	// if ("witness_list_unit" in objUnit && "witnesses" in objUnit)
-	// 	return callbacks.ifUnitError("ambiguous witnesses");
+
+	if((!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_TRUSTME) && objUnit.coordinators)
+		return callbacks.ifUnitError("non trust me unit with coordinators body");
 		
 	var arrAuthorAddresses = objUnit.authors ? objUnit.authors.map(function(author) { return author.address; } ) : [];
 	
@@ -223,7 +224,7 @@ function validate(objJoint, callbacks) {
 					profiler.start();
 					!objUnit.parent_units
 						? cb()
-						: validateParents(conn, objJoint, objValidationState, cb);
+						: validation_byzantine.validateParents(conn, objJoint, objValidationState, cb);
 				},
 				function(cb){
 					profiler.stop('validation-parents');
@@ -232,11 +233,6 @@ function validate(objJoint, callbacks) {
 						? cb()
 						: validateSkiplist(conn, objJoint.skiplist_units, cb);
 				},
-				// pow remove
-				// function(cb){
-				// 	profiler.stop('validation-skiplist');
-				// 	validateWitnesses(conn, objUnit, objValidationState, cb);
-				// },
 				function(cb){
 					profiler.start();
 					validateAuthors(conn, objUnit.authors, objUnit, objValidationState, cb);
@@ -251,6 +247,11 @@ function validate(objJoint, callbacks) {
 					profiler.start();
 					// move old writer method (updateBestParnt and updateWitnessedlevel) here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
 				    ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, cb);
+				},
+				function(cb){
+					profiler.stop('validation-authors');
+					profiler.start();
+					objUnit.pow_type == constants.POW_TYPE_TRUSTME ? ValidateCoordinatorsAndTrustmeWithoutFork(conn, objUnit.coordinators, objUnit, objValidationState, cb) : cb();
 				}
 			], 
 			function(err){
@@ -414,52 +415,6 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			}
 		);
 	}
-
-	function checkRoundIndexDidNotRetreat(){
-		if (!objUnit.pow_type)
-			return callback();
-		function getMaxRoundIndexForAnyTypeUnit(unit, handleMaxRound){
-			storage.readStaticUnitProps(conn, unit, function (unitPros){
-				if(unitPros.round_index)
-					return handleMaxRound(unitPros.round_index);
-				var maxRoundIndex = 0;
-				conn.query(
-					"SELECT  parent_unit \n\
-					FROM parenthoods \n\
-					WHERE unit = ? ",
-					[unit],
-					function(rows){
-						async.eachSeries(
-							rows,
-							function(parent, cb){
-								getMaxRoundIndexForAnyTypeUnit(parent, function(roundIndex){
-									if (roundIndex > maxRoundIndex)
-										maxRoundIndex = roundIndex;
-									cb();
-								});
-							},
-							function(err){
-								handleMaxRound(maxRoundIndex);
-							});
-					});
-			});
-		}
-
-		async.eachSeries(
-			objUnit.parent_units,
-			function(parent_unit, cb){
-				getMaxRoundIndexForAnyTypeUnit(parent_unit, function (roundIndex){
-					if (objUnit.round_index < roundIndex)
-						cb("round index of unit retreated ")
-				});
-			},
-			function(err){
-				if (err)
-					return callback(err);
-				callback();
-			});
-	}
-
 
 	function checkPOWTypeUnitsInRightRound(){
 		if (!objUnit.pow_type)
@@ -629,143 +584,12 @@ function validateParents(conn, objJoint, objValidationState, callback){
 	);
 }
 
-function validateWitnesses(conn, objUnit, objValidationState, callback){
-
-	function validateWitnessListMutations(arrWitnesses){
-		if (!objUnit.parent_units) // genesis
-			return callback();
-		storage.determineIfHasWitnessListMutationsAlongMc(conn, objUnit, last_ball_unit, arrWitnesses, function(err){
-			if (err && objValidationState.last_ball_mci >= 512000) // do not enforce before the || bug was fixed
-				return callback(err);
-			checkNoReferencesInWitnessAddressDefinitions(arrWitnesses);
-		});
-	}
-	
-	function checkNoReferencesInWitnessAddressDefinitions(arrWitnesses){
-		profiler.start();
-		var cross = (conf.storage === 'sqlite') ? 'CROSS' : ''; // correct the query planner
-		conn.query(
-			"SELECT 1 \n\
-			FROM address_definition_changes \n\
-			JOIN definitions USING(definition_chash) \n\
-			JOIN units AS change_units USING(unit)   -- units where the change was declared \n\
-			JOIN unit_authors USING(definition_chash) \n\
-			JOIN units AS definition_units ON unit_authors.unit=definition_units.unit   -- units where the definition was disclosed \n\
-			WHERE address_definition_changes.address IN(?) AND has_references=1 \n\
-				AND change_units.is_stable=1 AND change_units.main_chain_index<=? AND +change_units.sequence='good' \n\
-				AND definition_units.is_stable=1 AND definition_units.main_chain_index<=? AND +definition_units.sequence='good' \n\
-			UNION \n\
-			SELECT 1 \n\
-			FROM definitions \n\
-			"+cross+" JOIN unit_authors USING(definition_chash) \n\
-			JOIN units AS definition_units ON unit_authors.unit=definition_units.unit   -- units where the definition was disclosed \n\
-			WHERE definition_chash IN(?) AND has_references=1 \n\
-				AND definition_units.is_stable=1 AND definition_units.main_chain_index<=? AND +definition_units.sequence='good' \n\
-			LIMIT 1",
-			[arrWitnesses, objValidationState.last_ball_mci, objValidationState.last_ball_mci, arrWitnesses, objValidationState.last_ball_mci],
-			function(rows){
-				profiler.stop('validation-witnesses-no-refs');
-				(rows.length > 0) ? callback("some witnesses have references in their addresses") : callback();
-			}
-		);
-	}
-
-	profiler.start();
-	var last_ball_unit = objUnit.last_ball_unit;
-	if (typeof objUnit.witness_list_unit === "string"){
-		conn.query("SELECT sequence, is_stable, main_chain_index FROM units WHERE unit=?", [objUnit.witness_list_unit], function(unit_rows){
-			if (unit_rows.length === 0)
-				return callback("witness list unit "+objUnit.witness_list_unit+" not found");
-			var objWitnessListUnitProps = unit_rows[0];
-			if (objWitnessListUnitProps.sequence !== 'good')
-				return callback("witness list unit "+objUnit.witness_list_unit+" is not serial");
-			if (objWitnessListUnitProps.is_stable !== 1)
-				return callback("witness list unit "+objUnit.witness_list_unit+" is not stable");
-			if (objWitnessListUnitProps.main_chain_index > objValidationState.last_ball_mci)
-				return callback("witness list unit "+objUnit.witness_list_unit+" must come before last ball");
-			conn.query(
-				"SELECT address FROM unit_witnesses WHERE unit=? ORDER BY address", 
-				[objUnit.witness_list_unit], 
-				function(rows){
-					if (rows.length === 0)
-						return callback("referenced witness list unit "+objUnit.witness_list_unit+" has no witnesses");
-					var arrWitnesses = rows.map(function(row){ return row.address; });
-					if (arrWitnesses.length !== constants.COUNT_WITNESSES)
-						throw Error("wrong number of witnesses: "+arrWitnesses.length);
-					profiler.stop('validation-witnesses-read-list');
-					validateWitnessListMutations(arrWitnesses);
-				}
-			);
-		});
-	}
-	else if (Array.isArray(objUnit.witnesses) && objUnit.witnesses.length === constants.COUNT_WITNESSES){
-		var prev_witness = objUnit.witnesses[0];
-		for (var i=0; i<objUnit.witnesses.length; i++){
-			var curr_witness = objUnit.witnesses[i];
-			if (!chash.isChashValid(curr_witness))
-				return cb("witness address "+curr_witness+" is invalid");
-			if (i === 0)
-				continue;
-			if (curr_witness <= prev_witness)
-				return callback("wrong order of witnesses, or duplicates");
-			prev_witness = curr_witness;
-		}
-		if (storage.isGenesisUnit(objUnit.unit)){
-			// addresses might not be known yet, it's ok
-			validateWitnessListMutations(objUnit.witnesses);
-			return;
-		}
-		// check that all witnesses are already known and their units are good and stable
-		conn.query(
-			// address=definition_chash is true in the first appearence of the address
-			// (not just in first appearence: it can return to its initial definition_chash sometime later)
-			"SELECT COUNT(DISTINCT address) AS count_stable_good_witnesses FROM unit_authors JOIN units USING(unit) \n\
-			WHERE address=definition_chash AND +sequence='good' AND is_stable=1 AND main_chain_index<=? AND address IN(?)",
-			[objValidationState.last_ball_mci, objUnit.witnesses],
-			function(rows){
-				if (rows[0].count_stable_good_witnesses !== constants.COUNT_WITNESSES)
-					return callback("some witnesses are not stable, not serial, or don't come before last ball");
-				profiler.stop('validation-witnesses-stable');
-				validateWitnessListMutations(objUnit.witnesses);
-			}
-		);
-	}
-	else
-		return callback("no witnesses or not enough witnesses");
-}
-
-//pow del
-// function validateHeadersCommissionRecipients(objUnit, cb){
-// 	if (objUnit.authors.length > 1 && typeof objUnit.earned_headers_commission_recipients !== "object")
-// 		return cb("must specify earned_headers_commission_recipients when more than 1 author");
-// 	if ("earned_headers_commission_recipients" in objUnit){
-// 		if (!isNonemptyArray(objUnit.earned_headers_commission_recipients))
-// 			return cb("empty earned_headers_commission_recipients array");
-// 		var total_earned_headers_commission_share = 0;
-// 		var prev_address = "";
-// 		for (var i=0; i<objUnit.earned_headers_commission_recipients.length; i++){
-// 			var recipient = objUnit.earned_headers_commission_recipients[i];
-// 			if (!isPositiveInteger(recipient.earned_headers_commission_share))
-// 				return cb("earned_headers_commission_share must be positive integer");
-// 			if (hasFieldsExcept(recipient, ["address", "earned_headers_commission_share"]))
-// 				return cb("unknowsn fields in recipient");
-// 			if (recipient.address <= prev_address)
-// 				return cb("recipient list must be sorted by address");
-// 			if (!isValidAddress(recipient.address))
-// 				return cb("invalid recipient address checksum");
-// 			total_earned_headers_commission_share += recipient.earned_headers_commission_share;
-// 			prev_address = recipient.address;
-// 		}
-// 		if (total_earned_headers_commission_share !== 100)
-// 			return cb("sum of earned_headers_commission_share is not 100");
-// 	}
-// 	cb();
-// }
 
 function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback) {
 	if (arrAuthors.length > constants.MAX_AUTHORS_PER_UNIT) // this is anti-spam. Otherwise an attacker would send nonserial balls signed by zillions of authors.
 		return callback("too many authors");
-	objValidationState.arrAddressesWithForkedPath = [];
+	//byzantine del:
+	//objValidationState.arrAddressesWithForkedPath = [];
 	var prev_address = "";
 	for (var i=0; i<arrAuthors.length; i++){
 		var objAuthor = arrAuthors[i];
@@ -773,12 +597,29 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 			return callback("author addresses not sorted");
 		prev_address = objAuthor.address;
 	}
-	
+
 	objValidationState.unit_hash_to_sign = objectHash.getUnitHashToSign(objUnit);
+		//pow add: check trust me author must come from pow unit authors of last round
+	if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
+		// validate proposer ID
+		if(objUnit.authors.length !== 1)
+			return cb("trust me unit consist of more than one author")
+		// getProposer method can ensure prop[oser is among top 10 pow unit address.]
+		byzantine.getProposer(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index){
+			if(proposer !== objUnit.authors[0].address)
+				return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
+			if(round_index !== objUnit.round_index)
+				return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
+			async.eachSeries(arrAuthors, function(objAuthor, cb){
+				validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+			}, callback);
+		});
+	}else{
+		async.eachSeries(arrAuthors, function(objAuthor, cb){
+			validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+		}, callback);
+	}
 	
-	async.eachSeries(arrAuthors, function(objAuthor, cb){
-		validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
-	}, callback);
 }
 
 function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
@@ -831,87 +672,73 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 					return callback("authentifier verification failed");
 				// pow modi
 				//checkSerialAddressUse();
-				checkTrustMeAuthor();
+				checkNoPendingChangeOfDefinitionChash();
 			}
 		);
-	}
-
-	//pow add: check trust me author must come from pow unit authors of last round
-	function checkTrustMeAuthor(){
-		if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
-			round.getWitnessesByRoundIndex(conn, objUnit.round_index , function(last_Round_witnesses){
-				if(last_Round_witnesses.indexOf(objAuthor.address) === -1){
-					return callback("author of trust me unit is invalid");
-				}
-				checkSerialAddressUse(); 
-			});
-
-		}else{
-			checkSerialAddressUse();
-		}
 	}
 	
-	function findConflictingUnits(handleConflictingUnits){
-		var cross = (objValidationState.max_known_mci - objValidationState.max_parent_limci < 1000) ? 'CROSS' : '';
-		conn.query( // _left_ join forces use of indexes in units
-			"SELECT unit, is_stable \n\
-			FROM units \n\
-			"+cross+" JOIN unit_authors USING(unit) \n\
-			WHERE address=? AND (main_chain_index>? OR main_chain_index IS NULL) AND unit != ?",
-			[objAuthor.address, objValidationState.max_parent_limci, objUnit.unit],
-			function(rows){
-				var arrConflictingUnitProps = [];
-				async.eachSeries(
-					rows,
-					function(row, cb){
-						graph.determineIfIncludedOrEqual(conn, row.unit, objUnit.parent_units, function(bIncluded){
-							if (!bIncluded)
-								arrConflictingUnitProps.push(row);
-							cb();
-						});
-					},
-					function(){
-						handleConflictingUnits(arrConflictingUnitProps);
-					}
-				);
-			}
-		);
-	}
+	// in byzantine mode ,we don't need to make sure unit serial any more
+	// function findConflictingUnits(handleConflictingUnits){
+	// 	var cross = (objValidationState.max_known_mci - objValidationState.max_parent_limci < 1000) ? 'CROSS' : '';
+	// 	conn.query( // _left_ join forces use of indexes in units
+	// 		"SELECT unit, is_stable \n\
+	// 		FROM units \n\
+	// 		"+cross+" JOIN unit_authors USING(unit) \n\
+	// 		WHERE address=? AND (main_chain_index>? OR main_chain_index IS NULL) AND unit != ?",
+	// 		[objAuthor.address, objValidationState.max_parent_limci, objUnit.unit],
+	// 		function(rows){
+	// 			var arrConflictingUnitProps = [];
+	// 			async.eachSeries(
+	// 				rows,
+	// 				function(row, cb){
+	// 					graph.determineIfIncludedOrEqual(conn, row.unit, objUnit.parent_units, function(bIncluded){
+	// 						if (!bIncluded)
+	// 							arrConflictingUnitProps.push(row);
+	// 						cb();
+	// 					});
+	// 				},
+	// 				function(){
+	// 					handleConflictingUnits(arrConflictingUnitProps);
+	// 				}
+	// 			);
+	// 		}
+	// 	);
+	// }
 
 
-	function checkSerialAddressUse(){
-		var next = checkNoPendingChangeOfDefinitionChash;
-		findConflictingUnits(function(arrConflictingUnitProps){
-			if (arrConflictingUnitProps.length === 0){ // no conflicting units
-				// we can have 2 authors. If the 1st author gave bad sequence but the 2nd is good then don't overwrite
-				objValidationState.sequence = objValidationState.sequence || 'good';
-				return next();
-			}
-			var arrConflictingUnits = arrConflictingUnitProps.map(function(objConflictingUnitProps){ return objConflictingUnitProps.unit; });
-			breadcrumbs.add("========== found conflicting units "+arrConflictingUnits+" =========");
-			breadcrumbs.add("========== will accept a conflicting unit "+objUnit.unit+" =========");
-			objValidationState.arrAddressesWithForkedPath.push(objAuthor.address);
-			objValidationState.arrConflictingUnits = (objValidationState.arrConflictingUnits || []).concat(arrConflictingUnits);
-			bNonserial = true;
-			var arrUnstableConflictingUnitProps = arrConflictingUnitProps.filter(function(objConflictingUnitProps){
-				return (objConflictingUnitProps.is_stable === 0);
-			});
-			var bConflictsWithStableUnits = arrConflictingUnitProps.some(function(objConflictingUnitProps){
-				return (objConflictingUnitProps.is_stable === 1);
-			});
-			if (objValidationState.sequence !== 'final-bad') // if it were already final-bad because of 1st author, it can't become temp-bad due to 2nd author
-				objValidationState.sequence = bConflictsWithStableUnits ? 'final-bad' : 'temp-bad';
-			var arrUnstableConflictingUnits = arrUnstableConflictingUnitProps.map(function(objConflictingUnitProps){ return objConflictingUnitProps.unit; });
-			if (bConflictsWithStableUnits) // don't temp-bad the unstable conflicting units
-				return next();
-			if (arrUnstableConflictingUnits.length === 0)
-				return next();
-			// we don't modify the db during validation, schedule the update for the write
-			objValidationState.arrAdditionalQueries.push(
-				{sql: "UPDATE units SET sequence='temp-bad' WHERE unit IN(?) AND +sequence='good'", params: [arrUnstableConflictingUnits]});
-			next();
-		});
-	}
+	// function checkSerialAddressUse(){
+	// 	var next = checkNoPendingChangeOfDefinitionChash;
+	// 	findConflictingUnits(function(arrConflictingUnitProps){
+	// 		if (arrConflictingUnitProps.length === 0){ // no conflicting units
+	// 			// we can have 2 authors. If the 1st author gave bad sequence but the 2nd is good then don't overwrite
+	// 			objValidationState.sequence = objValidationState.sequence || 'good';
+	// 			return next();
+	// 		}
+	// 		var arrConflictingUnits = arrConflictingUnitProps.map(function(objConflictingUnitProps){ return objConflictingUnitProps.unit; });
+	// 		breadcrumbs.add("========== found conflicting units "+arrConflictingUnits+" =========");
+	// 		breadcrumbs.add("========== will accept a conflicting unit "+objUnit.unit+" =========");
+	// 		objValidationState.arrAddressesWithForkedPath.push(objAuthor.address);
+	// 		objValidationState.arrConflictingUnits = (objValidationState.arrConflictingUnits || []).concat(arrConflictingUnits);
+	// 		bNonserial = true;
+	// 		var arrUnstableConflictingUnitProps = arrConflictingUnitProps.filter(function(objConflictingUnitProps){
+	// 			return (objConflictingUnitProps.is_stable === 0);
+	// 		});
+	// 		var bConflictsWithStableUnits = arrConflictingUnitProps.some(function(objConflictingUnitProps){
+	// 			return (objConflictingUnitProps.is_stable === 1);
+	// 		});
+	// 		if (objValidationState.sequence !== 'final-bad') // if it were already final-bad because of 1st author, it can't become temp-bad due to 2nd author
+	// 			objValidationState.sequence = bConflictsWithStableUnits ? 'final-bad' : 'temp-bad';
+	// 		var arrUnstableConflictingUnits = arrUnstableConflictingUnitProps.map(function(objConflictingUnitProps){ return objConflictingUnitProps.unit; });
+	// 		if (bConflictsWithStableUnits) // don't temp-bad the unstable conflicting units
+	// 			return next();
+	// 		if (arrUnstableConflictingUnits.length === 0)
+	// 			return next();
+	// 		// we don't modify the db during validation, schedule the update for the write
+	// 		objValidationState.arrAdditionalQueries.push(
+	// 			{sql: "UPDATE units SET sequence='temp-bad' WHERE unit IN(?) AND +sequence='good'", params: [arrUnstableConflictingUnits]});
+	// 		next();
+	// 	});
+	// }
 	
 	// don't allow contradicting pending keychanges.
 	// We don't trust pending keychanges even when they are serial, as another unit may arrive and make them nonserial
@@ -925,8 +752,6 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 			function(rows){
 				if (rows.length === 0)
 					return next();
-				if (!bNonserial || objValidationState.arrAddressesWithForkedPath.indexOf(objAuthor.address) === -1)
-					return callback("you can't send anything before your last keychange is stable and before last ball");
 				// from this point, our unit is nonserial
 				async.eachSeries(
 					rows,
@@ -961,8 +786,6 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 			function(rows){
 				if (rows.length === 0)
 					return next();
-				if (!bNonserial || objValidationState.arrAddressesWithForkedPath.indexOf(objAuthor.address) === -1)
-					return callback("you can't send anything before your last definition is stable and before last ball");
 				// from this point, our unit is nonserial
 				async.eachSeries(
 					rows,
@@ -983,49 +806,6 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 		);
 	}
 	
-	// This was bad idea.  An uncovered nonserial, if not archived, will block new units from this address forever.
-	/*
-	function checkNoPendingOrRetrievableNonserialIncluded(){
-		var next = validateDefinition;
-		conn.query(
-			"SELECT lb_units.main_chain_index FROM units JOIN units AS lb_units ON units.last_ball_unit=lb_units.unit \n\
-			WHERE units.is_on_main_chain=1 AND units.main_chain_index=?",
-			[objValidationState.last_ball_mci],
-			function(lb_rows){
-				var last_ball_of_last_ball_mci = (lb_rows.length > 0) ? lb_rows[0].main_chain_index : 0;
-				conn.query(
-					"SELECT unit FROM unit_authors JOIN units USING(unit) \n\
-					WHERE address=? AND (is_stable=0 OR main_chain_index>?) AND sequence!='good'", 
-					[objAuthor.address, last_ball_of_last_ball_mci], 
-					function(rows){
-						if (rows.length === 0)
-							return next();
-						if (!bNonserial)
-							return callback("you can't send anything before all your nonserial units are stable and before last ball of last ball");
-						// from this point, the unit is nonserial
-						async.eachSeries(
-							rows,
-							function(row, cb){
-								graph.determineIfIncludedOrEqual(conn, row.unit, objUnit.parent_units, function(bIncluded){
-									if (bIncluded)
-										console.log("checkNoPendingOrRetrievableNonserialIncluded: unit "+row.unit+" is included");
-									bIncluded ? cb("found") : cb();
-								});
-							},
-							function(err){
-								(err === "found") 
-									? callback("you can't send anything before all your included nonserial units are stable \
-											   and lie before last ball of last ball (self is nonserial)") 
-									: next();
-							}
-						);
-					}
-				);
-			}
-		);
-	}
-	*/
-	
 	function validateDefinition(){
 		if (!("definition" in objAuthor))
 			return callback();
@@ -1044,8 +824,9 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 	}
 	
 	function handleDuplicateAddressDefinition(arrAddressDefinition){
-		if (!bNonserial || objValidationState.arrAddressesWithForkedPath.indexOf(objAuthor.address) === -1)
-			return callback("duplicate definition of address "+objAuthor.address+", bNonserial="+bNonserial);
+		//byzantine del:
+		// if (!bNonserial || objValidationState.arrAddressesWithForkedPath.indexOf(objAuthor.address) === -1)
+		// 	return callback("duplicate definition of address "+objAuthor.address+", bNonserial="+bNonserial);
 		// todo: investigate if this can split the nodes
 		// in one particular case, the attacker changes his definition then quickly sends a new ball with the old definition - the new definition will not be active yet
 		if (objectHash.getChash160(arrAddressDefinition) !== objectHash.getChash160(objAuthor.definition))
@@ -1129,45 +910,50 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 		}
 	}
 	
-	function validateSpendProofs(cb){
-		if (!("spend_proofs" in objMessage))
-			return cb();
-		var arrEqs = objMessage.spend_proofs.map(function(objSpendProof){
-			return "spend_proof="+conn.escape(objSpendProof.spend_proof)+
-				" AND address="+conn.escape(objSpendProof.address ? objSpendProof.address : objUnit.authors[0].address);
-		});
-		checkForDoublespends(conn, "spend proof", 
-			"SELECT address, unit, main_chain_index, sequence FROM spend_proofs JOIN units USING(unit) WHERE unit != ? AND ("+arrEqs.join(" OR ")+")",
-			[objUnit.unit], 
-			objUnit, objValidationState, function(cb2){ cb2(); }, cb);
-	}
-	
-	async.series([validateSpendProofs, validatePayload], callback);
+	// byzantine remove
+	// function validateSpendProofs(cb){
+	// 	if (!("spend_proofs" in objMessage))
+	// 		return cb();
+	// 	var arrEqs = objMessage.spend_proofs.map(function(objSpendProof){
+	// 		return "spend_proof="+conn.escape(objSpendProof.spend_proof)+
+	// 			" AND address="+conn.escape(objSpendProof.address ? objSpendProof.address : objUnit.authors[0].address);
+	// 	});
+	// 	checkForDoublespends(conn, "spend proof", 
+	// 		"SELECT address, unit, main_chain_index, sequence FROM spend_proofs JOIN units USING(unit) WHERE unit != ? AND ("+arrEqs.join(" OR ")+")",
+	// 		[objUnit.unit], 
+	// 		objUnit, objValidationState, function(cb2){ cb2(); }, cb);
+	// }
+	//async.series([validateSpendProofs, validatePayload], callback);
+	async.series([validatePayload], callback);
 }
 
 // pow add :
 function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, callback) {
 	console.log("validating witness level");
 	if (!objUnit.parent_units) {//gensis un;
-		objValidationState.best_parent_unit = null;
+		//objValidationState.best_parent_unit = null;
 		objValidationState.witnessed_level = 0;
 		return callback();
 	}
-	var unit_best_parent;
+	var unit_limci;
 	var unit_witenessed_level;
 	async.series(
 		[
+			//byzantine del
+			// function(cb){
+			// 	storage.determineBestParent(conn,objUnit, function(best_parent_unit){
+			// 		unit_best_parent = best_parent_unit;
+			// 		objValidationState.best_parent_unit = best_parent_unit;
+			// 		cb();
+			// 	});
+			// },
 			function(cb){
-				storage.determineBestParent(conn,objUnit, function(best_parent_unit){
-					unit_best_parent = best_parent_unit;
-					objValidationState.best_parent_unit = best_parent_unit;
-					cb();
-				});
-			},
-			function(cb){
-				storage.determinewitnessedLevel(conn,objUnit,unit_best_parent, function(witenessed_level){
+				storage.determinewitnessedLevelAndLimci(conn,objUnit, function(err,witenessed_level,limci){
+					if(err)
+						return cb(err);
 					unit_witenessed_level = witenessed_level;
-					objValidationState.witnessed_level= witenessed_level;
+					objValidationState.witenessed_level = limci;
+					objValidationState.limci = limci;
 					cb();
 				});
 			},
@@ -1203,10 +989,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 							if (last_round_min_wl === null){
 								return cb("last_round_min_wl or last_round_min_wl is null ");
 							}
-							// if(unit_witenessed_level < last_round_max_wl){
-							// 	console.log("unit info "+ JSON.stringify(objUnit));
-							// 	return cb("unit witnessed level is not bigger than last round max wl");
-							// }
+						
 							return cb();
 						});
 					}
@@ -1219,7 +1002,7 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 				});
 			},
 			function(cb){// check no bad joints to ensure supernode is not doing bad
-				if(!objUnit.pow_type || objUnit.pow_type !==1)
+				if(!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
 					return cb();
 				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
 					if(err)
@@ -1238,12 +1021,49 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 	})
 }
 
+// byzantine add :
+// validate coordinators and trustme unit fork condition
+function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, objValidationState, callback) {
+	console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
+
+	//check only single main chain without fork ,there is no two trust me units with same mci
+	storage.getUnitsInfoWithMci(conn,objUnit.hp, function(units){
+		if(units.length > 0)
+			return callback("duplicated trust me units with same MCI !")
+		if(coordinators.length <  ( 2 * constants.TOTAL_BYZANTINE + 1) )
+			return callback("not enough coordinators, not reach to 2f + 1 threshold ");
+		if(coordinators.length > constants.TOTAL_COORDINATORS )
+			return callback("too many coordinators ");
+		
+			// check coordinators are sorted and no duplicated
+		var prev_address = "";
+		for (var i=0; i<coordinators.length; i++){
+			var objCoodinator = coordinators[i];
+			if (objCoodinator.address <= prev_address)
+				return callback("coordinator addresses not sorted");
+			prev_address = objCoodinator.address;
+		}
+		
+		async.eachSeries(coordinators, function(coordinator, cb){
+			// Make sure all coordinators are correct witness of round
+			round.getWitnessesByRoundIndex(objUnit.round_index, function(witnesses){
+				if(witnesses.indexOf(coordinator.address) === -1)
+					return cb("Incorrect coordinator deteced :" + coordinator.address);
+				// Validate signature
+				objValidationState.unit_hash_to_sign = objectHash.getProposalHashToSign(objUnit);
+				validateAuthor(conn, coordinator, objUnit, objValidationState, cb);
+			});
+		}, callback);
+	});
+}
+
+
 function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidationState, onAcceptedDoublespends, cb){
 	conn.query(
 		sql, 
 		arrSqlArgs,
 		function(rows){
-			if (rows.length === 0)
+			if (rows.length === 0) //no double spend, skip it 
 				return cb();
 			var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
 			async.eachSeries(
@@ -1270,15 +1090,36 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 							throw Error("unreachable code, conflicting "+type+" in unit "+objConflictingRecord.unit);
 						}
 						else{
-							if (objValidationState.arrAddressesWithForkedPath.indexOf(objConflictingRecord.address) === -1)
-								throw Error("double spending "+type+" without double spending address?");
+							//byzantine del:
+							// if (objValidationState.arrAddressesWithForkedPath.indexOf(objConflictingRecord.address) === -1)
+							//	throw Error("double spending "+type+" without double spending address?");
 							cb2();
 						}
 					});
 				},
-				function(err){
+				function(err){//sync.eachSeries callback
 					if (err)
 						return cb(err);
+					// byzantine add
+					// here mean double spend units found and units are non serial
+					console.log("Double spend unit found: " + objUnit.unit);
+					var arrUnstableConflictingUnitProps = rows.filter(function(objConflictingUnitProps){
+						return (objConflictingUnitProps.is_stable === 0);
+					});
+					var bConflictsWithStableUnits = rows.some(function(objConflictingUnitProps){
+						return (objConflictingUnitProps.is_stable === 1);
+					});
+					if (objValidationState.sequence !== 'final-bad') // if it were already final-bad because of 1st author, it can't become temp-bad due to 2nd author
+							objValidationState.sequence = bConflictsWithStableUnits ? 'final-bad' : 'temp-bad';
+					var arrUnstableConflictingUnits = arrUnstableConflictingUnitProps.map(function(objConflictingUnitProps){ return objConflictingUnitProps.unit; });
+					if (bConflictsWithStableUnits) // don't temp-bad the unstable conflicting units
+						return onAcceptedDoublespends(cb);
+					if (arrUnstableConflictingUnits.length === 0)
+						return onAcceptedDoublespends(cb);
+
+					//	we don't modify the db during validation, schedule the update for the write
+					objValidationState.arrAdditionalQueries.push(
+						{sql: "UPDATE units SET sequence='temp-bad' WHERE unit IN(?) AND +sequence='good'", params: [arrUnstableConflictingUnits]});
 					onAcceptedDoublespends(cb);
 				}
 			);
@@ -2380,3 +2221,4 @@ exports.hasValidHashes = hasValidHashes;
 exports.validateAuthorSignaturesWithoutReferences = validateAuthorSignaturesWithoutReferences;
 exports.validatePayment = validatePayment;
 exports.initPrivatePaymentValidationState = initPrivatePaymentValidationState;
+exports.validateProposalJoint = validation_byzantine.validateProposalJoint;
