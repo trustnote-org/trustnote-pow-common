@@ -581,8 +581,14 @@ function checkIfHaveEnoughOutboundPeersAndAdd()
 
 function connectToPeer( sUrl, pfnOnOpen )
 {
+	//
+	//	save sUrl to database
+	//
 	addPeer( sUrl );
 
+	//
+	//
+	//
 	let options	= {};
 	if ( socks && conf.socksHost && conf.socksPort )
 	{
@@ -590,18 +596,19 @@ function connectToPeer( sUrl, pfnOnOpen )
 		(
 			{
 				proxy:
-					{
-						ipaddress: conf.socksHost,
-						port: conf.socksPort,
-						type: 5
-					}
+				{
+					ipaddress	: conf.socksHost,
+					port		: conf.socksPort,
+					type		: 5
+				}
 			},
 			/^wss/i.test( sUrl )
 		);
 	}
 
-	let oWsServer = options.agent ? new WebSocket( sUrl, options ) : new WebSocket( sUrl );
-	assocConnectingOutboundWebsockets[ sUrl ]	= oWsServer;
+	let oWsClient = options.agent ? new WebSocket( sUrl, options ) : new WebSocket( sUrl );
+	assocConnectingOutboundWebsockets[ sUrl ]	= oWsClient;
+
 	setTimeout
 	(
 		() =>
@@ -617,8 +624,8 @@ function connectToPeer( sUrl, pfnOnOpen )
 	);
 
 	//	...
-	oWsServer.setMaxListeners( 20 );	//	avoid warning
-	oWsServer.once
+	oWsClient.setMaxListeners( 20 );	//	avoid warning
+	oWsClient.once
 	(
 		'open',
 		function onWsOpen()
@@ -626,17 +633,17 @@ function connectToPeer( sUrl, pfnOnOpen )
 			breadcrumbs.add( `connected to ${ sUrl }` );
 			delete assocConnectingOutboundWebsockets[ sUrl ];
 
-			oWsServer.assocPendingRequests		= {};
-			oWsServer.assocInPreparingResponse	= {};
+			oWsClient.assocPendingRequests		= {};
+			oWsClient.assocInPreparingResponse	= {};
 
-			if ( ! oWsServer.url )
+			if ( ! oWsClient.url )
 			{
 				throw Error( "no url on ws" );
 			}
-			if ( oWsServer.url !== sUrl && oWsServer.url !== sUrl + "/" )
+			if ( oWsClient.url !== sUrl && oWsClient.url !== sUrl + "/" )
 			{
 				// browser implementatin of Websocket might add /
-				throw Error("url is different: " + oWsServer.url);
+				throw Error( "url is different: " + oWsClient.url );
 			}
 
 			let another_ws_to_same_peer = getOutboundPeerWsByUrl( sUrl );
@@ -644,7 +651,7 @@ function connectToPeer( sUrl, pfnOnOpen )
 			{
 				//	duplicate connection.  May happen if we abondoned a connection attempt after timeout but it still succeeded while we opened another connection
 				console.log( `already have a connection to ${ sUrl }, will keep the old one and close the duplicate` );
-				oWsServer.close( 1000, 'duplicate connection' );
+				oWsClient.close( 1000, 'duplicate connection' );
 				if ( pfnOnOpen )
 				{
 					pfnOnOpen( null, another_ws_to_same_peer );
@@ -652,56 +659,60 @@ function connectToPeer( sUrl, pfnOnOpen )
 				return;
 			}
 
-			oWsServer.peer		= sUrl;
-			oWsServer.host		= getHostByPeer(oWsServer.peer);
-			oWsServer.bOutbound	= true;
-			oWsServer.last_ts	= Date.now();
-			console.log( 'connected to ' + sUrl + ", host " + oWsServer.host );
+			oWsClient.peer		= sUrl;
+			oWsClient.host		= getHostByPeer( oWsClient.peer );
+			oWsClient.bOutbound	= true;
+			oWsClient.last_ts	= Date.now();
+			console.log( `connected to ${ sUrl }, host ${ oWsClient.host }` );
 
-			arrOutboundPeers.push( oWsServer );
-			sendVersion( oWsServer );
+			arrOutboundPeers.push( oWsClient );
+			sendVersion( oWsClient );
 			if ( conf.myUrl )
 			{
 				//	I can listen too, this is my url to connect to
-				sendJustsaying( oWsServer, 'my_url', conf.myUrl );
+				sendJustsaying( oWsClient, 'my_url', conf.myUrl );
 			}
 			if ( ! conf.bLight )
 			{
-				subscribe( oWsServer );
+				subscribe( oWsClient );
 			}
 			if ( pfnOnOpen )
 			{
-				pfnOnOpen( null, oWsServer );
+				pfnOnOpen( null, oWsClient );
 			}
-			eventBus.emit( 'connected', oWsServer );
+
+			//
+			//	...
+			//
+			eventBus.emit( 'connected', oWsClient );
 			eventBus.emit( 'open-' + sUrl );
 		}
 	);
-	oWsServer.on
+	oWsClient.on
 	(
 		'close',
 		function onWsClose()
 		{
-			let i = arrOutboundPeers.indexOf(oWsServer);
+			let i = arrOutboundPeers.indexOf(oWsClient);
 			console.log( 'close event, removing ' + i + ': ' + sUrl );
 			if ( i !== -1 )
 			{
 				arrOutboundPeers.splice(i, 1);
 			}
 
-			cancelRequestsOnClosedConnection( oWsServer );
+			cancelRequestsOnClosedConnection( oWsClient );
 			if ( options.agent && options.agent.destroy )
 			{
 				options.agent.destroy();
 			}
 		}
 	);
-	oWsServer.on
+	oWsClient.on
 	(
 		'error',
 		function onWsError( e )
 		{
-			delete assocConnectingOutboundWebsockets[sUrl];
+			delete assocConnectingOutboundWebsockets[ sUrl ];
 			console.log( "error from server " + sUrl + ": " + e );
 
 			let err = e.toString();
@@ -710,18 +721,23 @@ function connectToPeer( sUrl, pfnOnOpen )
 			//	! ws.bOutbound means not connected yet.
 			// 	This is to distinguish connection errors from later errors that occur on open connection
 			//
-			if ( ! oWsServer.bOutbound && pfnOnOpen )
+			if ( ! oWsClient.bOutbound && pfnOnOpen )
 			{
 				pfnOnOpen( err );
 			}
-			if ( ! oWsServer.bOutbound )
+			if ( ! oWsClient.bOutbound )
 			{
-				eventBus.emit('open-' + sUrl, err);
+				eventBus.emit( 'open-' + sUrl, err );
 			}
 		}
 	);
+	oWsClient.on
+	(
+		'message',
+		onWebSocketMessage
+	);
 
-	oWsServer.on( 'message', onWebSocketMessage );
+	//	...
 	console.log( 'connectToPeer done' );
 }
 
@@ -765,83 +781,168 @@ function addOutboundPeers( multiplier )
 	);
 }
 
-function getHostByPeer(peer) {
-	let matches = peer.match(/^wss?:\/\/(.*)$/i);
-	if (matches)
-		peer = matches[1];
-	matches = peer.match(/^(.*?)[:\/]/);
-	return matches ? matches[1] : peer;
-}
+function getHostByPeer( sPeer )
+{
+	let sRet	= sPeer;
+	let arrMatches	= sPeer.match( /^wss?:\/\/(.*)$/i );
 
-function addPeerHost(host, onDone) {
-	db.query("INSERT " + db.getIgnore() + " INTO peer_hosts (peer_host) VALUES (?)", [host], function () {
-		if (onDone)
-			onDone();
-	});
-}
+	if ( Array.isArray( arrMatches ) && arrMatches.length >= 2 )
+	{
+		if ( arrMatches )
+		{
+			sPeer = arrMatches[ 1 ];
+		}
 
-function addPeer(peer) {
-	if (assocKnownPeers[peer])
-		return;
-
-	assocKnownPeers[peer] = true;
-	let host = getHostByPeer(peer);
-	addPeerHost(host, function () {
-		console.log("will insert peer " + peer);
-		db.query("INSERT " + db.getIgnore() + " INTO peers (peer_host, peer) VALUES (?,?)", [host, peer]);
-	});
-}
-
-function getOutboundPeerWsByUrl(url) {
-	console.log("outbound peers: " + arrOutboundPeers.map(function (o) {
-		return o.peer;
-	}).join(", "));
-	for (let i = 0; i < arrOutboundPeers.length; i++)
-		if (arrOutboundPeers[i].peer === url)
-			return arrOutboundPeers[i];
-	return null;
-}
-
-function getPeerWebSocket(peer) {
-	for (let i = 0; i < arrOutboundPeers.length; i++)
-		if (arrOutboundPeers[i].peer === peer)
-			return arrOutboundPeers[i];
-	for (let i = 0; i < wss.clients.length; i++)
-		if (wss.clients[i].peer === peer)
-			return wss.clients[i];
-	return null;
-}
-
-function findOutboundPeerOrConnect(url, onOpen) {
-	if (!url)
-		throw Error('no url');
-	if (!onOpen)
-		onOpen = function () {
-		};
-	url = url.toLowerCase();
-	let ws = getOutboundPeerWsByUrl(url);
-	if (ws)
-		return onOpen(null, ws);
-	// check if we are already connecting to the peer
-	ws = assocConnectingOutboundWebsockets[url];
-	if (ws) { // add second event handler
-		breadcrumbs.add('already connecting to ' + url);
-		return eventBus.once('open-' + url, function secondOnOpen(err) {
-			console.log('second open ' + url + ", err=" + err);
-			if (err)
-				return onOpen(err);
-			if (ws.readyState === ws.OPEN)
-				onOpen(null, ws);
-			else {
-				// can happen e.g. if the ws was abandoned but later succeeded, we opened another connection in the meantime, 
-				// and had another_ws_to_same_peer on the first connection
-				console.log('in second onOpen, websocket already closed');
-				onOpen('[internal] websocket already closed');
-			}
-		});
+		arrMatches = sPeer.match(/^(.*?)[:\/]/);
+		if ( Array.isArray( arrMatches ) && arrMatches.length >= 2 )
+		{
+			//
+			//	...
+			//
+			sRet = arrMatches[ 1 ];
+		}
 	}
-	console.log("will connect to " + url);
-	connectToPeer(url, onOpen);
+
+	return sRet;
+}
+
+function addPeerHost( sHost, pfnOnDone )
+{
+	db.query
+	(
+		"INSERT " + db.getIgnore() + " INTO peer_hosts (peer_host) VALUES (?)",
+		[ sHost ],
+		() =>
+		{
+			if ( pfnOnDone )
+			{
+				pfnOnDone();
+			}
+		}
+	);
+}
+
+/**
+ *	save peer to database
+ *	@param	{string}	sPeer	- 'wss://127.0.0.1:90000'
+ */
+function addPeer( sPeer )
+{
+	if ( assocKnownPeers[ sPeer ] )
+	{
+		return;
+	}
+
+	//
+	//	save to memory
+	//
+	assocKnownPeers[ sPeer ] = true;
+
+	//
+	//	save to local storage
+	//
+	let sHost = getHostByPeer( sPeer );
+	addPeerHost
+	(
+		sHost,
+		() =>
+		{
+			console.log( "will insert peer " + sPeer );
+			db.query( "INSERT " + db.getIgnore() + " INTO peers (peer_host, peer) VALUES (?,?)", [ sHost, sPeer ] );
+		}
+	);
+}
+
+function getOutboundPeerWsByUrl( sUrl )
+{
+	console.log( "outbound peers: " + arrOutboundPeers.map( o => { return o.peer; } ).join( ", " ) );
+
+	for ( let i = 0; i < arrOutboundPeers.length; i ++ )
+	{
+		if ( arrOutboundPeers[ i ].peer === sUrl )
+		{
+			return arrOutboundPeers[ i ];
+		}
+	}
+
+	return null;
+}
+
+function getPeerWebSocket( peer )
+{
+	for ( let i = 0; i < arrOutboundPeers.length; i++ )
+	{
+		if ( arrOutboundPeers[ i ].peer === peer )
+		{
+			return arrOutboundPeers[ i ];
+		}
+	}
+
+	for ( let i = 0; i < wss.clients.length; i++ )
+	{
+		if ( wss.clients[ i ].peer === peer )
+		{
+			return wss.clients[ i ];
+		}
+	}
+
+	return null;
+}
+
+function findOutboundPeerOrConnect( sUrl, pfnOnOpen )
+{
+	if ( ! sUrl )
+	{
+		throw Error( 'no url' );
+	}
+	if ( ! pfnOnOpen )
+	{
+		pfnOnOpen = function() {};
+	}
+
+	//	...
+	sUrl	= sUrl.toLowerCase();
+	let oWs	= getOutboundPeerWsByUrl( sUrl );
+	if ( oWs )
+	{
+		return pfnOnOpen( null, oWs );
+	}
+
+	//	check if we are already connecting to the peer
+	oWs	= assocConnectingOutboundWebsockets[ sUrl ];
+	if ( oWs )
+	{
+		//	add second event handler
+		breadcrumbs.add( 'already connecting to ' + sUrl );
+		return eventBus.once
+		(
+			'open-' + sUrl,
+			function secondOnOpen( err )
+			{
+				console.log('second open ' + sUrl + ", err=" + err);
+				if ( err )
+				{
+					return pfnOnOpen( err );
+				}
+				if ( oWs.readyState === oWs.OPEN )
+				{
+					pfnOnOpen( null, oWs );
+				}
+				else
+				{
+					//
+					//	can happen e.g. if the ws was abandoned but later succeeded, we opened another connection in the meantime,
+					//	and had another_ws_to_same_peer on the first connection
+					//
+					console.log( 'in second onOpen, websocket already closed' );
+					pfnOnOpen( '[internal] websocket already closed' );
+				}
+			}
+		);
+	}
+
+	console.log( "will connect to " + sUrl );
+	connectToPeer( sUrl, pfnOnOpen );
 }
 
 function purgePeerEvents() {
@@ -997,7 +1098,8 @@ function requestFromLightVendor(command, params, responseHandler) {
 	});
 }
 
-function printConnectionStatus() {
+function printConnectionStatus()
+{
 	console.log(`${ wss.clients.length } incoming connections, 
 			${ arrOutboundPeers.length } outgoing connections, 
 			${ Object.keys(assocConnectingOutboundWebsockets).length } outgoing connections being opened`);
@@ -1007,23 +1109,29 @@ function printConnectionStatus() {
 	printDatabaseConnectionStatus();
 }
 
-function printDatabaseConnectionStatus() {
-	console.log(`SQLite getCountUsedConnections : ${ db.getCountUsedConnections() }`);
+function printDatabaseConnectionStatus()
+{
+	console.log( `SQLite getCountUsedConnections : ${ db.getCountUsedConnections() }` );
 }
 
-function printEventBusStatus() {
+function printEventBusStatus()
+{
 	//
 	//	watching all events in eventBus.
 	//
-	let arrAllEventNames = eventBus.eventNames();
-	let arrAllListener = [];
-	if (Array.isArray(arrAllEventNames)) {
-		for (let i = 0; i < arrAllEventNames.length; i++) {
+	let arrAllEventNames	= eventBus.eventNames();
+	let arrAllListener	= [];
+
+	if ( Array.isArray( arrAllEventNames ) )
+	{
+		for ( let i = 0; i < arrAllEventNames.length; i++ )
+		{
 			let sEventName = arrAllEventNames[i];
-			arrAllListener.push(`${ sEventName } : ${ eventBus.listenerCount(sEventName) }`);
+			arrAllListener.push( `${ sEventName } : ${ eventBus.listenerCount(sEventName) }` );
 		}
 	}
-	console.log(`Event bus listeners: `, arrAllListener);
+
+	console.log( `Event bus listeners: `, arrAllListener );
 }
 
 
