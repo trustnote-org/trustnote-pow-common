@@ -54,7 +54,8 @@ function sortOutputs(a,b){
 
 // bMultiAuthored includes all addresses, not just those that pay
 // arrAddresses is paying addresses
-function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci, amount, bMultiAuthored, onDone){
+function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mci, amount, bMultiAuthored, onDone )
+{
 	var asset = objAsset ? objAsset.asset : null;
 	console.log("pick coins "+asset+" amount "+amount);
 	var is_base = objAsset ? 0 : 1;
@@ -106,6 +107,8 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 					var input = rows[0];
 					// default type is "transfer"
 					addInput(input);
+
+					console.log( `pickDivisibleCoinsForAmount onDone[1]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 					onDone(arrInputsWithProofs, total_amount);
 				}
 				else
@@ -138,7 +141,10 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 					},
 					function(err){
 						if (err === 'found')
+						{
+							console.log( `pickDivisibleCoinsForAmount onDone[2]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 							onDone(arrInputsWithProofs, total_amount);
+						}
 						else if (asset)
 							issueAsset();
 						else{
@@ -204,7 +210,10 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 			return finish();
 		else{
 			if (amount === Infinity && !objAsset.cap) // don't try to create infinite issue
+			{
+				console.log( `pickDivisibleCoinsForAmount onDone[3]( null );` );
 				return onDone(null);
+			}
 		}
 		console.log("will try to issue asset "+asset);
 		// for issue, we use full list of addresses rather than spendable addresses
@@ -238,7 +247,15 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 			}
 			arrInputsWithProofs.push(objInputWithProof);
 			var bFound = is_base ? (total_amount > required_amount) : (total_amount >= required_amount);
-			bFound ? onDone(arrInputsWithProofs, total_amount) : finish();
+			if ( bFound )
+			{
+				console.log( `pickDivisibleCoinsForAmount onDone[4]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
+				onDone( arrInputsWithProofs, total_amount );
+			}
+			else
+			{
+				finish();
+			}
 		}
 		
 		if (objAsset.cap){
@@ -262,9 +279,15 @@ function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci
 	
 	function finish(){
 		if (amount === Infinity && arrInputsWithProofs.length > 0)
+		{
+			console.log( `pickDivisibleCoinsForAmount onDone[5]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 			onDone(arrInputsWithProofs, total_amount);
+		}
 		else
+		{
+			console.log( `pickDivisibleCoinsForAmount onDone[6]( null );` );
 			onDone(null);
+		}
 	}
 	
 	var arrSpendableAddresses = arrAddresses.concat(); // cloning
