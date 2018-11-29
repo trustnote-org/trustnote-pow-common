@@ -544,6 +544,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
 /**
  *	verify if a solution( hash, nonce ) is valid
  *
+ * 	@param	{object}	oConn
  * 	@param	{object}	objInput
  *	@param	{number}	objInput.roundIndex
  *	@param	{string}	objInput.firstTrustMEBall
@@ -559,7 +560,7 @@ function _startMiningWithInputs_debug( oInput, pfnCallback )
  *				otherwise, error info will be returned by err
  *	@return	{boolean}
  */
-function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
+function checkProofOfWork( oConn, objInput, sHash, nNonce, pfnCallback )
 {
 	if ( _bBrowser && !_bWallet )
 	{
@@ -595,7 +596,7 @@ function checkProofOfWork( objInput, sHash, nNonce, pfnCallback )
 	//
 	calculateBitsValueByRoundIndexWithDeposit
 	(
-		_db,
+		oConn || _db,
 		objInput.roundIndex,
 		objInput.deposit,
 		( err, uSelfBits ) =>

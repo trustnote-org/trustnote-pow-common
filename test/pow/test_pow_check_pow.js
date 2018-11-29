@@ -19,7 +19,7 @@ let objInput	= {
 let sHash	= '00198bb0606e5a8b5d47577bc96de488116af886815f4dccc5ad1ebd78d1b14e';
 let nNonce	= 65;
 
-_pow.checkProofOfWork( objInput, sHash, nNonce, function( err, objResult )
+_pow.checkProofOfWork( null, objInput, sHash, nNonce, function( err, objResult )
 {
 	console.log( err, objResult );
 });

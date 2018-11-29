@@ -1563,7 +1563,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 				var objPowProof = {roundIndex:objUnit.round_index,firstTrustMEBall:firstTrustMEBall, publicSeed:payload.seed,
 					superNodeAuthor:objUnit.authors[0].address, deposit: depositBalance} ;
 				//check ifsolution is correct
-				pow.checkProofOfWork(objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
+				pow.checkProofOfWork(conn,objPowProof, payload.solution.hash, payload.solution.nonce, function(err){
 					if(err)
 						return cb("Wrong pow proof of work: "+ err);
 					return cb();
