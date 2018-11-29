@@ -1091,7 +1091,10 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 						else{
 							//byzantine del:
 							// if (objValidationState.arrAddressesWithForkedPath.indexOf(objConflictingRecord.address) === -1)
-							// 	throw Error("double spending "+type+" without double spending address?");
+							//	throw Error("double spending "+type+" without double spending address?");
+							//	we don't modify the db during validation, schedule the update for the write
+							objValidationState.arrAdditionalQueries.push(
+								{sql: "UPDATE units SET sequence='temp-bad' WHERE unit IN(?) AND +sequence='good'", params: [arrUnstableConflictingUnits]});
 							cb2();
 						}
 					});
