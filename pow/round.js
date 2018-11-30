@@ -119,9 +119,9 @@ function getDurationByCycleId(conn, cycleId, callback){
         throw Error("calculate duration error on minRoundIndex or maxRoundIndex");    
     conn.query(
         "SELECT int_value AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-        WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+        WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
             AND sequence='good' AND is_stable=1 AND round_index>=? ORDER BY main_chain_index LIMIT 1",
-        [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, minRoundIndex],
+        [constants.POW_TYPE_TRUSTME, minRoundIndex],
         function(rowsMin){
             if (rowsMin.length !== 1)
                 return callback(0);
@@ -129,9 +129,9 @@ function getDurationByCycleId(conn, cycleId, callback){
                 return callback(0);
             conn.query(
                 "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
-                WHERE address=? AND feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+                WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
                     AND sequence='good' AND is_stable=1 AND round_index<=? ORDER BY main_chain_index DESC LIMIT 1",
-                [constants.FOUNDATION_ADDRESS, constants.POW_TYPE_TRUSTME, maxRoundIndex],
+                [constants.POW_TYPE_TRUSTME, maxRoundIndex],
                 function(rowsMax){
                     if (rowsMax.length !== 1)
                         return callback(0);
