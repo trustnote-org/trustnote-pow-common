@@ -1000,17 +1000,6 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 						return cb();
 					}
 				});
-			},
-			function(cb){// check no bad joints to ensure supernode is not doing bad
-				if(!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
-					return cb();
-				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
-					if(err)
-						return cb(err);
-					if(invalid)
-						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
-					return cb();
-				});
 			}
 	],
 	function(err){
@@ -1310,6 +1299,17 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	var depositBalance = 0 ;
 	async.series(
 		[
+			function(cb){// check no bad joints to ensure supernode is not doing bad
+				if(objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
+					return cb("unit:" + objUnit.unit + " pow_type is not POW_TYPE_POW_EQUHASH with pow_equihash payload!");
+				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
+					if(err)
+						return cb(err);
+					if(invalid)
+						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
+					return cb();
+				});
+			},
 			// check deposit address is valid and balance 
 			function(cb){
 				deposit.getDepositAddressBySupernodeAddress(conn, objUnit.authors[0].address, function (err,depositAddress){
@@ -1444,9 +1444,6 @@ function validatePayment(conn, payload, message_index, objUnit, objValidationSta
 
 // divisible assets (including base asset)
 function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index, objUnit, objValidationState, callback){
-	
-//	if (objAsset)
-//		profiler2.start();
 	var denomination = payload.denomination || 1;
 	var arrAuthorAddresses = objUnit.authors.map(function(author) { return author.address; } );
 	var arrInputAddresses = []; // used for non-transferrable assets only
@@ -1512,9 +1509,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 	var bIssue = false;
 	// pow add
 	var bCoinbase = false;
-	//pow del
-	// var bHaveHeadersComissions = false;
-	// var bHaveWitnessings = false;
+
 	
 	// same for both public and private
 	function validateIndivisibleIssue(input, cb){
@@ -1543,9 +1538,6 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 			}
 		);
 	}
-	
-//	if (objAsset)
-//		profiler2.stop('validate outputs');
 	
 	// max 1 issue must come first, then transfers, then hc, then witnessings
 	// no particular sorting order within the groups
@@ -1723,11 +1715,24 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 									return cb("coinbase unit by each author can not sent more than once ");
 								}
 								// check amount is valid
+								if()
 								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address,
 								function(commission){
 									if (commission != input.amount){
 										return cb("coinbase unit amount is incorrect ");
 									}
+									// coinbase unit can only consist of one message 
+									if(objUnit.messages.length !== 1 )
+										return cb("coinbase unit contains more than one mssage body, pls. check it ");
+									 // two outputs for coinbase unit: one is for author self ,the other is for foundation
+									if(payload.outputs.length !== 2 )
+										return cb("coinbase units must have two outputs");
+									var founddation_outputs= payload.filter(function(output) {return output.address == constants.FOUNDATION_ADDRESS });
+									if(founddation_outputs.length !== 1)
+										return cb("moe than one outputs to foundation address occured");
+									var coinbase_foundation_amount = Math.floor(input.amount * constants.FOUNDATION_RATIO);
+									if(founddation_outputs[0].amount !== coinbase_foundation_amount )
+										return cb("foundation share is incoorect in coinbase unit Expected: "+ coinbase_foundation_amount + "Actual :" + founddation_outputs[0].amount);
 									return cb();
 								});
 							});
@@ -1735,10 +1740,6 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						break;
 
 				case "transfer":
-				//	if (objAsset)
-				//		profiler2.start(); pow del
-				// if (bHaveHeadersComissions || bHaveWitnessings)
-				// 	return cb("all transfers must come before hc and witnessings");
 					if (hasFieldsExcept(input, ["type", "unit", "message_index", "output_index"]))
 						return cb("unknown fields in payment input");
 					if (!isStringOfLength(input.unit, constants.HASH_LENGTH))
@@ -1899,83 +1900,11 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							}
 						});
 					break;
-
-				// pow del headers_commission & witnessing check
-				// case "headers_commission":
-				// case "witnessing":
-				// 	if (type === "headers_commission"){
-				// 		if (bHaveWitnessings)
-				// 			return cb("all headers commissions must come before witnessings");
-				// 		bHaveHeadersComissions = true;
-				// 	}
-				// 	else
-				// 		bHaveWitnessings = true;
-				// 	if (objAsset)
-				// 		return cb("only base asset can have "+type);
-				// 	if (hasFieldsExcept(input, ["type", "from_main_chain_index", "to_main_chain_index", "address"]))
-				// 		return cb("unknown fields in witnessing input");
-				// 	if (!isNonnegativeInteger(input.from_main_chain_index))
-				// 		return cb("from_main_chain_index must be nonnegative int");
-				// 	if (!isNonnegativeInteger(input.to_main_chain_index))
-				// 		return cb("to_main_chain_index must be nonnegative int");
-				// 	if (input.from_main_chain_index > input.to_main_chain_index)
-				// 		return cb("from_main_chain_index > input.to_main_chain_index");
-				// 	if (input.to_main_chain_index > objValidationState.last_ball_mci)
-				// 		return cb("to_main_chain_index > last_ball_mci");
-				// 	if (input.from_main_chain_index > objValidationState.last_ball_mci)
-				// 		return cb("from_main_chain_index > last_ball_mci");
-
-				// 	var address = null;
-				// 	if (arrAuthorAddresses.length === 1){
-				// 		if ("address" in input)
-				// 			return cb("when single-authored, must not put address in "+type+" input");
-				// 		address = arrAuthorAddresses[0];
-				// 	}
-				// 	else{
-				// 		if (typeof input.address !== "string")
-				// 			return cb("when multi-authored, must put address in "+type+" input");
-				// 		if (arrAuthorAddresses.indexOf(input.address) === -1)
-				// 			return cb(type+" input address "+input.address+" is not an author");
-				// 		address = input.address;
-				// 	}
-
-				// 	var input_key = type + "-" + address + "-" + input.from_main_chain_index;
-				// 	if (objValidationState.arrInputKeys.indexOf(input_key) >= 0)
-				// 		return cb("input "+input_key+" already used");
-				// 	objValidationState.arrInputKeys.push(input_key);
-
-				// 	doubleSpendWhere = "type=? AND from_main_chain_index=? AND address=? AND asset IS NULL";
-				// 	doubleSpendVars = [type, input.from_main_chain_index, address];
-
-				// 	mc_outputs.readNextSpendableMcIndex(conn, type, address, objValidationState.arrConflictingUnits, function(next_spendable_mc_index){
-				// 		if (input.from_main_chain_index < next_spendable_mc_index)
-				// 			return cb(type+" ranges must not overlap"); // gaps allowed, in case a unit becomes bad due to another address being nonserial
-				// 		var max_mci = (type === "headers_commission")
-				// 			? headers_commission.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci)
-				// 			: paid_witnessing.getMaxSpendableMciForLastBallMci(objValidationState.last_ball_mci);
-				// 		if (input.to_main_chain_index > max_mci)
-				// 			return cb(type+" to_main_chain_index is too large");
-
-				// 		var calcFunc = (type === "headers_commission") ? mc_outputs.calcEarnings : paid_witnessing.calcWitnessEarnings;
-				// 		calcFunc(conn, type, input.from_main_chain_index, input.to_main_chain_index, address, {
-				// 			ifError: function(err){
-				// 				throw Error(err);
-				// 			},
-				// 			ifOk: function(commission){
-				// 				if (commission === 0)
-				// 					return cb("zero "+type+" commission");
-				// 				total_input += commission;
-				// 				checkInputDoubleSpend(cb);
-				// 			}
-				// 		});
-				// 	});
-				// 	break;
-
 				default:
 					return cb("unrecognized input type: "+input.type);
 			}
 		},
-		function(err){
+		function(err){ // async.forEachOfSeries callback
 			console.log("inputs done "+payload.asset, arrInputAddresses, arrOutputAddresses);
 			if (err)
 				return callback(err);

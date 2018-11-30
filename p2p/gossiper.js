@@ -732,8 +732,8 @@ class Gossiper extends EventEmitter
 	 *		all peers( ip:port ) known by the peer and the max version of data stored in the peer.
 	 *		for example:
 	 *		{
-	 *			'127.0.0.1:9000'	: 1,	//	max version
-	 *			'127.0.0.1:9001'	: 2,	//	max version
+	 *			'wss://127.0.0.1:9000'	: 1,	//	max version
+	 *			'wss://127.0.0.1:9001'	: 2,	//	max version
 	 *		}
 	 *	@return {{type: number, request_digest: {}, updates: Array}}
 	 */
