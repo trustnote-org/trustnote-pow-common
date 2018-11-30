@@ -1,6 +1,6 @@
 const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
-
+const { GossiperUtils }		= require( './gossiper-utils' );
 
 
 /**
@@ -21,8 +21,8 @@ class GossiperScuttle
 	 *
 	 * 	@return
 	 * 	{
-	 * 		'wss://127.0.0.1:9011'	: m_nMaxVersionSeen,
-	 * 		'wss://127.0.0.1:9012'	: m_nMaxVersionSeen,
+	 * 		'wss://127.0.0.1:9011'	: maxVersion,
+	 * 		'wss://127.0.0.1:9012'	: maxVersion,
 	 * 		...
 	 * 	}
 	 */
@@ -36,7 +36,14 @@ class GossiperScuttle
 			let sPeerUrl	= arrPeerUrls[ i ];
 			let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
-			oDigest[ sPeerUrl ]	= oPeer.m_nMaxVersionSeen;
+			oDigest[ sPeerUrl ]	= oPeer.getMaxVersion();
+		}
+
+		//	broadcast local
+		let sLocalUrl	= this.m_oLocalPeer.getUrl();
+		if ( GossiperUtils.isValidPeerUrl( sLocalUrl ) )
+		{
+			oDigest[ sLocalUrl ] = this.m_oLocalPeer.getMaxVersion();
 		}
 
 		return oDigest;
@@ -71,10 +78,10 @@ class GossiperScuttle
 				}
 
 				//
-				//	sPeerName	- 'ip:port'
+				//	sPeerUrl	- 'ws://ip:port'
 				//
-				let oLocalPeer		= this.m_oRemotePeers[ sPeerUrl ];
-				let nLocalMaxVersion	= this.getMaxVersionSeenOfPeer( sPeerUrl );
+				let oPeer		= this.m_oRemotePeers[ sPeerUrl ];
+				let nPeerMaxVersion	= this.getMaxVersionSeenOfPeer( sPeerUrl );
 				let nDigestMaxVersion	= oDigest[ sPeerUrl ];
 
 				if ( ! this.m_oRemotePeers[ sPeerUrl ] )
@@ -86,7 +93,7 @@ class GossiperScuttle
 					oRequests[ sPeerUrl ]	= 0;
 					arrNewPeers.push( sPeerUrl );
 				}
-				else if ( nLocalMaxVersion > nDigestMaxVersion )
+				else if ( nPeerMaxVersion > nDigestMaxVersion )
 				{
 					//
 					//	We have more recent information for this peer.
@@ -107,17 +114,17 @@ class GossiperScuttle
 					(
 						{
 							peer	: sPeerUrl,
-							deltas	: oLocalPeer.getDeltasAfterVersion( nDigestMaxVersion )
+							deltas	: oPeer.getDeltasAfterVersion( nDigestMaxVersion )
 						}
 					);
 				}
-				else if ( nLocalMaxVersion < nDigestMaxVersion )
+				else if ( nPeerMaxVersion < nDigestMaxVersion )
 				{
 					//
 					//	They have more recent information.
 					// 	Request it.
 					//
-					oRequests[ sPeerUrl ] = nLocalMaxVersion;
+					oRequests[ sPeerUrl ] = nPeerMaxVersion;
 				}
 				else
 				{
@@ -217,8 +224,8 @@ class GossiperScuttle
 		//
 		return {
 			'deltas'	: arrDeltas,		//	for updates
-			'requests'	: oRequests,
-			'new_peers'	: arrNewPeers
+			'requests'	: oRequests,		//	objects
+			'new_peers'	: arrNewPeers		//	array
 		};
 	}
 
@@ -239,7 +246,7 @@ class GossiperScuttle
 			return 0;
 		}
 
-		return this.m_oRemotePeers[ sPeerUrl ].m_nMaxVersionSeen;
+		return this.m_oRemotePeers[ sPeerUrl ].getMaxVersion();
 	}
 
 	/**
@@ -333,6 +340,14 @@ class GossiperScuttle
 			}
 
 			let oPeer = this.m_oRemotePeers[ sPeerUrl ];
+			if ( ! oPeer )
+			{
+				if ( sPeerUrl === this.m_oLocalPeer.getUrl() )
+				{
+					oPeer = this.m_oLocalPeer;
+				}
+			}
+
 			if ( oPeer )
 			{
 				//

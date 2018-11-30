@@ -1,3 +1,4 @@
+const _fs			= require('fs');
 const { EventEmitter }		= require( 'events' );
 const { DeUtilsCore }		= require( 'deutils.js' );
 
@@ -264,7 +265,7 @@ class Gossiper extends EventEmitter
 	/**
 	 *	update socket
 	 *
-	 *	@param	{object}	oSockets
+	 *	@param	{object}	oMultiSockets
 	 *		{
 	 *			'wss://127.0.0.1:60001'	: {
 	 *				ip	: '',
@@ -276,25 +277,38 @@ class Gossiper extends EventEmitter
 	 *		}
 	 *	@return	{number}
 	 */
-	updateSockets( oSockets )
+	updateSockets( oMultiSockets )
 	{
 		let nCount = 0;
 
-		if ( DeUtilsCore.isPlainObject( oSockets ) )
+		if ( DeUtilsCore.isPlainObject( oMultiSockets ) )
 		{
-			for ( let oSocket in oSockets )
+			for ( let sUrl in oMultiSockets )
 			{
+				let oSocket = oMultiSockets[ sUrl ];
 				if ( ! DeUtilsCore.isPlainObjectWithKeys( oSocket, 'url' ) ||
 					! GossiperUtils.isValidPeerUrl( oSocket.url ) )
 				{
 					continue;
 				}
 
-				if ( this.m_oRemotePeers[ oSocket.url ] )
+				if ( this.m_oRemotePeers[ sUrl ] )
 				{
-					this.m_oRemotePeers[ oSocket.url ].updateConfigItem( 'socket', oSockets );
-					nCount ++;
+					this.m_oRemotePeers[ sUrl ].updateConfigItem( 'socket', oSocket );
 				}
+				else
+				{
+					this.createPeer
+					(
+						sUrl,
+						{
+							url	: sUrl,
+							socket	: oSocket,
+						}
+					);
+				}
+
+				nCount ++;
 			}
 		}
 
@@ -343,6 +357,14 @@ class Gossiper extends EventEmitter
 	{
 		let oPeer	= null;
 		let bExists	= false;
+
+		if ( this.m_oLocalPeer.getUrl() === sPeerUrl )
+		{
+			return {
+				peer	: null,
+				exists	: true,
+			};
+		}
 
 		if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 		{
@@ -523,6 +545,39 @@ class Gossiper extends EventEmitter
 		let sLivePeerUrl	= null;
 		let sDeadPeerUrl	= null;
 
+
+		//
+		//	for debug
+		//
+		let oUrl		= GossiperUtils.parsePeerUrl( this.m_oLocalPeer.getUrl() );
+		let oAllPeerData	= {};
+		for ( let sPeerUrl in this.m_oRemotePeers )
+		{
+			let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+			oAllPeerData[ sPeerUrl ] = {
+				maxVersion	: oPeer.getMaxVersion(),
+				attributes	: oPeer.m_oAttributes,
+			};
+		}
+
+		const oAllPeerDataSorted	= {};
+		Object.keys( oAllPeerData ).sort().forEach( sKey =>
+		{
+			oAllPeerDataSorted[ sKey ] = oAllPeerData[ sKey ];
+		});
+
+		_fs.writeFile( `data_${ oUrl.port }.json`, JSON.stringify( oAllPeerDataSorted, null, 4 ), err =>
+		{
+			if ( err )
+			{
+				return console.error( err );
+			}
+		});
+
+
+
+
+
 		//
 		//	Find a live peer to gossip to
 		//
@@ -622,21 +677,16 @@ class Gossiper extends EventEmitter
 	/**
 	 *	handle new peers
 	 *
-	 *	@param	{object}	oNewPeers
-	 *		{
-	 *			'wss://127.0.0.1:60001'	: {
-	 *				ip	: '',
-	 *				port	: 0,
-	 *				address	: '',
-	 *				socket	: null
-	 *			},
+	 *	@param	{object}	arrNewPeers
+	 *		[
+	 *			'wss://127.0.0.1:60001'
 	 *			...
-	 *		}
+	 *		]
 	 *	@return	{number}
 	 */
-	_handleNewPeers( oNewPeers )
+	_handleNewPeers( arrNewPeers )
 	{
-		if ( ! DeUtilsCore.isPlainObject( oNewPeers ) )
+		if ( ! Array.isArray( arrNewPeers ) || 0 === arrNewPeers.length )
 		{
 			return 0;
 		}
@@ -649,20 +699,17 @@ class Gossiper extends EventEmitter
 		//		...
 		// 	]
 		//
-		let nCount		= 0;
-		let arrPeerNames	= Object.keys( oNewPeers );
+		let nCount = 0;
 
-		for ( let i = 0; i < arrPeerNames.length; i ++ )
+		for ( let i = 0; i < arrNewPeers.length; i ++ )
 		{
-			let sPeerUrl	= arrPeerNames[ i ];
-			let oPeerConfig	= oNewPeers[ sPeerUrl ];
-
+			let sPeerUrl	= arrNewPeers[ i ];
 			if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 			{
-				let oPeerData	= this.createPeer( sPeerUrl, oPeerConfig );
-				if ( oPeerData.peer )
+				let oCreateResult = this.createPeer( sPeerUrl, {} );
+				if ( oCreateResult.peer )
 				{
-					if ( ! oPeerData.exists )
+					if ( ! oCreateResult.exists )
 					{
 						nCount ++;
 					}
@@ -763,10 +810,11 @@ class Gossiper extends EventEmitter
 		let oScuttle = this.m_oScuttle.scuttle( oPeerDigest );
 
 		//
-		//	TODO
 		//	to handle new peers
 		//
 		this._handleNewPeers( oScuttle.new_peers );
+
+		//	...
 		return {
 			type		: FIRST_RESPONSE,
 			request_digest	: oScuttle.requests,

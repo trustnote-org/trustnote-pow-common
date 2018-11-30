@@ -37,10 +37,11 @@ class GossiperPeer extends EventEmitter
 		//
 		this.m_oConfig =
 			{
-				url	: '',
-				address	: '',
-				singer	: null,
-				socket	: null,
+				url		: '',
+				address		: '',
+				singer		: null,
+				socket		: null,
+				maxVersion	: 0,
 			};
 		this.updateConfig( oOptions );
 
@@ -50,7 +51,6 @@ class GossiperPeer extends EventEmitter
 		this.m_bAlive			= true;
 
 		this.m_oAttributes		= {};
-		this.m_nMaxVersionSeen		= 0;
 		this.m_nHeartbeatVersion	= 0;
 
 		this.m_oDetector		= new GossiperDetector();
@@ -67,6 +67,15 @@ class GossiperPeer extends EventEmitter
 	}
 
 	/**
+	 *	get address
+	 *	@return	{string}
+	 */
+	getAddress()
+	{
+		return this.getConfigItem( 'address' );
+	}
+
+	/**
 	 *	get socket handle
 	 *
 	 *	@return {*}
@@ -75,6 +84,27 @@ class GossiperPeer extends EventEmitter
 	{
 		return this.getConfigItem( 'socket' );
 	}
+
+	/**
+	 *	get max version seen
+	 *
+	 *	@return	{number}
+	 */
+	getMaxVersion()
+	{
+		return this.getConfigItem( 'maxVersion' );
+	}
+
+	/**
+	 *	increase max version seen
+	 *
+	 *	@return	{boolean}
+	 */
+	increaseMaxVersion()
+	{
+		return this.updateConfigItem( 'maxVersion', this.getConfigItem( 'maxVersion' ) + 1 );
+	}
+
 
 	/**
 	 *	get config
@@ -102,10 +132,10 @@ class GossiperPeer extends EventEmitter
 			return false;
 		}
 
-		this.updateConfigItem( 'url', oOptions.url );
-		this.updateConfigItem( 'address', oOptions.address );
-		this.updateConfigItem( 'signer', oOptions.signer );
-		this.updateConfigItem( 'socket', oOptions.socket );
+		for ( let sKey in oOptions )
+		{
+			this.updateConfigItem( sKey, oOptions[ sKey ] );
+		}
 
 		return true;
 	}
@@ -318,9 +348,10 @@ class GossiperPeer extends EventEmitter
 		//	It's possibly to get the same updates more than once if we're gossiping with multiple peers at once
 		//	ignore them
 		//
-		if ( nVersion > this.m_nMaxVersionSeen )
+		if ( nVersion > this.getMaxVersion() )
 		{
-			this.m_nMaxVersionSeen = nVersion;
+			//	update max version seen
+			this.updateConfigItem( 'maxVersion', nVersion );
 			this.setValue( sKey, vValue, nVersion, err =>
 			{
 				if ( err )
@@ -358,8 +389,8 @@ class GossiperPeer extends EventEmitter
 			return pfnCallback( `call updateLocalValue with invalid sKey: ${ JSON.stringify( sKey ) }` );
 		}
 
-		this.m_nMaxVersionSeen += 1;
-		this.setValue( sKey, vValue, this.m_nMaxVersionSeen, err =>
+		this.increaseMaxVersion();
+		this.setValue( sKey, vValue, this.getMaxVersion(), err =>
 		{
 			if ( err )
 			{
