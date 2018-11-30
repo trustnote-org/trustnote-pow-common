@@ -143,37 +143,41 @@ function startPhase(hp, phase){
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
         if(proposer === address_p){
-            if(validValue_p !== null){
-                pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
-                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
-            }
-            else{
-                composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
-                    function(err, objJoint){
-                        if(err)
-                            throw Error("startPhase compose proposal joint err" + err);
-                        validation.validateProposalJoint(objJoint, {
-                            ifInvalid: function(err){
-                                throw Error("startPhase my proposer is Invalid:" + err);
-                            },
-                            ifNeedWaiting: function(){
-                                throw Error("startPhase my proposer need waiting?");
-                            },
-                            ifOk: function(){
-                                pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
-                                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                                broadcastProposal(h_p, p_p, objJoint, validPhase_p);
-                            }
-                        });                        
-                    }
-                ); 
+            if(!assocByzantinePhase[h_p].phase[p_p]){
+                if(validValue_p !== null){
+                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
+                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                    broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
+                }
+                else{
+                    composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
+                        function(err, objJoint){
+                            if(err)
+                                throw Error("startPhase compose proposal joint err" + err);
+                            validation.validateProposalJoint(objJoint, {
+                                ifInvalid: function(err){
+                                    throw Error("startPhase my proposer is Invalid:" + err);
+                                },
+                                ifNeedWaiting: function(){
+                                    throw Error("startPhase my proposer need waiting?");
+                                },
+                                ifOk: function(){
+                                    pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
+                                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                                    broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                                }
+                            });                        
+                        }
+                    ); 
+                }
             }
         }
         else{
-            h_propose_timeout = h_p;
-            p_propose_timeout = p_p;
-            setTimeout(OnTimeoutPropose, getTimeout(p_p));
+            if(h_propose_timeout === -1 && p_propose_timeout === -1){
+                h_propose_timeout = h_p;
+                p_propose_timeout = p_p;
+                setTimeout(OnTimeoutPropose, getTimeout(p_p));
+            }
         }
     });
 }
@@ -351,6 +355,22 @@ eventBus.on('byzantine_gossip', function(gossipMessage){
         });
     });
 });
+eventBus.on('mci_became_stable', function(mci){
+     //reset params
+     lockedValue_p = null;
+     lockedPhase_p = -1;
+     validValue_p  = null;
+     validPhase_p  = -1;
+     h_propose_timeout   = -1;
+     p_propose_timeout   = -1; 
+     h_prevote_timeout   = -1;
+     p_prevote_timeout   = -1; 
+     h_precommit_timeout = -1;
+     p_precommit_timeout = -1; 
+     // start new h_p
+     startPhase(mci+1, 0);
+});
+
 // Function OnTimeoutPropose(height, round) :
 //     if height=hp ∧ round=roundp ∧ stepp=propose then
 //         broadcast <PREVOTE,hp,roundp,nil>

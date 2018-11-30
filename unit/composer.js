@@ -54,8 +54,7 @@ function sortOutputs(a,b){
 
 // bMultiAuthored includes all addresses, not just those that pay
 // arrAddresses is paying addresses
-function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mci, amount, bMultiAuthored, onDone )
-{
+function pickDivisibleCoinsForAmount(conn, objAsset, arrAddresses, last_ball_mci, amount, bMultiAuthored, onDone){
 	var asset = objAsset ? objAsset.asset : null;
 	console.log("pick coins "+asset+" amount "+amount);
 	var is_base = objAsset ? 0 : 1;
@@ -107,8 +106,6 @@ function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mc
 					var input = rows[0];
 					// default type is "transfer"
 					addInput(input);
-
-					console.log( `pickDivisibleCoinsForAmount onDone[1]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 					onDone(arrInputsWithProofs, total_amount);
 				}
 				else
@@ -141,10 +138,7 @@ function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mc
 					},
 					function(err){
 						if (err === 'found')
-						{
-							console.log( `pickDivisibleCoinsForAmount onDone[2]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 							onDone(arrInputsWithProofs, total_amount);
-						}
 						else if (asset)
 							issueAsset();
 						else{
@@ -210,10 +204,7 @@ function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mc
 			return finish();
 		else{
 			if (amount === Infinity && !objAsset.cap) // don't try to create infinite issue
-			{
-				console.log( `pickDivisibleCoinsForAmount onDone[3]( null );` );
 				return onDone(null);
-			}
 		}
 		console.log("will try to issue asset "+asset);
 		// for issue, we use full list of addresses rather than spendable addresses
@@ -247,15 +238,7 @@ function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mc
 			}
 			arrInputsWithProofs.push(objInputWithProof);
 			var bFound = is_base ? (total_amount > required_amount) : (total_amount >= required_amount);
-			if ( bFound )
-			{
-				console.log( `pickDivisibleCoinsForAmount onDone[4]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
-				onDone( arrInputsWithProofs, total_amount );
-			}
-			else
-			{
-				finish();
-			}
+			bFound ? onDone(arrInputsWithProofs, total_amount) : finish();
 		}
 		
 		if (objAsset.cap){
@@ -279,15 +262,9 @@ function pickDivisibleCoinsForAmount( conn, objAsset, arrAddresses, last_ball_mc
 	
 	function finish(){
 		if (amount === Infinity && arrInputsWithProofs.length > 0)
-		{
-			console.log( `pickDivisibleCoinsForAmount onDone[5]( ${ JSON.stringify( arrInputsWithProofs ) }, ${ JSON.stringify( total_amount ) } );` );
 			onDone(arrInputsWithProofs, total_amount);
-		}
 		else
-		{
-			console.log( `pickDivisibleCoinsForAmount onDone[6]( null );` );
 			onDone(null);
-		}
 	}
 	
 	var arrSpendableAddresses = arrAddresses.concat(); // cloning
@@ -424,9 +401,10 @@ function composeTrustMEJoint(from_address, round_index, signer, callbacks){
 
 // pow add Coinbase joint
 function composeCoinbaseJoint(from_address, coinbase_address, round_index, coinbase_amount, signer, callbacks){
+	var coinbase_foundation_amount = Math.floor(coinbase_amount*constants.FOUNDATION_RATIO);
 	composeJoint({
 		paying_addresses: [from_address],
-		outputs: [{address: coinbase_address, amount: 0}],
+		outputs: [{address: coinbase_address, amount: 0}, {address: constants.FOUNDATION_ADDRESS, amount: coinbase_foundation_amount}],
 		//inputs: [{type: "coinbase", amount: coinbase_amount, address: from_address}],
 		inputs: [{type: "coinbase", amount: coinbase_amount}],
 		round_index: round_index,
@@ -613,10 +591,9 @@ function composeJoint(params){
 				last_ball_mci = lightProps.last_stable_mc_ball_mci;
 				return checkForUnstablePredecessors();
 			}
-			// pow modi
+		
 			parentComposer.pickParentUnitsAndLastBall(
 				conn, 
-				// arrWitnesses,
 				function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
 					if (err)
 						return cb("unable to find parents: "+err);
@@ -626,7 +603,7 @@ function composeJoint(params){
 					last_ball_mci = last_stable_mc_ball_mci;
 					checkForUnstablePredecessors();
 				}
-			);
+			);				
 		},
 		function(cb){ // authors
 			async.eachSeries(arrFromAddresses, function(from_address, cb2){
@@ -807,7 +784,7 @@ function composeJoint(params){
 	});
 }
 
-function composeProposalJoint(proposer_address, round_index, hp, signer, callback){
+function composeProposalJoint(proposer_address, round_index, hp, phase, signer, callback){
 	if (conf.bLight)
 		throw Error("can not be a proposer for light");
 	
@@ -874,7 +851,7 @@ function composeProposalJoint(proposer_address, round_index, hp, signer, callbac
 				);
 			}
 			
-			parentComposer.pickTrustParentUnitsAndLastBall(
+			parentComposer.pickParentUnitsAndLastBall(
 				conn, 
 				function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci){
 					if (err)
@@ -982,6 +959,7 @@ function composeProposalJoint(proposer_address, round_index, hp, signer, callbac
 					objUnit.unit = objectHash.getUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.proposer = objJoint.unit.authors;
+					objJoint.phase = phase;
 					delete objJoint.unit.authors;
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					callback(null, objJoint);
@@ -1008,43 +986,11 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 			});
 		},
 		function(cb){
-			function setDefinition(){
-				signer.readDefinition(conn, coordinator_address, function(err, arrDefinition){
-					if (err)
-						return cb(err);
-					objAuthor.definition = arrDefinition;
-					cb();
-				});
-			}
 			signer.readSigningPaths(conn, coordinator_address, function(assocLengthsBySigningPaths){
 				var arrSigningPaths = Object.keys(assocLengthsBySigningPaths);
 				assocSigningPaths[coordinator_address] = arrSigningPaths;
 				for (var j=0; j<arrSigningPaths.length; j++)
 					objAuthor.authentifiers[arrSigningPaths[j]] = repeatString("-", assocLengthsBySigningPaths[arrSigningPaths[j]]);
-				conn.query(
-					"SELECT 1 FROM unit_authors CROSS JOIN units USING(unit) \n\
-					WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
-					LIMIT 1", 
-					[coordinator_address, last_ball_mci], 
-					function(rows){
-						if (rows.length === 0) // first message from this address
-							return setDefinition();
-						// try to find last stable change of definition, then check if the definition was already disclosed
-						conn.query(
-							"SELECT definition \n\
-							FROM address_definition_changes CROSS JOIN units USING(unit) LEFT JOIN definitions USING(definition_chash) \n\
-							WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
-							ORDER BY level DESC LIMIT 1", 
-							[coordinator_address, last_ball_mci],
-							function(rows){
-								if (rows.length === 0) // no definition changes at all
-									return cb();
-								var row = rows[0];
-								row.definition ? cb() : setDefinition(); // if definition not found in the db, add it into the json
-							}
-						);
-					}
-				);
 			});
 		}
 	], function(err){
@@ -1096,7 +1042,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 		});
 	});
 }
-function composeCoordinatorTrustMe(proposer_address, objJoint, approvedCoordinators, signer, callbacks){
+function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoordinators, signer, callbacks){
 	if (conf.bLight)
 		throw Error("light node can not compose trustme unit");	
 	
@@ -1114,11 +1060,16 @@ function composeCoordinatorTrustMe(proposer_address, objJoint, approvedCoordinat
 		callbacks.ifError(err);
 	};
 	
-	var arrPayingAddresses =  [proposer_address];
+	var objJoint = {unit: objUnit};
+	
+	var arrPayingAddresses = [proposer_address];
 	var arrFromAddresses = arrPayingAddresses.sort();
 	if(arrFromAddresses.length !== 1){
 		throw Error("proposalJoint must have 1 author");
 	}
+
+	objJoint.unit.phase = phase;
+	objJoint.unit.coordinators = approvedCoordinators.sort();
 
 	async.series([
 		function(cb){ // lock
@@ -1180,61 +1131,6 @@ function composeCoordinatorTrustMe(proposer_address, objJoint, approvedCoordinat
 					);
 				});
 			}, cb);
-		},
-		// messages retrieved via callback
-		function(cb){
-			if (!fnRetrieveMessages)
-				return cb();
-			console.log("will retrieve messages");
-			fnRetrieveMessages(conn, last_ball_mci, bMultiAuthored, arrPayingAddresses, function(err, arrMoreMessages, assocMorePrivatePayloads){
-				console.log("fnRetrieveMessages callback: err code = "+(err ? err.error_code : ""));
-				if (err)
-					return cb((typeof err === "string") ? ("unable to add additional messages: "+err) : err);
-				Array.prototype.push.apply(objUnit.messages, arrMoreMessages);
-				if (assocMorePrivatePayloads && Object.keys(assocMorePrivatePayloads).length > 0)
-					for (var payload_hash in assocMorePrivatePayloads)
-						assocPrivatePayloads[payload_hash] = assocMorePrivatePayloads[payload_hash];
-				cb();
-			});
-		},
-		function(cb){ // input coins
-			objUnit.headers_commission = objectLength.getHeadersSize(objUnit);
-			var naked_payload_commission = objectLength.getTotalPayloadSize(objUnit); // without input coins
-
-			if (bGenesis){
-				// pow modi
-				//objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: arrWitnesses[0]}];
-				objPaymentMessage.payload.inputs = [{type: "issue", serial_number: 1, amount: constants.TOTAL_WHITEBYTES, address: constants.FOUNDATION_ADDRESS}];
-				objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
-				total_input = constants.TOTAL_WHITEBYTES;
-				return cb();
-			}
-			if (params.inputs){ // input coins already selected
-				if (!params.input_amount)
-					throw Error('inputs but no input_amount');
-				total_input = params.input_amount;
-				objPaymentMessage.payload.inputs = params.inputs;
-				objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
-				return cb();
-			}
-			
-			// all inputs must appear before last_ball
-			var target_amount = params.send_all ? Infinity : (total_amount + objUnit.headers_commission + naked_payload_commission);
-			pickDivisibleCoinsForAmount(
-				conn, null, arrPayingAddresses, last_ball_mci, target_amount, bMultiAuthored, 
-				function(arrInputsWithProofs, _total_input){
-					if (!arrInputsWithProofs)
-						return cb({ 
-							error_code: "NOT_ENOUGH_FUNDS", 
-							error: "not enough spendable funds from "+arrPayingAddresses+" for "+target_amount
-						});
-					total_input = _total_input;
-					objPaymentMessage.payload.inputs = arrInputsWithProofs.map(function(objInputWithProof){ return objInputWithProof.input; });
-					objUnit.payload_commission = objectLength.getTotalPayloadSize(objUnit);
-					console.log("inputs increased payload by", objUnit.payload_commission - naked_payload_commission);
-					cb();
-				}
-			);
 		}
 	], function(err){
 		// we close the transaction and release the connection before signing as multisig signing may take very very long
@@ -1244,19 +1140,6 @@ function composeCoordinatorTrustMe(proposer_address, objJoint, approvedCoordinat
 			if (err)
 				return handleError(err);
 			
-			// change, payload hash, signature, and unit hash
-			var change = total_input - total_amount - objUnit.headers_commission - objUnit.payload_commission;
-			if (change <= 0){
-				if (!params.send_all)
-					throw Error("change="+change+", params="+JSON.stringify(params));
-				return handleError({ 
-					error_code: "NOT_ENOUGH_FUNDS", 
-					error: "not enough spendable funds from "+arrPayingAddresses+" for fees"
-				});
-			}
-			objPaymentMessage.payload.outputs[0].amount = change;
-			objPaymentMessage.payload.outputs.sort(sortOutputs);
-			objPaymentMessage.payload_hash = objectHash.getBase64Hash(objPaymentMessage.payload);
 			var text_to_sign = objectHash.getUnitHashToSign(objUnit);
 			async.each(
 				objUnit.authors,
@@ -1294,21 +1177,10 @@ function composeCoordinatorTrustMe(proposer_address, objJoint, approvedCoordinat
 					if (err)
 						return handleError(err);
 					objUnit.unit = objectHash.getUnitHash(objUnit);
-					if (bGenesis)
-						objJoint.ball = objectHash.getBallHash(objUnit.unit);
-
-					console.log( `////////////////////////////// COMPOSE NEW JOINT START //////////////////////////////` );
-					console.log( require('util').inspect( objJoint, { depth : null } ) );
-					console.log( `////////////////////////////// COMPOSE NEW JOINT END //////////////////////////////` );
-
+					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					if (Object.keys(assocPrivatePayloads).length === 0)
 						assocPrivatePayloads = null;
-					// // Victor ShareAddress
-					// if (params.arrShareDefinition)
-					// 	objJoint.arrShareDefinition = params.arrShareDefinition;
-					//profiler.stop('compose');
-					console.log( `will call callbacks.ifOk( objJoint, assocPrivatePayloads, unlock_callback );` );
 					callbacks.ifOk(objJoint, assocPrivatePayloads, unlock_callback);
 				}
 			);
@@ -1504,7 +1376,7 @@ exports.composeAssetAttestorsJoint = composeAssetAttestorsJoint;
 exports.composeJoint = composeJoint;
 exports.composeProposalJoint = composeProposalJoint;
 exports.composeCoordinatorSig = composeCoordinatorSig;
-
+exports.composeCoordinatorTrustMe = composeCoordinatorTrustMe;
 
 exports.filterMostFundedAddresses = filterMostFundedAddresses;
 exports.readSortedFundedAddresses = readSortedFundedAddresses;
