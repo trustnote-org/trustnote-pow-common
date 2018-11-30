@@ -1000,17 +1000,6 @@ function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, call
 						return cb();
 					}
 				});
-			},
-			function(cb){// check no bad joints to ensure supernode is not doing bad
-				if(!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
-					return cb();
-				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
-					if(err)
-						return cb(err);
-					if(invalid)
-						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
-					return cb();
-				});
 			}
 	],
 	function(err){
@@ -1310,6 +1299,17 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 	var depositBalance = 0 ;
 	async.series(
 		[
+			function(cb){// check no bad joints to ensure supernode is not doing bad
+				if(objUnit.pow_type !== constants.POW_TYPE_POW_EQUHASH)
+					return cb("unit:" + objUnit.unit + " pow_type is not POW_TYPE_POW_EQUHASH with pow_equihash payload!");
+				deposit.hasInvalidUnitsFromHistory(conn, objUnit.authors[0].address, function(err,invalid){
+					if(err)
+						return cb(err);
+					if(invalid)
+						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
+					return cb();
+				});
+			},
 			// check deposit address is valid and balance 
 			function(cb){
 				deposit.getDepositAddressBySupernodeAddress(conn, objUnit.authors[0].address, function (err,depositAddress){
@@ -1509,9 +1509,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 	var bIssue = false;
 	// pow add
 	var bCoinbase = false;
-	//pow del
-	// var bHaveHeadersComissions = false;
-	// var bHaveWitnessings = false;
+
 	
 	// same for both public and private
 	function validateIndivisibleIssue(input, cb){
