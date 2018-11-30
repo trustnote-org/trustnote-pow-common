@@ -139,7 +139,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 						return callback("last ball "+last_ball+" is not on MC");
 					// byzantine add
 					if (objLastBallUnitProps.pow_type !== constants.POW_TYPE_TRUSTME)
-						return callback("last ball "+last_ball+" is not trustmet type ");
+						return callback("last ball "+ last_ball +" is not trustmet type ");
 					if (objLastBallUnitProps.ball && objLastBallUnitProps.ball !== last_ball)
 						return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
 					objValidationState.last_ball_mci = objLastBallUnitProps.main_chain_index;

@@ -23,10 +23,9 @@ class GossiperPeer extends EventEmitter
 	 *	@constructor
 	 *
 	 *	@param	{object}	oOptions
-	 *	@param	{string}	[oOptions.ip=]		- local ip address, '127.0.0.1' or undefined
-	 *	@param	{number}	[oOptions.port=]	- local port number
-	 *	@param	{string}	[oOptions.address=]	- local super node address
-	 *	@param	{function}	[oOptions.signer=]	- local signer function provided by super node
+	 *	@param	{string}	[oOptions.url=]		- peer url 'wss://127.0.0.1:6000', 'udp|tcp...://127.0.0.1:6000' or undefined
+	 *	@param	{string}	[oOptions.address=]	- super node address
+	 *	@param	{function}	[oOptions.signer=]	- signer function provided by super node
 	 *	@param	{object}	[oOptions.socket=]	- socket handle which connect to the super node
 	 */
 	constructor( oOptions )
@@ -38,12 +37,10 @@ class GossiperPeer extends EventEmitter
 		//
 		this.m_oConfig =
 			{
-				ip	: '',
-				port	: 0,
+				url	: '',
 				address	: '',
 				singer	: null,
 				socket	: null,
-				name	: '',
 			};
 		this.updateConfig( oOptions );
 
@@ -60,12 +57,12 @@ class GossiperPeer extends EventEmitter
 	}
 
 	/**
-	 * 	get peer name
-	 *	@return {string|null}	'127.0.0.1:5001'
+	 * 	get peer url
+	 *	@return {string|null}	'wss://127.0.0.1:5001'
 	 */
-	getName()
+	getUrl()
 	{
-		return this.getConfigItem( 'name' );
+		return this.getConfigItem( 'url' );
 	}
 
 	/**
@@ -79,7 +76,8 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 *	get config
-	 *	@return {{ip: string, port: number, address: string, singer: null, socket: null, name: string}}
+	 *
+	 *	@return { { url: string, address: string, singer: null, socket: null } }
 	 */
 	getConfig()
 	{
@@ -90,24 +88,24 @@ class GossiperPeer extends EventEmitter
 	 *	update configurations
 	 *
 	 *	@param	{object}	oOptions
-	 *	@param	{string}	[oOptions.ip=]		- local ip address, '127.0.0.1' or undefined
-	 *	@param	{number}	[oOptions.port=]	- local port number
-	 *	@param	{string}	[oOptions.address=]	- local super node address
-	 *	@param	{function}	[oOptions.signer=]	- local signer function provided by super node
+	 *	@param	{string}	[oOptions.url=]		- peer url
+	 *	@param	{string}	[oOptions.address=]	- super node address
+	 *	@param	{function}	[oOptions.signer=]	- signer function provided by super node
 	 *	@param	{object}	[oOptions.socket=]	- socket handle which connect to the super node
 	 */
 	updateConfig( oOptions )
 	{
-		let bIpUpdated		= this.updateConfigItem( oOptions, 'ip' );
-		let bPortUpdated	= this.updateConfigItem( oOptions, 'port' );
-		this.updateConfigItem( oOptions, 'address' );
-		this.updateConfigItem( oOptions, 'signer' );
-		this.updateConfigItem( oOptions, 'socket' );
-
-		if ( bIpUpdated || bPortUpdated )
+		if ( ! DeUtilsCore.isPlainObject( oOptions ) )
 		{
-			this.m_oConfig.name = GossiperUtils.assemblePeerName( this.m_oConfig.ip, this.m_oConfig.port );
+			return false;
 		}
+
+		this.updateConfigItem( 'url', oOptions.url );
+		this.updateConfigItem( 'address', oOptions.address );
+		this.updateConfigItem( 'signer', oOptions.signer );
+		this.updateConfigItem( 'socket', oOptions.socket );
+
+		return true;
 	}
 
 	/**
@@ -132,19 +130,18 @@ class GossiperPeer extends EventEmitter
 	/**
 	 *	update config item by key
 	 *
-	 *	@param	{object}	oOptions
 	 *	@param	{string}	sKey
+	 *	@param	{}		vValue
 	 *	@return	{boolean}
 	 */
-	updateConfigItem( oOptions, sKey )
+	updateConfigItem( sKey, vValue )
 	{
 		let bRet = false;
 
-		if ( DeUtilsCore.isExistingString( sKey ) &&
-			DeUtilsCore.isPlainObjectWithKeys( oOptions, sKey ) )
+		if ( DeUtilsCore.isExistingString( sKey ) )
 		{
 			bRet = true;
-			this.m_oConfig[ sKey ] = oOptions[ sKey ];
+			this.m_oConfig[ sKey ] = vValue;
 		}
 
 		return bRet;
@@ -262,7 +259,7 @@ class GossiperPeer extends EventEmitter
 		}
 
 		this.m_oAttributes[ sKey ] = [ vValue, nVersion ];
-		this.emit( 'update', sKey, vValue );
+		this.emit( 'peer_update', sKey, vValue );
 
 		//	...
 		pfnCallback( null );
@@ -376,6 +373,9 @@ class GossiperPeer extends EventEmitter
 		this.updateLocalValue( '__heartbeat__', this.m_nHeartbeatVersion, err =>
 		{
 		});
+
+		//	...
+		//console.log( `${ new Date().toString() } :: __heartbeat__` );
 	}
 
 }

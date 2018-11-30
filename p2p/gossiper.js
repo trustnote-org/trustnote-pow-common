@@ -1,5 +1,3 @@
-//const _net			= require( 'net' );
-//const _msgPack		= require( 'msgpack' );
 const { EventEmitter }		= require( 'events' );
 const { DeUtilsCore }		= require( 'deutils.js' );
 
@@ -50,6 +48,35 @@ const FIRST_RESPONSE		= 1;
 const SECOND_RESPONSE		= 2;
 
 
+/**
+ *	@event	peer_update
+ * 	@param	{string}	sPeerUrl
+ * 	@param	{string}	sKey
+ * 	@param	{}		vValue
+ */
+const EVENT_PEER_UPDATE		= 'peer_update';
+
+/**
+ *	@event	peer_alive
+ * 	@param	{string}	sPeerUrl
+ */
+const EVENT_PEER_ALIVE		= 'peer_alive';
+
+/**
+ *	@event	peer_failed
+ * 	@param	{string}	sPeerUrl
+ */
+const EVENT_PEER_FAILED		= 'peer_failed';
+
+/**
+ *	@event	new_peer
+ * 	@param	{string}	sPeerUrl
+ */
+const EVENT_NEW_PEER		= 'new_peer';
+
+
+
+
 
 
 
@@ -63,20 +90,9 @@ class Gossiper extends EventEmitter
 	 *
 	 *	@param	{object}	oOptions
 	 *	@param	{number}	oOptions.interval	- interval in milliseconds for gossiper communication
-	 *	@param	{string}	oOptions.ip		- local ip address, '127.0.0.1' or undefined
-	 *	@param	{number}	oOptions.port		- local port number
+	 *	@param	{string}	oOptions.url		- local url, 'wss://127.0.0.1:6000', 'udp|tcp...://127.0.0.1:6000' or undefined
 	 *	@param	{string}	oOptions.address	- local super node address
 	 *	@param	{function}	oOptions.signer		- local signer function provided by super node
-	 *	@param	{object}	oOptions.seeds		- seeds for initializing Gossiper
-	 *		{
-	 *			'127.0.0.1:60001'	: {
-	 *				ip	: '',
-	 *				port	: 0,
-	 *				address	: '',
-	 *				socket	: null
-	 *			},
-	 *			...
-	 *		}
 	 */
 	constructor( oOptions )
 	{
@@ -89,17 +105,17 @@ class Gossiper extends EventEmitter
 		//	local
 		//
 		this.m_oLocalPeer	= new GossiperPeer( oOptions );
-		this.m_oOtherPeers	= {};
-		this.m_oScuttle		= new GossiperScuttle( this.m_oOtherPeers, this.m_oLocalPeer );
+		this.m_oRemotePeers	= {};
+		this.m_oScuttle		= new GossiperScuttle( this.m_oRemotePeers, this.m_oLocalPeer );
 	}
 
 
 	/**
 	 * 	start
 	 *
-	 *	@param	{object}	oSeeds
+	 *	@param	{object}	oSeeds		- seeds for initializing Gossiper
 	 *		{
-	 *			'127.0.0.1:60001'	: {
+	 *			'wss://127.0.0.1:60001'	: {
 	 *				ip	: '',
 	 *				port	: 0,
 	 *				address	: '',
@@ -162,7 +178,7 @@ class Gossiper extends EventEmitter
 	 *	handle message given by caller
 	 *	* I AM A CALLEE, THE MESSAGE WAS DELIVERED BY CALLER
 	 *
-	 *	@param	{object}	oSocket
+	 *	@param	{function}	oSocket
 	 *	@param	{object}	oMessage
 	 *	@param	{number}	oMessage.type
 	 *	@param	{object}	[oMessage.digest=]
@@ -194,8 +210,8 @@ class Gossiper extends EventEmitter
 				//
 				//	oMsg.digest :
 				//	{
-				//		'127.0.0.1:9011'	: m_nMaxVersionSeen,
-				//		'127.0.0.1:9012'	: m_nMaxVersionSeen,
+				//		'wss://127.0.0.1:9011'	: m_nMaxVersionSeen,
+				//		'tcp://127.0.0.1:9012'	: m_nMaxVersionSeen,
 				//		...
 				//	}
 				//
@@ -210,14 +226,14 @@ class Gossiper extends EventEmitter
 				//
 				//	oMsg.updates
 				//	[
-				//		[ sPeerName, key, value, version ],
-				//		[ sPeerName, key, value, version ],
+				//		[ sPeerUrl, key, value, version ],
+				//		[ sPeerUrl, key, value, version ],
 				//		...
 				// 	],
 				//	oMsg.request_digest
 				//	{
-				// 		sPeerName	: 0,
-				// 		sPeerName	: nLocalMaxVersion,
+				// 		sPeerUrl	: 0,
+				// 		sPeerUrl	: nLocalMaxVersion,
 				//		...
 				//	}
 				//
@@ -231,8 +247,8 @@ class Gossiper extends EventEmitter
 				//
 				//	oMsg.updates
 				//	[
-				//		[ sPeerName, sKey, vValue, nVersion ],
-				//		[ sPeerName, sKey, vValue, nVersion ],
+				//		[ sPeerUrl, sKey, vValue, nVersion ],
+				//		[ sPeerUrl, sKey, vValue, nVersion ],
 				//		...
 				// 	]
 				//
@@ -246,7 +262,49 @@ class Gossiper extends EventEmitter
 	}
 
 	/**
+	 *	update socket
+	 *
+	 *	@param	{object}	oSockets
+	 *		{
+	 *			'wss://127.0.0.1:60001'	: {
+	 *				ip	: '',
+	 *				port	: 0,
+	 *				address	: '',
+	 *				socket	: null
+	 *			},
+	 *			...
+	 *		}
+	 *	@return	{number}
+	 */
+	updateSockets( oSockets )
+	{
+		let nCount = 0;
+
+		if ( DeUtilsCore.isPlainObject( oSockets ) )
+		{
+			for ( let oSocket in oSockets )
+			{
+				if ( ! DeUtilsCore.isPlainObjectWithKeys( oSocket, 'url' ) ||
+					! GossiperUtils.isValidPeerUrl( oSocket.url ) )
+				{
+					continue;
+				}
+
+				if ( this.m_oRemotePeers[ oSocket.url ] )
+				{
+					this.m_oRemotePeers[ oSocket.url ].updateConfigItem( 'socket', oSockets );
+					nCount ++;
+				}
+			}
+		}
+
+		return nCount;
+	}
+
+
+	/**
 	 * 	check if the nType is a valid message type
+	 *
 	 *	@param	{number}	nType
 	 *	@return {boolean}
 	 */
@@ -257,17 +315,18 @@ class Gossiper extends EventEmitter
 	}
 
 	/**
-	 *	get peer by name
-	 *	@param	{string}	sPeerName
+	 *	get peer by url
+	 *
+	 *	@param	{string}	sPeerUrl
 	 *	@return {*}
 	 */
-	getPeer( sPeerName )
+	getPeer( sPeerUrl )
 	{
 		let oPeer	= null;
 
-		if ( DeUtilsCore.isExistingString( sPeerName ) )
+		if ( DeUtilsCore.isExistingString( sPeerUrl ) )
 		{
-			oPeer = this.m_oOtherPeers[ sPeerName ];
+			oPeer = this.m_oRemotePeers[ sPeerUrl ];
 		}
 
 		return oPeer;
@@ -275,25 +334,25 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	create a new peer or return existed instance
-	 *	@param	{string}	sPeerName
+	 *
+	 *	@param	{string}	sPeerUrl
 	 *	@param	{object}	oPeerConfig
 	 *	@return {*}
 	 */
-	createPeer( sPeerName, oPeerConfig )
+	createPeer( sPeerUrl, oPeerConfig )
 	{
-		let oPeerName	= GossiperUtils.parsePeerName( sPeerName );
 		let oPeer	= null;
 		let bExists	= false;
 
-		if ( null !== oPeerName.ip && null !== oPeerName.port )
+		if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 		{
-			if ( this.m_oOtherPeers[ sPeerName ] )
+			if ( this.m_oRemotePeers[ sPeerUrl ] )
 			{
 				//
 				//	already exists
 				//
 				bExists	= true;
-				oPeer	= this.m_oOtherPeers[ sPeerName ];
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 			}
 			else
 			{
@@ -302,14 +361,14 @@ class Gossiper extends EventEmitter
 				//
 				bExists	= false;
 
-				let oPeerOptions = Object.assign( {}, oPeerName, oPeerConfig );
-				this.m_oOtherPeers[ sPeerName ] = new GossiperPeer( oPeerOptions );
-				oPeer	= this.m_oOtherPeers[ sPeerName ];
+				let oPeerOptions = Object.assign( {}, oPeerConfig );
+				this.m_oRemotePeers[ sPeerUrl ] = new GossiperPeer( oPeerOptions );
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 				//
 				//	emit events and listen
 				//
-				this.emit( 'new_peer', sPeerName );
+				this.emit( 'new_peer', sPeerUrl );
 				this._listenToPeer( oPeer );
 			}
 		}
@@ -344,13 +403,13 @@ class Gossiper extends EventEmitter
 	/**
 	 *	get peer keys
 	 *
-	 *	@param	{string}	sPeerName
+	 *	@param	{string}	sPeerUrl
 	 *	@return {Array}
 	 */
-	getPeerAllKeys( sPeerName )
+	getPeerAllKeys( sPeerUrl )
 	{
 		let arrKeys	= null;
-		let oPeer	= this.m_oOtherPeers[ sPeerName ];
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 		if ( oPeer )
 		{
@@ -363,14 +422,14 @@ class Gossiper extends EventEmitter
 	/**
 	 *	get peer value
 	 *
-	 *	@param	{string}	sPeerName
+	 *	@param	{string}	sPeerUrl
 	 *	@param	{string}	sKey
 	 *	@return {*}
 	 */
-	getPeerValue( sPeerName, sKey )
+	getPeerValue( sPeerUrl, sKey )
 	{
 		let vValue	= null;
-		let oPeer	= this.m_oOtherPeers[ sPeerName ];
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
 
 		if ( oPeer )
 		{
@@ -381,27 +440,27 @@ class Gossiper extends EventEmitter
 	}
 
 	/**
-	 *	get all peers
+	 *	get all peer urls
 	 *
 	 *	@return {Array}
 	 *
 	 * 	@description
-	 *	this.m_oOtherPeers
+	 *	this.m_oRemotePeers
 	 *	{
-	 *		peer_name_1	: { ... },
-	 *		peer_name_2	: { ... },
+	 *		'wss://127.0.0.1:6001'	: { ... },
+	 *		'wss://127.0.0.1:6002'	: { ... },
 	 *	}
 	 */
-	getAllPeerNames()
+	getAllPeerUrls()
 	{
-		let arrPeerNames = [];
+		let arrUrls = [];
 
-		for ( let sPeerName in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
-			arrPeerNames.push( sPeerName );
+			arrUrls.push( sPeerUrl );
 		}
 
-		return arrPeerNames;
+		return arrUrls;
 	}
 
 	/**
@@ -410,21 +469,21 @@ class Gossiper extends EventEmitter
 	 *	@return {Array}
 	 *
 	 * 	@description
-	 * 	@see	.getAllPeerNames()
+	 * 	@see	.getAllPeerUrls()
 	 */
-	getLivePeerNames()
+	getLivePeerUrls()
 	{
-		let arrPeerNames = [];
+		let arrUrls = [];
 
-		for ( let sPeerName in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
-			if ( this.m_oOtherPeers[ sPeerName ].isAlive() )
+			if ( this.m_oRemotePeers[ sPeerUrl ].isAlive() )
 			{
-				arrPeerNames.push( sPeerName );
+				arrUrls.push( sPeerUrl );
 			}
 		}
 
-		return arrPeerNames;
+		return arrUrls;
 	}
 
 	/**
@@ -433,21 +492,21 @@ class Gossiper extends EventEmitter
 	 *	@return {Array}
 	 *
 	 * 	@description
-	 * 	@see	.getAllPeerNames()
+	 * 	@see	.getAllPeerUrls()
 	 */
-	getDeadPeerNames()
+	getDeadPeerUrls()
 	{
-		let arrPeerNames = [];
+		let arrUrls = [];
 
-		for ( let sPeerName in this.m_oOtherPeers )
+		for ( let sPeerUrl in this.m_oRemotePeers )
 		{
-			if ( ! this.m_oOtherPeers[ sPeerName ].isAlive() )
+			if ( ! this.m_oRemotePeers[ sPeerUrl ].isAlive() )
 			{
-				arrPeerNames.push( sPeerName );
+				arrUrls.push( sPeerUrl );
 			}
 		}
 
-		return arrPeerNames;
+		return arrUrls;
 	}
 
 
@@ -459,54 +518,56 @@ class Gossiper extends EventEmitter
 	 */
 	_gossip()
 	{
-		let arrLivePeerNames	= this.getLivePeerNames();
-		let arrDeadPeerNames	= this.getDeadPeerNames();
-		let sLivePeerName	= null;
-		let sDeadPeerName	= null;
+		let arrLivePeerUrls	= this.getLivePeerUrls();
+		let arrDeadPeerUrls	= this.getDeadPeerUrls();
+		let sLivePeerUrl	= null;
+		let sDeadPeerUrl	= null;
 
 		//
 		//	Find a live peer to gossip to
 		//
-		if ( arrLivePeerNames.length > 0 )
+		if ( arrLivePeerUrls.length > 0 )
 		{
-			sLivePeerName	= this._chooseRandom( arrLivePeerNames );
-			this._gossipToPeer( sLivePeerName );
+			sLivePeerUrl	= this._chooseRandom( arrLivePeerUrls );
+			this._gossipToPeer( sLivePeerUrl );
 		}
 
 		//
 		//	possibly gossip to a dead peer
 		//
-		let fProb = arrDeadPeerNames.length / ( arrLivePeerNames.length + 1 );
+		let fProb = arrDeadPeerUrls.length / ( arrLivePeerUrls.length + 1 );
 		if ( fProb > Math.random() )
 		{
-			sDeadPeerName	= this._chooseRandom( arrDeadPeerNames );
-			this._gossipToPeer( sDeadPeerName );
+			sDeadPeerUrl	= this._chooseRandom( arrDeadPeerUrls );
+			this._gossipToPeer( sDeadPeerUrl );
 		}
 
 		//
 		//	Gossip to seed under certain conditions
 		//
-		if ( sLivePeerName && ! this.m_oSeeds[ sLivePeerName ] &&
-			arrLivePeerNames.length < this.m_oSeeds.length )
+		if ( sLivePeerUrl && ! this.m_oSeeds[ sLivePeerUrl ] &&
+			arrLivePeerUrls.length < this.m_oSeeds.length )
 		{
-			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerNames().length ) )
+			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerUrls().length ) )
 			{
-				let arrCertainPeerName	= this._chooseRandom( Object.keys( this.m_oOtherPeers ) );
-				this._gossipToPeer( arrCertainPeerName );
+				let arrCertainPeerUrl	= this._chooseRandom( Object.keys( this.m_oRemotePeers ) );
+				this._gossipToPeer( arrCertainPeerUrl );
 			}
 		}
 
 		//
-		//	Check health of m_oOtherPeers
+		//	Check health of m_oRemotePeers
 		//
-		for ( let i in this.m_oOtherPeers )
+		for ( let i in this.m_oRemotePeers )
 		{
-			let oPeer = this.m_oOtherPeers[ i ];
+			let oPeer = this.m_oRemotePeers[ i ];
 			if ( oPeer !== this.m_oLocalPeer )
 			{
 				oPeer.checkIfSuspect();
 			}
 		}
+
+		//console.log( `${ new Date().toString() } :: gossip live: ${ arrLivePeerUrls.length }, dead: ${ arrDeadPeerUrls.length }` );
 	}
 
 	/**
@@ -530,16 +591,16 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	gossip to peer
-	 *	@param	{string}	sPeerName
+	 *	@param	{string}	sPeerUrl
 	 */
-	_gossipToPeer( sPeerName )
+	_gossipToPeer( sPeerUrl )
 	{
-		if ( ! GossiperUtils.isValidPeerName( sPeerName ) )
+		if ( ! GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 		{
-			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerName: ${ JSON.stringify( sPeerName ) }` );
+			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerUrl: ${ JSON.stringify( sPeerUrl ) }` );
 		}
 
-		let oPeer = this.getPeer( sPeerName );
+		let oPeer = this.getPeer( sPeerUrl );
 		if ( oPeer )
 		{
 			//
@@ -549,7 +610,7 @@ class Gossiper extends EventEmitter
 		}
 		else
 		{
-			this._emitErrorLog( `Peer not found by sPeerName: ${ JSON.stringify( sPeerName ) }` );
+			this._emitErrorLog( `Peer not found by sPeerUrl: ${ JSON.stringify( sPeerUrl ) }` );
 		}
 	}
 
@@ -563,7 +624,7 @@ class Gossiper extends EventEmitter
 	 *
 	 *	@param	{object}	oNewPeers
 	 *		{
-	 *			'127.0.0.1:60001'	: {
+	 *			'wss://127.0.0.1:60001'	: {
 	 *				ip	: '',
 	 *				port	: 0,
 	 *				address	: '',
@@ -583,8 +644,8 @@ class Gossiper extends EventEmitter
 		//
 		//	arrNewPeers
 		//	[
-		//		sPeerName,
-		//		sPeerName,
+		//		sPeerUrl,
+		//		sPeerUrl,
 		//		...
 		// 	]
 		//
@@ -593,12 +654,12 @@ class Gossiper extends EventEmitter
 
 		for ( let i = 0; i < arrPeerNames.length; i ++ )
 		{
-			let sPeerName	= arrPeerNames[ i ];
-			let oPeerConfig	= oNewPeers[ sPeerName ];
+			let sPeerUrl	= arrPeerNames[ i ];
+			let oPeerConfig	= oNewPeers[ sPeerUrl ];
 
-			if ( GossiperUtils.isValidPeerName( sPeerName ) )
+			if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 			{
-				let oPeerData	= this.createPeer( sPeerName, oPeerConfig );
+				let oPeerData	= this.createPeer( sPeerUrl, oPeerConfig );
 				if ( oPeerData.peer )
 				{
 					if ( ! oPeerData.exists )
@@ -625,30 +686,18 @@ class Gossiper extends EventEmitter
 		}
 
 		//	...
-		oPeer.on
-		(
-			'update',
-			( sKey, vValue ) =>
-			{
-				this.emit( 'update', oPeer.getName(), sKey, vValue );
-			}
-		);
-		oPeer.on
-		(
-			'peer_alive',
-			() =>
-			{
-				this.emit( 'peer_alive', oPeer.getName() );
-			}
-		);
-		oPeer.on
-		(
-			'peer_failed',
-			() =>
-			{
-				this.emit( 'peer_failed', oPeer.getName() );
-			}
-		);
+		oPeer.on( 'peer_update', ( sKey, vValue ) =>
+		{
+			this.emit( 'peer_update', oPeer.getUrl(), sKey, vValue );
+		});
+		oPeer.on( 'peer_alive', () =>
+		{
+			this.emit( 'peer_alive', oPeer.getUrl() );
+		});
+		oPeer.on( 'peer_failed', () =>
+		{
+			this.emit( 'peer_failed', oPeer.getUrl() );
+		});
 
 		return true;
 	}
@@ -666,8 +715,8 @@ class Gossiper extends EventEmitter
 		//
 		//	digest	:
 		//	{
-		//		'127.0.0.1:9011'	: m_nMaxVersionSeen,
-		//		'127.0.0.1:9012'	: m_nMaxVersionSeen,
+		//		'wss://127.0.0.1:9011'	: m_nMaxVersionSeen,
+		//		'wss://127.0.0.1:9012'	: m_nMaxVersionSeen,
 		//	}
 		//
 		return {
@@ -694,20 +743,20 @@ class Gossiper extends EventEmitter
 		//
 		//	deltas		>>> return.updates
 		//	[
-		//		[ sPeerName, key, value, version ],
-		//		[ sPeerName, key, value, version ],
+		//		[ sPeerUrl, key, value, version ],
+		//		[ sPeerUrl, key, value, version ],
 		//		...
 		// 	],
 		//	requests	>>> return.request_digest
 		//	{
-		// 		sPeerName	: 0,
-		// 		sPeerName	: nLocalMaxVersion,
+		// 		sPeerUrl	: 0,
+		// 		sPeerUrl	: nLocalMaxVersion,
 		//		...
 		//	},
 		//	new_peers
 		//	[
-		//		sPeerName,
-		//		sPeerName,
+		//		sPeerUrl,
+		//		sPeerUrl,
 		//		...
 		// 	]
 		//
@@ -718,7 +767,6 @@ class Gossiper extends EventEmitter
 		//	to handle new peers
 		//
 		this._handleNewPeers( oScuttle.new_peers );
-
 		return {
 			type		: FIRST_RESPONSE,
 			request_digest	: oScuttle.requests,
@@ -737,16 +785,16 @@ class Gossiper extends EventEmitter
 		//
 		//	oRequests
 		//	{
-		// 		sPeerName	: 0,
-		// 		sPeerName	: nLocalMaxVersion,
+		// 		sPeerUrl	: 0,
+		// 		sPeerUrl	: nLocalMaxVersion,
 		//		...
 		//	}
 		//
 		//
 		//	return.updates
 		//	[
-		//		[ sPeerName, sKey, vValue, nVersion ],
-		//		[ sPeerName, sKey, vValue, nVersion ],
+		//		[ sPeerUrl, sKey, vValue, nVersion ],
+		//		[ sPeerUrl, sKey, vValue, nVersion ],
 		//		...
 		// 	]
 		//
