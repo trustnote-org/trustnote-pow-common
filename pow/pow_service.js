@@ -35,6 +35,7 @@ let m_oCacheRunningServers	= {};
  *
  * 	@public
  * 	@param	{object}	oOptions
+ * 	@param	{string}	oOptions.url
  * 	@param	{number}	oOptions.port
  * 	@param	{function}	oOptions.onStart( err, oWsServer )
  * 	@param	{function}	oOptions.onConnection( err, oWsClient )
@@ -51,9 +52,13 @@ function createServer( oOptions )
 	{
 		throw new Error( 'call createServer with invalid oOptions' );
 	}
+	if ( 'string' !== typeof oOptions.url )
+	{
+		throw new Error( 'call createServer with invalid oOptions.url.' );
+	}
 	if ( 'number' !== typeof oOptions.port )
 	{
-		throw new Error( 'call createServer with invalid oOptions.port' );
+		throw new Error( 'call createServer with invalid oOptions.port.' );
 	}
 	if ( 'function' !== typeof oOptions.onStart )
 	{
@@ -94,6 +99,8 @@ function createServer( oOptions )
 	({
 		port : oOptions.port
 	});
+	oWsServer.url	= oOptions.url;
+
 	oWsServer.on( 'connection', ( oWsClient ) =>
 	{
 		//

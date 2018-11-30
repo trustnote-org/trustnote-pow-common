@@ -58,6 +58,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 * 	get peer url
+	 *
 	 *	@return {string|null}	'wss://127.0.0.1:5001'
 	 */
 	getUrl()
@@ -67,6 +68,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 *	get socket handle
+	 *
 	 *	@return {*}
 	 */
 	getSocket()
@@ -149,6 +151,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 * 	get status of a this peer: alive or not
+	 *
 	 *	@return {boolean}
 	 */
 	isAlive()
@@ -213,6 +216,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 *	get keys
+	 *
 	 *	@return {Array}
 	 */
 	getAllKeys()
@@ -224,6 +228,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 *	get value
+	 *
 	 *	@param	{}	sKey
 	 *	@return {*}
 	 */
@@ -292,6 +297,7 @@ class GossiperPeer extends EventEmitter
 
 	/**
 	 *	update with delta
+	 *
 	 *	@param	{}		sKey
 	 *	@param	{}		vValue
 	 * 	@param	{number}	nVersion
