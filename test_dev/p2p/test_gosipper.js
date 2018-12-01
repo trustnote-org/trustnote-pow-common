@@ -18,8 +18,8 @@ if ( Array.isArray( process.argv ) && process.argv.length >= 3 )
 let _arrPortList	= [
 				50000,
 				50001,
-				50002,
-				50003,
+				// 50002,
+				// 50003,
 			].filter( nPort => nPort !== _servicePort );
 
 /**
@@ -58,7 +58,7 @@ function startGossiper()
 	_oGossiper.on( 'new_peer', ( sPeerUrl ) =>
 	{
 		console.log( `))) EVENT [new_peer] :: `, sPeerUrl );
-		if ( sPeerUrl !== _oGossiperOptions.url && ! _oGossiper.getPeer( sPeerUrl ) )
+		if ( sPeerUrl !== _oGossiperOptions.url && ! _oGossiper.m_oScuttle.getPeer( sPeerUrl ) )
 		{
 			connectToServer( sPeerUrl );
 		}

@@ -67,25 +67,6 @@ class GossiperPeer extends EventEmitter
 	}
 
 	/**
-	 *	get address
-	 *	@return	{string}
-	 */
-	getAddress()
-	{
-		return this.getConfigItem( 'address' );
-	}
-
-	/**
-	 *	get socket handle
-	 *
-	 *	@return {*}
-	 */
-	getSocket()
-	{
-		return this.getConfigItem( 'socket' );
-	}
-
-	/**
 	 *	get max version seen
 	 *
 	 *	@return	{number}

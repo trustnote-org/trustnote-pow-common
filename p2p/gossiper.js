@@ -2,7 +2,7 @@ const _fs			= require('fs');
 const { EventEmitter }		= require( 'events' );
 const { DeUtilsCore }		= require( 'deutils.js' );
 
-const { GossiperPeer }		= require( './gossiper-peer' );
+const { GossiperRouter }	= require( './gossiper-router' );
 const { GossiperScuttle }	= require( './gossiper-scuttle' );
 const { GossiperUtils }		= require( './gossiper-utils' );
 
@@ -50,30 +50,22 @@ const SECOND_RESPONSE		= 2;
 
 
 /**
+ * 	@events
+ *
  *	@event	peer_update
  * 	@param	{string}	sPeerUrl
  * 	@param	{string}	sKey
  * 	@param	{}		vValue
- */
-const EVENT_PEER_UPDATE		= 'peer_update';
-
-/**
+ *
  *	@event	peer_alive
  * 	@param	{string}	sPeerUrl
- */
-const EVENT_PEER_ALIVE		= 'peer_alive';
-
-/**
+ *
  *	@event	peer_failed
  * 	@param	{string}	sPeerUrl
- */
-const EVENT_PEER_FAILED		= 'peer_failed';
-
-/**
+ *
  *	@event	new_peer
  * 	@param	{string}	sPeerUrl
  */
-const EVENT_NEW_PEER		= 'new_peer';
 
 
 
@@ -103,11 +95,14 @@ class Gossiper extends EventEmitter
 		this.m_nInterval	= DeUtilsCore.isPlainObjectWithKeys( oOptions, 'interval' ) ? oOptions.interval : DEFAULT_INTERVAL;
 
 		//
-		//	local
+		//	gossiper router
 		//
-		this.m_oLocalPeer	= new GossiperPeer( oOptions );
-		this.m_oRemotePeers	= {};
-		this.m_oScuttle		= new GossiperScuttle( this.m_oRemotePeers, this.m_oLocalPeer );
+		this.m_oRouter		= new GossiperRouter();
+
+		//
+		//	Scuttle
+		//
+		this.m_oScuttle		= new GossiperScuttle( oOptions );
 	}
 
 
@@ -117,10 +112,8 @@ class Gossiper extends EventEmitter
 	 *	@param	{object}	oSeeds		- seeds for initializing Gossiper
 	 *		{
 	 *			'wss://127.0.0.1:60001'	: {
-	 *				ip	: '',
-	 *				port	: 0,
+	 *				url	: '',
 	 *				address	: '',
-	 *				socket	: null
 	 *			},
 	 *			...
 	 *		}
@@ -145,7 +138,7 @@ class Gossiper extends EventEmitter
 		(
 			() =>
 			{
-				this.m_oLocalPeer.beatHeart();
+				this.m_oScuttle.m_oLocalPeer.beatHeart();
 			},
 			this.m_nInterval
 		);
@@ -263,56 +256,22 @@ class Gossiper extends EventEmitter
 	}
 
 	/**
-	 *	update socket
+	 *	update multi-socket
 	 *
 	 *	@param	{object}	oMultiSockets
 	 *		{
-	 *			'wss://127.0.0.1:60001'	: {
-	 *				ip	: '',
-	 *				port	: 0,
-	 *				address	: '',
-	 *				socket	: null
-	 *			},
+	 *			'wss://127.0.0.1:60001'	: oSocket,
 	 *			...
 	 *		}
-	 *	@return	{number}
+	 *		{object}	oSocket
+	 *		{
+	 *				address	: 'node address',
+	 *		}
+	 *	@return	{number}	- count of successfully updated
 	 */
 	updateSockets( oMultiSockets )
 	{
-		let nCount = 0;
-
-		if ( DeUtilsCore.isPlainObject( oMultiSockets ) )
-		{
-			for ( let sUrl in oMultiSockets )
-			{
-				let oSocket = oMultiSockets[ sUrl ];
-				if ( ! DeUtilsCore.isPlainObjectWithKeys( oSocket, 'url' ) ||
-					! GossiperUtils.isValidPeerUrl( oSocket.url ) )
-				{
-					continue;
-				}
-
-				if ( this.m_oRemotePeers[ sUrl ] )
-				{
-					this.m_oRemotePeers[ sUrl ].updateConfigItem( 'socket', oSocket );
-				}
-				else
-				{
-					this.createPeer
-					(
-						sUrl,
-						{
-							url	: sUrl,
-							socket	: oSocket,
-						}
-					);
-				}
-
-				nCount ++;
-			}
-		}
-
-		return nCount;
+		return this.m_oRouter.updateMultiSockets( oMultiSockets );
 	}
 
 
@@ -329,24 +288,6 @@ class Gossiper extends EventEmitter
 	}
 
 	/**
-	 *	get peer by url
-	 *
-	 *	@param	{string}	sPeerUrl
-	 *	@return {*}
-	 */
-	getPeer( sPeerUrl )
-	{
-		let oPeer	= null;
-
-		if ( DeUtilsCore.isExistingString( sPeerUrl ) )
-		{
-			oPeer = this.m_oRemotePeers[ sPeerUrl ];
-		}
-
-		return oPeer;
-	}
-
-	/**
 	 *	create a new peer or return existed instance
 	 *
 	 *	@param	{string}	sPeerUrl
@@ -355,50 +296,17 @@ class Gossiper extends EventEmitter
 	 */
 	createPeer( sPeerUrl, oPeerConfig )
 	{
-		let oPeer	= null;
-		let bExists	= false;
-
-		if ( this.m_oLocalPeer.getUrl() === sPeerUrl )
+		let oCreate	= this.m_oScuttle.createNewPeer( sPeerUrl, oPeerConfig );
+		if ( oCreate.new )
 		{
-			return {
-				peer	: null,
-				exists	: true,
-			};
+			//
+			//	emit events and listen
+			//
+			this.emit( 'new_peer', sPeerUrl );
+			this._listenToPeer( oCreate.peer );
 		}
 
-		if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
-		{
-			if ( this.m_oRemotePeers[ sPeerUrl ] )
-			{
-				//
-				//	already exists
-				//
-				bExists	= true;
-				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
-			}
-			else
-			{
-				//
-				//	create new
-				//
-				bExists	= false;
-
-				let oPeerOptions = Object.assign( {}, oPeerConfig );
-				this.m_oRemotePeers[ sPeerUrl ] = new GossiperPeer( oPeerOptions );
-				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
-
-				//
-				//	emit events and listen
-				//
-				this.emit( 'new_peer', sPeerUrl );
-				this._listenToPeer( oPeer );
-			}
-		}
-
-		return {
-			peer	: oPeer,
-			exists	: bExists,
-		};
+		return oCreate;
 	}
 
 	/**
@@ -410,7 +318,7 @@ class Gossiper extends EventEmitter
 	 */
 	setLocalValue( sKey, vValue, pfnCallback )
 	{
-		this.m_oLocalPeer.updateLocalValue( sKey, vValue, pfnCallback );
+		this.m_oScuttle.m_oLocalPeer.updateLocalValue( sKey, vValue, pfnCallback );
 	}
 
 	/**
@@ -419,116 +327,7 @@ class Gossiper extends EventEmitter
 	 */
 	getLocalValue( sKey )
 	{
-		return this.m_oLocalPeer.getValue( sKey );
-	}
-
-	/**
-	 *	get peer keys
-	 *
-	 *	@param	{string}	sPeerUrl
-	 *	@return {Array}
-	 */
-	getPeerAllKeys( sPeerUrl )
-	{
-		let arrKeys	= null;
-		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
-
-		if ( oPeer )
-		{
-			arrKeys	= oPeer.getAllKeys();
-		}
-
-		return arrKeys;
-	}
-
-	/**
-	 *	get peer value
-	 *
-	 *	@param	{string}	sPeerUrl
-	 *	@param	{string}	sKey
-	 *	@return {*}
-	 */
-	getPeerValue( sPeerUrl, sKey )
-	{
-		let vValue	= null;
-		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
-
-		if ( oPeer )
-		{
-			vValue	= oPeer.getValue( sKey );
-		}
-
-		return vValue;
-	}
-
-	/**
-	 *	get all peer urls
-	 *
-	 *	@return {Array}
-	 *
-	 * 	@description
-	 *	this.m_oRemotePeers
-	 *	{
-	 *		'wss://127.0.0.1:6001'	: { ... },
-	 *		'wss://127.0.0.1:6002'	: { ... },
-	 *	}
-	 */
-	getAllPeerUrls()
-	{
-		let arrUrls = [];
-
-		for ( let sPeerUrl in this.m_oRemotePeers )
-		{
-			arrUrls.push( sPeerUrl );
-		}
-
-		return arrUrls;
-	}
-
-	/**
-	 *	get live peer name list
-	 *
-	 *	@return {Array}
-	 *
-	 * 	@description
-	 * 	@see	.getAllPeerUrls()
-	 */
-	getLivePeerUrls()
-	{
-		let arrUrls = [];
-
-		for ( let sPeerUrl in this.m_oRemotePeers )
-		{
-			if ( this.m_oRemotePeers[ sPeerUrl ].isAlive() )
-			{
-				arrUrls.push( sPeerUrl );
-			}
-		}
-
-		return arrUrls;
-	}
-
-	/**
-	 *	get dead peers
-	 *
-	 *	@return {Array}
-	 *
-	 * 	@description
-	 * 	@see	.getAllPeerUrls()
-	 */
-	getDeadPeerUrls()
-	{
-		let arrUrls = [];
-
-		for ( let sPeerUrl in this.m_oRemotePeers )
-		{
-			if ( ! this.m_oRemotePeers[ sPeerUrl ].isAlive() )
-			{
-				arrUrls.push( sPeerUrl );
-			}
-		}
-
-		return arrUrls;
+		return this.m_oScuttle.m_oLocalPeer.getValue( sKey );
 	}
 
 
@@ -540,20 +339,19 @@ class Gossiper extends EventEmitter
 	 */
 	_gossip()
 	{
-		let arrLivePeerUrls	= this.getLivePeerUrls();
-		let arrDeadPeerUrls	= this.getDeadPeerUrls();
+		let arrLivePeerUrls	= this.m_oScuttle.getLivePeerUrls();
+		let arrDeadPeerUrls	= this.m_oScuttle.getDeadPeerUrls();
 		let sLivePeerUrl	= null;
 		let sDeadPeerUrl	= null;
 
-
-		//
+		////////////////////////////////////////////////////////////////////////////////
 		//	for debug
-		//
-		let oUrl		= GossiperUtils.parsePeerUrl( this.m_oLocalPeer.getUrl() );
+		////////////////////////////////////////////////////////////////////////////////
+		let oUrl		= GossiperUtils.parsePeerUrl( this.m_oScuttle.m_oLocalPeer.getUrl() );
 		let oAllPeerData	= {};
-		for ( let sPeerUrl in this.m_oRemotePeers )
+		for ( let sPeerUrl in this.m_oScuttle.m_oRemotePeers )
 		{
-			let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+			let oPeer	= this.m_oScuttle.m_oRemotePeers[ sPeerUrl ];
 			oAllPeerData[ sPeerUrl ] = {
 				maxVersion	: oPeer.getMaxVersion(),
 				attributes	: oPeer.m_oAttributes,
@@ -573,6 +371,8 @@ class Gossiper extends EventEmitter
 				return console.error( err );
 			}
 		});
+		////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -603,20 +403,20 @@ class Gossiper extends EventEmitter
 		if ( sLivePeerUrl && ! this.m_oSeeds[ sLivePeerUrl ] &&
 			arrLivePeerUrls.length < this.m_oSeeds.length )
 		{
-			if ( Math.random() < ( this.m_oSeeds.length / this.getAllPeerUrls().length ) )
+			if ( Math.random() < ( this.m_oSeeds.length / this.m_oScuttle.getAllPeerUrls().length ) )
 			{
-				let arrCertainPeerUrl	= this._chooseRandom( Object.keys( this.m_oRemotePeers ) );
+				let arrCertainPeerUrl	= this._chooseRandom( Object.keys( this.m_oScuttle.m_oRemotePeers ) );
 				this._gossipToPeer( arrCertainPeerUrl );
 			}
 		}
 
 		//
-		//	Check health of m_oRemotePeers
+		//	Check health of m_oScuttle.m_oRemotePeers
 		//
-		for ( let i in this.m_oRemotePeers )
+		for ( let i in this.m_oScuttle.m_oRemotePeers )
 		{
-			let oPeer = this.m_oRemotePeers[ i ];
-			if ( oPeer !== this.m_oLocalPeer )
+			let oPeer = this.m_oScuttle.m_oRemotePeers[ i ];
+			if ( oPeer !== this.m_oScuttle.m_oLocalPeer )
 			{
 				oPeer.checkIfSuspect();
 			}
@@ -646,32 +446,36 @@ class Gossiper extends EventEmitter
 
 	/**
 	 *	gossip to peer
-	 *	@param	{string}	sPeerUrl
+	 *
+	 *	@param	{string}	sUrl
 	 */
-	_gossipToPeer( sPeerUrl )
+	_gossipToPeer( sUrl )
 	{
-		if ( ! GossiperUtils.isValidPeerUrl( sPeerUrl ) )
+		if ( ! GossiperUtils.isValidPeerUrl( sUrl ) )
 		{
-			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerUrl: ${ JSON.stringify( sPeerUrl ) }` );
+			return this._emitErrorLog( `call _gossipToPeer with invalid sPeerUrl: ${ JSON.stringify( sUrl ) }` );
 		}
 
-		let oPeer = this.getPeer( sPeerUrl );
-		if ( oPeer )
+		//
+		//	pickup a socket and send message
+		//
+		let oSocket = this.m_oRouter.getSocket( sUrl );
+		if ( oSocket )
 		{
 			//
 			//	send REQUEST message to peer
 			//
-			this._sendMessage( oPeer.getSocket(), this._requestMessage() );
+			this._sendMessage( oSocket, this._requestMessage() );
 		}
 		else
 		{
-			this._emitErrorLog( `Peer not found by sPeerUrl: ${ JSON.stringify( sPeerUrl ) }` );
+			this._emitErrorLog( `will not send message to peer: ${ JSON.stringify( sUrl ) }, the socket of this peer was not ready.` );
 		}
 	}
 
 
 	////////////////////////////////////////////////////////////////////////////////
-	//	MESSSAGES
+	//	MESSAGES
 	////////////////////////////////////////////////////////////////////////////////
 
 	/**
@@ -707,12 +511,10 @@ class Gossiper extends EventEmitter
 			if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
 			{
 				let oCreateResult = this.createPeer( sPeerUrl, {} );
-				if ( oCreateResult.peer )
+				if ( oCreateResult.peer &&
+					oCreateResult.new )
 				{
-					if ( ! oCreateResult.exists )
-					{
-						nCount ++;
-					}
+					nCount ++;
 				}
 			}
 		}
@@ -866,10 +668,6 @@ class Gossiper extends EventEmitter
 	 */
 	_sendMessage( oSocket, oMessage )
 	{
-		if ( ! DeUtilsCore.isPlainObjectWithKeys( oMessage, 'type' ) )
-		{
-			return this._emitErrorLog( `call _sendMessage with invalid oMessage: ${ JSON.stringify( oMessage ) }.` );
-		}
 		if ( ! oSocket )
 		{
 			return this._emitErrorLog( `Socket was not ready.` );
@@ -880,6 +678,10 @@ class Gossiper extends EventEmitter
 			(
 				`Socket readyState: ${ oSocket.readyState } on peer ${ oSocket.peer }, will not send ${ JSON.stringify( oMessage ) }`
 			);
+		}
+		if ( ! DeUtilsCore.isPlainObjectWithKeys( oMessage, 'type' ) )
+		{
+			return this._emitErrorLog( `call _sendMessage with invalid oMessage: ${ JSON.stringify( oMessage ) }.` );
 		}
 
 		//

@@ -1,6 +1,10 @@
 const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
+
+const { GossiperPeer }		= require( './gossiper-peer' );
 const { GossiperUtils }		= require( './gossiper-utils' );
+
+
 
 
 /**
@@ -9,11 +13,190 @@ const { GossiperUtils }		= require( './gossiper-utils' );
  */
 class GossiperScuttle
 {
-	constructor( oRemotePeers, oLocalPeer )
+	constructor( oOptions )
 	{
-		this.m_oRemotePeers	= oRemotePeers;
-		this.m_oLocalPeer	= oLocalPeer;
+		this.m_oRemotePeers	= {};
+		this.m_oLocalPeer	= new GossiperPeer( oOptions );
 	}
+
+	/**
+	 *	get peer by url
+	 *
+	 *	@param	{string}	sUrl
+	 *	@return {*}
+	 */
+	getPeer( sUrl )
+	{
+		let oPeer	= null;
+
+		if ( GossiperUtils.isValidPeerUrl( sUrl ) &&
+			DeUtilsCore.isPlainObject( this.m_oRemotePeers[ sUrl ] ) )
+		{
+			oPeer = this.m_oRemotePeers[ sUrl ];
+		}
+
+		return oPeer;
+	}
+
+	/**
+	 *	create a new peer or return existed instance
+	 *
+	 *	@param	{string}	sPeerUrl
+	 *	@param	{object}	oPeerConfig
+	 *	@return {*}
+	 */
+	createNewPeer( sPeerUrl, oPeerConfig )
+	{
+		let oPeer	= null;
+		let bNew	= false;
+
+		if ( this.m_oLocalPeer.getUrl() === sPeerUrl )
+		{
+			return {
+				peer	: null,
+				new	: false,
+			};
+		}
+
+		if ( GossiperUtils.isValidPeerUrl( sPeerUrl ) )
+		{
+			if ( this.m_oRemotePeers[ sPeerUrl ] )
+			{
+				//
+				//	already exists
+				//
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+			}
+			else
+			{
+				//
+				//	create new
+				//
+				let oPeerOptions = Object.assign( {}, oPeerConfig );
+				this.m_oRemotePeers[ sPeerUrl ] = new GossiperPeer( oPeerOptions );
+
+				//	...
+				bNew	= true;
+				oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+			}
+		}
+
+		return {
+			peer	: oPeer,
+			new	: bNew,
+		};
+	}
+
+
+	/**
+	 *	get peer keys
+	 *
+	 *	@param	{string}	sPeerUrl
+	 *	@return {Array}
+	 */
+	getPeerAllKeys( sPeerUrl )
+	{
+		let arrKeys	= null;
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+
+		if ( oPeer )
+		{
+			arrKeys	= oPeer.getAllKeys();
+		}
+
+		return arrKeys;
+	}
+
+	/**
+	 *	get peer value
+	 *
+	 *	@param	{string}	sPeerUrl
+	 *	@param	{string}	sKey
+	 *	@return {*}
+	 */
+	getPeerValue( sPeerUrl, sKey )
+	{
+		let vValue	= null;
+		let oPeer	= this.m_oRemotePeers[ sPeerUrl ];
+
+		if ( oPeer )
+		{
+			vValue	= oPeer.getValue( sKey );
+		}
+
+		return vValue;
+	}
+
+	/**
+	 *	get all peer urls
+	 *
+	 *	@return {Array}
+	 *
+	 * 	@description
+	 *	this.m_oRemotePeers
+	 *	{
+	 *		'wss://127.0.0.1:6001'	: { ... },
+	 *		'wss://127.0.0.1:6002'	: { ... },
+	 *	}
+	 */
+	getAllPeerUrls()
+	{
+		let arrUrls = [];
+
+		for ( let sPeerUrl in this.m_oRemotePeers )
+		{
+			arrUrls.push( sPeerUrl );
+		}
+
+		return arrUrls;
+	}
+
+	/**
+	 *	get live peer name list
+	 *
+	 *	@return {Array}
+	 *
+	 * 	@description
+	 * 	@see	.getAllPeerUrls()
+	 */
+	getLivePeerUrls()
+	{
+		let arrUrls = [];
+
+		for ( let sPeerUrl in this.m_oRemotePeers )
+		{
+			if ( this.m_oRemotePeers[ sPeerUrl ].isAlive() )
+			{
+				arrUrls.push( sPeerUrl );
+			}
+		}
+
+		return arrUrls;
+	}
+
+	/**
+	 *	get dead peers
+	 *
+	 *	@return {Array}
+	 *
+	 * 	@description
+	 * 	@see	.getAllPeerUrls()
+	 */
+	getDeadPeerUrls()
+	{
+		let arrUrls = [];
+
+		for ( let sPeerUrl in this.m_oRemotePeers )
+		{
+			if ( ! this.m_oRemotePeers[ sPeerUrl ].isAlive() )
+			{
+				arrUrls.push( sPeerUrl );
+			}
+		}
+
+		return arrUrls;
+	}
+
 
 	/**
 	 *	digest
