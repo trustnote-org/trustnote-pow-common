@@ -246,7 +246,7 @@ function validate(objJoint, callbacks) {
 					profiler.stop('validation-messages');
 					profiler.start();
 					// move old writer method (updateBestParnt and updateWitnessedlevel) here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
-				    ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, cb);
+				    ValidateWitnessLevel(conn, objUnit, objValidationState, cb);
 				},
 				function(cb){
 					profiler.stop('validation-authors');
@@ -928,7 +928,7 @@ function validateMessage(conn, objMessage, message_index, objUnit, objValidation
 }
 
 // pow add :
-function ValidateWitnessLevelAndBadJoint(conn, objUnit, objValidationState, callback) {
+function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 	console.log("validating witness level");
 	if (!objUnit.parent_units) {//gensis un;
 		//objValidationState.best_parent_unit = null;
