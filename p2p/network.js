@@ -3555,32 +3555,38 @@ function startRelay() {
 		startAcceptingConnections();
 
 		//
-		//	start gossiper
+		//	start Gossiper
 		//
-		_gossiper.gossiperStart({
-			pfnConnectToPeer	: connectToPeer,
-			pfnSigner		: ( sMessage ) =>
-			{
-				console.log( `network _gossiper callback pfnSigner: `, sMessage );
-			},
-			pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
-			{
-				console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
-				eventBus.emit( 'byzantine_gossip', sPeerUrl, sKey, vValue );
-			}
-		});
+		eventBus.on( 'headless_wallet_ready', () =>
+		{
+			//
+			//	start gossiper
+			//
+			_gossiper.gossiperStart({
+				pfnConnectToPeer	: connectToPeer,
+				pfnSigner		: ( sMessage ) =>
+				{
+					console.log( `network _gossiper callback pfnSigner: `, sMessage );
+				},
+				pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
+				{
+					console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
+					eventBus.emit( 'byzantine_gossip', sPeerUrl, sKey, vValue );
+				}
+			});
 
-		////////////////////////////////////////////////////////////
-		//	for testing
-		////////////////////////////////////////////////////////////
-		setInterval
-		(
-			() =>
-			{
-				_gossiper.gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
-			},
-			getRandomInt( 1000, 2000 )
-		);
+			////////////////////////////////////////////////////////////
+			//	for testing
+			////////////////////////////////////////////////////////////
+			setInterval
+			(
+				() =>
+				{
+					_gossiper.gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
+				},
+				getRandomInt( 1000, 2000 )
+			);
+		});
 	}
 
 	//	...
