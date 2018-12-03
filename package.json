@@ -24,6 +24,7 @@
 	"dependencies": {
 		"async": "^1.5.2",
 		"blakejs": "git+https://github.com/trustnote/blakejs.git",
+		"deutils.js": ">=1.0.0",
 		"event-stream": "^4.0.0",
 		"jshint": "^2.9.6",
 		"lodash": "^4.6.1",
@@ -34,8 +35,7 @@
 		"socks": "1.1.10",
 		"sqlite3": "^3.1.4",
 		"thirty-two": "^1.0.1",
-		"ws": "^1.0.1",
-		"deutils.js": ">=1.0.0",
-		"url-parse": ">=1.0.0"
+		"trustnote-pow-gossiper": "git+https://github.com/trustnote/trustnote-pow-gossiper.git#beta2",
+		"ws": "^1.0.1"
 	}
 }

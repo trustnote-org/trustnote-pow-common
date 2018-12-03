@@ -1715,7 +1715,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 									return cb("coinbase unit by each author can not sent more than once ");
 								}
 								// check amount is valid
-								if()
+								//if()
 								round.getCoinbaseByRoundIndexAndAddress(conn,objUnit.round_index -1,objUnit.authors[0].address,
 								function(commission){
 									if (commission != input.amount){
