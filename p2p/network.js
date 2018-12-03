@@ -26,6 +26,28 @@ const light			= require('../wallet/light.js');
 const breadcrumbs		= require('../base/breadcrumbs.js');
 const _round			= require('../pow/round.js');
 
+/**
+ *	Gossiper
+ */
+const { Gossiper }		= require( 'trustnote-pow-gossiper' );
+const { GossiperMessages }	= require( 'trustnote-pow-gossiper' );
+const { GossiperEvents }	= require( 'trustnote-pow-gossiper' );
+const { GossiperUtils }		= require( 'trustnote-pow-gossiper' );
+const { DeUtilsCore }		= require( 'deutils.js' );
+
+const _oGossiperOptions		= {
+	interval	: 1000,
+	url		: `ws://127.0.0.1:${ _servicePort }`,
+	address		: `super_node_address_[${ _servicePort }]`,
+	signer		: ( sMessage ) =>
+	{
+	}
+};
+let _oGossiper	= new Gossiper( _oGossiperOptions );
+
+
+
+
 const mail			= process.browser ? null : require('../base/mail.js' + '');
 const _bUnitTestEnv		= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
 
@@ -1157,6 +1179,111 @@ function subscribe(ws) {
 		);
 	});
 }
+
+
+
+
+/********************************************************************************
+ *	Gossiper
+ ********************************************************************************/
+
+function gossiperStart()
+{
+	_oGossiper.on( 'peer_update', ( sPeerUrl, sKey, vValue ) =>
+	{
+		console.log( `GOSSIPER ))) EVENT [peer_update] (${ GossiperUtils.isReservedKey( sKey ) ? "Reserved" : "Customized" }):: `, sPeerUrl, sKey, vValue );
+	});
+	_oGossiper.on( 'peer_alive', ( sPeerUrl ) =>
+	{
+		console.log( `GOSSIPER ))) EVENT [peer_alive] :: `, sPeerUrl );
+	});
+	_oGossiper.on( 'peer_failed', ( sPeerUrl ) =>
+	{
+		console.error( `GOSSIPER ))) EVENT [peer_failed] :: `, sPeerUrl );
+	});
+	_oGossiper.on( 'new_peer', ( sPeerUrl ) =>
+	{
+		console.log( `GOSSIPER ))) EVENT [new_peer] :: `, sPeerUrl );
+		if ( sPeerUrl !== _oGossiperOptions.url &&
+			! _oGossiper.m_oRouter.getSocket( sPeerUrl ) )
+		{
+			connectToPeer( sPeerUrl, ( err, oNewWs ) =>
+			{
+				if ( err )
+				{
+					return console.error( `GOSSIPER ))) failed to connectToPeer: ${ sPeerUrl }.` );
+				}
+				if ( ! oNewWs )
+				{
+					return console.error( `GOSSIPER ))) connectToPeer returns an invalid oNewWs: ${ JSON.stringify( oNewWs ) }.` );
+				}
+
+				//
+				//	update the remote socket
+				//
+				if ( ! DeUtilsCore.isPlainObjectWithKeys( oNewWs, 'url' ) )
+				{
+					oNewWs.url	= sPeerUrl;
+				}
+
+				_oGossiper.updatePeerList({
+					[ sPeerUrl ] : oNewWs
+				});
+			});
+		}
+	});
+
+	//
+	//	start gossiper
+	//
+	_oGossiper.start( {} );
+
+	//
+	//	for testing
+	//
+	setInterval
+	(
+		() =>
+		{
+			gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
+		},
+		DeUtilsCore.getRandomInt( 1000, 2000 )
+	);
+}
+
+function gossiperBroadcast( sKey, vValue, pfnCallback )
+{
+	if ( ! DeUtilsCore.isExistingString( sKey ) )
+	{
+		return pfnCallback( `GOSSIPER ))) call gossiperBroadcast with invalid sKey: ${ JSON.stringify( sKey ) }` );
+	}
+
+	/**
+	 * 	update local value and broadcast it to all connected peers
+	 */
+	_oGossiper.setLocalValue( sKey, vValue, err =>
+	{
+		if ( err )
+		{
+			return pfnCallback( err );
+		}
+
+		pfnCallback( null );
+	});
+}
+
+function gossiperOnReceivedMessage( oWs, oMessage )
+{
+	try
+	{
+		_oGossiper.onReceivedMessage( oWs, oMessage );
+	}
+	catch( oException )
+	{
+		console.error( `GOSSIPER ))) gossiperOnReceivedMessage occurred an exception: ${ JSON.stringify( oException ) }` );
+	}
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3436,7 +3563,7 @@ function onWebSocketMessage( sMessage )
 		switch ( sMessageType )
 		{
 			case 'gossiper':
-				return null;
+				return gossiperOnReceivedMessage( oWs, oJSONContent );
 
 			case 'justsaying':
 				return handleJustsaying( oWs, oJSONContent.subject, oJSONContent.body );
@@ -3550,6 +3677,11 @@ function startRelay() {
 	}
 	else {
 		startAcceptingConnections();
+
+		//
+		//	start gossiper
+		//
+		gossiperStart();
 	}
 
 	//	...
