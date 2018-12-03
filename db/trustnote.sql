@@ -140,12 +140,13 @@ CREATE TABLE unit_witnesses (
 	FOREIGN KEY byUnit(unit) REFERENCES units(unit)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE witness_list_hashes (
-	witness_list_unit CHAR(44) BINARY NOT NULL PRIMARY KEY,
-	witness_list_hash CHAR(44) NOT NULL UNIQUE,
-	creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY byUnit(witness_list_unit) REFERENCES units(unit)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+-- pow del
+-- CREATE TABLE witness_list_hashes (
+-- 	witness_list_unit CHAR(44) BINARY NOT NULL PRIMARY KEY,
+-- 	witness_list_hash CHAR(44) NOT NULL UNIQUE,
+-- 	creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- 	FOREIGN KEY byUnit(witness_list_unit) REFERENCES units(unit)
+-- ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 
 -- if this ball wins headers commission from at least one of the included balls, how it is distributed
