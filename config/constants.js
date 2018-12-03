@@ -23,7 +23,7 @@ exports.BYZANTINE_PRECOMMIT = 3;
 exports.version = '1.0';
 exports.alt = '1';
 
-exports.GENESIS_UNIT = '/2JXOmTkFL2w0HBKMyMylwwLZg+fyhYX3wKLYqE7PL8=';
+exports.GENESIS_UNIT = 'UIfP4c3re6y9azgAItbzp6QaWCTOeGl9ZnMBsSEOVZY=';
 
 exports.BLACKBYTES_ASSET = '9qQId3BlWRQHvVy+STWyLKFb3lUd0xfQhX6mPVEHC2c=';
 // Pow add
