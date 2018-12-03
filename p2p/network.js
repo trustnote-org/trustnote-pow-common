@@ -1,30 +1,31 @@
 /*jslint node: true */
 "use strict";
 
-const WebSocket			= process.browser ? global.WebSocket : require('ws');
-const socks			= process.browser ? null : require( 'socks' + '' );
-const WebSocketServer		= WebSocket.Server;
-const crypto			= require('crypto');
-const _				= require('lodash');
-const async			= require('async');
-const db			= require('../db/db.js');
-const constants			= require('../config/constants.js');
-const storage			= require('../db/storage.js');
-const myWitnesses		= require('../witness/my_witnesses.js');
-const joint_storage		= require('../db/joint_storage.js');
-const validation		= require('../validation/validation.js');
-const ValidationUtils		= require('../validation/validation_utils.js');
-const writer			= require('../db/writer.js');
-const conf			= require('../config/conf.js');
-const mutex			= require('../base/mutex.js');
-const catchup			= require('../catchup/catchup.js');
-const privatePayment		= require('../asset/private_payment.js');
-const objectHash		= require('../base/object_hash.js');
-const ecdsaSig			= require('../encrypt/signature.js');
-const eventBus			= require('../base/event_bus.js');
-const light			= require('../wallet/light.js');
-const breadcrumbs		= require('../base/breadcrumbs.js');
-const _round			= require('../pow/round.js');
+const WebSocket				= process.browser ? global.WebSocket : require('ws');
+const socks				= process.browser ? null : require( 'socks' + '' );
+const WebSocketServer			= WebSocket.Server;
+const crypto				= require('crypto');
+const _					= require('lodash');
+const async				= require('async');
+const db				= require('../db/db.js');
+const constants				= require('../config/constants.js');
+const storage				= require('../db/storage.js');
+const myWitnesses			= require('../witness/my_witnesses.js');
+const joint_storage			= require('../db/joint_storage.js');
+const validation			= require('../validation/validation.js');
+const ValidationUtils			= require('../validation/validation_utils.js');
+const writer				= require('../db/writer.js');
+const conf				= require('../config/conf.js');
+const mutex				= require('../base/mutex.js');
+const catchup				= require('../catchup/catchup.js');
+const privatePayment			= require('../asset/private_payment.js');
+const objectHash			= require('../base/object_hash.js');
+const ecdsaSig				= require('../encrypt/signature.js');
+const eventBus				= require('../base/event_bus.js');
+const light				= require('../wallet/light.js');
+const breadcrumbs			= require('../base/breadcrumbs.js');
+const _round				= require('../pow/round.js');
+const _gossiper				= require('./gossiper');
 
 const mail			= process.browser ? null : require('../base/mail.js' + '');
 const _bUnitTestEnv		= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
@@ -1157,6 +1158,8 @@ function subscribe(ws) {
 		);
 	});
 }
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3436,7 +3439,7 @@ function onWebSocketMessage( sMessage )
 		switch ( sMessageType )
 		{
 			case 'gossiper':
-				return null;
+				return gossiperOnReceivedMessage( oWs, oJSONContent );
 
 			case 'justsaying':
 				return handleJustsaying( oWs, oJSONContent.subject, oJSONContent.body );
@@ -3550,6 +3553,40 @@ function startRelay() {
 	}
 	else {
 		startAcceptingConnections();
+
+		//
+		//	start Gossiper
+		//
+		eventBus.on( 'headless_wallet_ready', () =>
+		{
+			//
+			//	start gossiper
+			//
+			_gossiper.gossiperStart({
+				pfnConnectToPeer	: connectToPeer,
+				pfnSigner		: ( sMessage ) =>
+				{
+					console.log( `network _gossiper callback pfnSigner: `, sMessage );
+				},
+				pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
+				{
+					console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
+					eventBus.emit( 'byzantine_gossip', sPeerUrl, sKey, vValue );
+				}
+			});
+
+			////////////////////////////////////////////////////////////
+			//	for testing
+			////////////////////////////////////////////////////////////
+			setInterval
+			(
+				() =>
+				{
+					_gossiper.gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
+				},
+				getRandomInt( 1000, 2000 )
+			);
+		});
 	}
 
 	//	...
@@ -3675,6 +3712,12 @@ exports.addLightWatchedAddress = addLightWatchedAddress;
 
 exports.closeAllWsConnections = closeAllWsConnections;
 exports.isConnected = isConnected;
+
+/**
+ * 	exports for gossiper
+ */
+exports.gossiperBroadcast 	= _gossiper.gossiperBroadcast;
+
 
 
 /***

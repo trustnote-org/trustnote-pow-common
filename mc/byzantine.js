@@ -13,6 +13,7 @@ var network = require('../p2p/network.js');
 var composer = require('../unit/composer.js');
 var round = require('../pow/round.js');
 var supernode = require('../wallet/supernode.js');
+var gossiper = require('../p2p/gossiper.js');
 
 var MAX_BYZANTINE_IN_CACHE = 10;
 
@@ -78,7 +79,11 @@ function initByzantine(){
         }
     );
 }
-initByzantine();
+eventBus.on( 'headless_wallet_ready', () =>
+{
+    initByzantine();
+});
+
 // init function end
 
 // public function begin
@@ -185,7 +190,7 @@ function startPhase(hp, phase){
 /**
  *  byzantine gossip message event
  */
-eventBus.on('byzantine_gossip', function(gossipMessage){
+eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage){
     if(maxGossipHp < gossipMessage.h)  // update max gossip h
         maxGossipHp = gossipMessage.h;
     if(!bByzantineUnderWay || gossipMessage.h < h_p)
@@ -433,13 +438,13 @@ function composePrecommitMessage(hp, pp, sig, idv){
             "idv": idv};
 }
 function broadcastProposal(h, p, value, vp){
-    //gossip.broadcast(composeProposalMessage(h, p, value, vp));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PROPOSE, composeProposalMessage(h, p, value, vp));
 }
 function broadcastPrevote(h, p, idv){
-    //gossip.broadcast(composePrevoteMessage(h, p, idv));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PREVOTE, composePrevoteMessage(h, p, idv));
 }
 function broadcastPrecommit(h, p, sig, idv){
-    //gossip.broadcast(composePrecommitMessage(h, p, sig, idv));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PRECOMMIT, composePrecommitMessage(h, p, sig, idv));
 }
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
