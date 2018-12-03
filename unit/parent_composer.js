@@ -12,7 +12,7 @@ function pickTrustParentUnits(conn, onDone){
 	conn.query(
 		"SELECT \n\
 			unit, version, alt, ball, main_chain_index \n\
-		FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
+		FROM units \n\
 		LEFT JOIN balls USING(unit)  \n\
 		LEFT JOIN archived_joints USING(unit) \n\
 		WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? AND archived_joints.unit IS NULL \n\
