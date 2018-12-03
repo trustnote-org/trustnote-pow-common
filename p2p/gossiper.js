@@ -68,7 +68,7 @@ function gossiperStart( oOptions )
 		{
 			throw Error( err );
 		}
-		if ( ! DeUtilsNetwork.DeUtilsNetwork( _conf.port ) )
+		if ( ! DeUtilsNetwork.isValidPort( _conf.port ) )
 		{
 			throw Error( `can not start Gossiper with invalid conf.port: ${ JSON.stringify( _conf.port ) }.` );
 		}
