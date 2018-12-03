@@ -174,6 +174,9 @@ function validate(objJoint, callbacks) {
 		arrDoubleSpendInputs: [],
 		arrInputKeys: []
 	};
+
+	// set default sequence is good
+	objValidationState.sequence = 'good';
 	if (objJoint.unsigned)
 		objValidationState.bUnsigned = true;
 	
