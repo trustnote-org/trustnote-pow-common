@@ -3566,6 +3566,7 @@ function startRelay() {
 			pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
 			{
 				console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
+				eventBus.emit( 'byzantine_gossip', sPeerUrl, sKey, vValue );
 			}
 		});
 
@@ -3705,6 +3706,12 @@ exports.addLightWatchedAddress = addLightWatchedAddress;
 
 exports.closeAllWsConnections = closeAllWsConnections;
 exports.isConnected = isConnected;
+
+/**
+ * 	exports for gossiper
+ */
+exports.gossiperBroadcast 	= _gossiper.gossiperBroadcast;
+
 
 
 /***
