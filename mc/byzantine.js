@@ -79,7 +79,11 @@ function initByzantine(){
         }
     );
 }
-initByzantine();
+eventBus.on( 'headless_wallet_ready', () =>
+{
+    initByzantine();
+});
+
 // init function end
 
 // public function begin
