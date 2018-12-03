@@ -33,9 +33,9 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 			conn.addQuery(arrQueries, objAdditionalQuery.sql, objAdditionalQuery.params);
 		}
 		
-		var fields = "unit, version, alt, witness_list_unit, last_ball_unit, headers_commission, payload_commission, sequence, content_hash";
-		var values = "?,?,?,?,?,?,?,?,?";
-		var params = [objUnit.unit, objUnit.version, objUnit.alt, objUnit.witness_list_unit, objUnit.last_ball_unit,
+		var fields = "unit, version, alt, last_ball_unit, headers_commission, payload_commission, sequence, content_hash";
+		var values = "?,?,?,?,?,?,?,?";
+		var params = [objUnit.unit, objUnit.version, objUnit.alt, objUnit.last_ball_unit,
 			objUnit.headers_commission || 0, objUnit.payload_commission || 0, objValidationState.sequence, objUnit.content_hash];
 		if (conf.bLight){
 			fields += ", creation_date";

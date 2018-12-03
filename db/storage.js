@@ -46,7 +46,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 	}
 	//profiler.start();
 	conn.query(
-		 	"SELECT units.unit, version, alt, witness_list_unit, last_ball_unit, balls.ball AS last_ball, is_stable, round_index, pow_type, \n\
+		 	"SELECT units.unit, version, alt, last_ball_unit, balls.ball AS last_ball, is_stable, round_index, pow_type, \n\
 		 		content_hash, headers_commission, payload_commission, main_chain_index, "+conn.getUnixTimestamp("units.creation_date")+" AS timestamp, phase \n\
 		 	FROM units LEFT JOIN balls ON last_ball_unit=balls.unit WHERE units.unit=?", 
 		[unit], 
@@ -1228,17 +1228,17 @@ function loadAssetWithListOfAttestedAuthors(conn, asset, last_ball_mci, arrAutho
 	});
 }
 
-function findWitnessListUnit(conn, arrWitnesses, last_ball_mci, handleWitnessListUnit){
-	conn.query(
-		"SELECT witness_list_hashes.witness_list_unit \n\
-		FROM witness_list_hashes CROSS JOIN units ON witness_list_hashes.witness_list_unit=unit \n\
-		WHERE witness_list_hash=? AND sequence='good' AND is_stable=1 AND main_chain_index<=?", 
-		[objectHash.getBase64Hash(arrWitnesses), last_ball_mci], 
-		function(rows){
-			handleWitnessListUnit((rows.length === 0) ? null : rows[0].witness_list_unit);
-		}
-	);
-}
+// function findWitnessListUnit(conn, arrWitnesses, last_ball_mci, handleWitnessListUnit){
+// 	conn.query(
+// 		"SELECT witness_list_hashes.witness_list_unit \n\
+// 		FROM witness_list_hashes CROSS JOIN units ON witness_list_hashes.witness_list_unit=unit \n\
+// 		WHERE witness_list_hash=? AND sequence='good' AND is_stable=1 AND main_chain_index<=?", 
+// 		[objectHash.getBase64Hash(arrWitnesses), last_ball_mci], 
+// 		function(rows){
+// 			handleWitnessListUnit((rows.length === 0) ? null : rows[0].witness_list_unit);
+// 		}
+// 	);
+// }
 
 function sliceAndExecuteQuery(query, params, largeParam, callback) {
 	if (typeof largeParam !== 'object' || largeParam.length === 0) return callback([]);
@@ -1348,7 +1348,7 @@ function readStaticUnitProps(conn, unit, handleProps){
 		return handleProps(props);
 	// pow modi :
 	// conn.query("SELECT level, witnessed_level, best_parent_unit, witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
-	conn.query("SELECT level, witnessed_level,pow_type,round_index, best_parent_unit, witness_list_unit FROM units WHERE unit=?", [unit], function(rows){
+	conn.query("SELECT level, witnessed_level,pow_type,round_index, best_parent_unit FROM units WHERE unit=?", [unit], function(rows){
 		if (rows.length !== 1)
 			throw Error("not 1 unit");
 		props = rows[0];
