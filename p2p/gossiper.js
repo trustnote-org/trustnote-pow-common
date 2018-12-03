@@ -255,19 +255,6 @@ function _gossiperStartWithOptions( oOptions )
 	//	start gossiper
 	//
 	_oGossiper.start( {} );
-
-
-	////////////////////////////////////////////////////////////
-	//	for testing
-	////////////////////////////////////////////////////////////
-	setInterval
-	(
-		() =>
-		{
-			gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
-		},
-		DeUtilsCore.getRandomInt( 1000, 2000 )
-	);
 }
 
 

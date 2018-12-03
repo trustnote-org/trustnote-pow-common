@@ -3568,6 +3568,18 @@ function startRelay() {
 				console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
 			}
 		});
+
+		////////////////////////////////////////////////////////////
+		//	for testing
+		////////////////////////////////////////////////////////////
+		setInterval
+		(
+			() =>
+			{
+				_gossiper.gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
+			},
+			getRandomInt( 1000, 2000 )
+		);
 	}
 
 	//	...
