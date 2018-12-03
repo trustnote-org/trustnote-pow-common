@@ -1,52 +1,31 @@
 /*jslint node: true */
 "use strict";
 
-const WebSocket			= process.browser ? global.WebSocket : require('ws');
-const socks			= process.browser ? null : require( 'socks' + '' );
-const WebSocketServer		= WebSocket.Server;
-const crypto			= require('crypto');
-const _				= require('lodash');
-const async			= require('async');
-const db			= require('../db/db.js');
-const constants			= require('../config/constants.js');
-const storage			= require('../db/storage.js');
-const myWitnesses		= require('../witness/my_witnesses.js');
-const joint_storage		= require('../db/joint_storage.js');
-const validation		= require('../validation/validation.js');
-const ValidationUtils		= require('../validation/validation_utils.js');
-const writer			= require('../db/writer.js');
-const conf			= require('../config/conf.js');
-const mutex			= require('../base/mutex.js');
-const catchup			= require('../catchup/catchup.js');
-const privatePayment		= require('../asset/private_payment.js');
-const objectHash		= require('../base/object_hash.js');
-const ecdsaSig			= require('../encrypt/signature.js');
-const eventBus			= require('../base/event_bus.js');
-const light			= require('../wallet/light.js');
-const breadcrumbs		= require('../base/breadcrumbs.js');
-const _round			= require('../pow/round.js');
-
-/**
- *	Gossiper
- */
-const { Gossiper }		= require( 'trustnote-pow-gossiper' );
-const { GossiperMessages }	= require( 'trustnote-pow-gossiper' );
-const { GossiperEvents }	= require( 'trustnote-pow-gossiper' );
-const { GossiperUtils }		= require( 'trustnote-pow-gossiper' );
-const { DeUtilsCore }		= require( 'deutils.js' );
-
-const _oGossiperOptions		= {
-	interval	: 1000,
-	url		: `ws://127.0.0.1:${ _servicePort }`,
-	address		: `super_node_address_[${ _servicePort }]`,
-	signer		: ( sMessage ) =>
-	{
-	}
-};
-let _oGossiper	= new Gossiper( _oGossiperOptions );
-
-
-
+const WebSocket				= process.browser ? global.WebSocket : require('ws');
+const socks				= process.browser ? null : require( 'socks' + '' );
+const WebSocketServer			= WebSocket.Server;
+const crypto				= require('crypto');
+const _					= require('lodash');
+const async				= require('async');
+const db				= require('../db/db.js');
+const constants				= require('../config/constants.js');
+const storage				= require('../db/storage.js');
+const myWitnesses			= require('../witness/my_witnesses.js');
+const joint_storage			= require('../db/joint_storage.js');
+const validation			= require('../validation/validation.js');
+const ValidationUtils			= require('../validation/validation_utils.js');
+const writer				= require('../db/writer.js');
+const conf				= require('../config/conf.js');
+const mutex				= require('../base/mutex.js');
+const catchup				= require('../catchup/catchup.js');
+const privatePayment			= require('../asset/private_payment.js');
+const objectHash			= require('../base/object_hash.js');
+const ecdsaSig				= require('../encrypt/signature.js');
+const eventBus				= require('../base/event_bus.js');
+const light				= require('../wallet/light.js');
+const breadcrumbs			= require('../base/breadcrumbs.js');
+const _round				= require('../pow/round.js');
+const _gossiper				= require('./gossiper');
 
 const mail			= process.browser ? null : require('../base/mail.js' + '');
 const _bUnitTestEnv		= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
@@ -1180,109 +1159,6 @@ function subscribe(ws) {
 	});
 }
 
-
-
-
-/********************************************************************************
- *	Gossiper
- ********************************************************************************/
-
-function gossiperStart()
-{
-	_oGossiper.on( 'peer_update', ( sPeerUrl, sKey, vValue ) =>
-	{
-		console.log( `GOSSIPER ))) EVENT [peer_update] (${ GossiperUtils.isReservedKey( sKey ) ? "Reserved" : "Customized" }):: `, sPeerUrl, sKey, vValue );
-	});
-	_oGossiper.on( 'peer_alive', ( sPeerUrl ) =>
-	{
-		console.log( `GOSSIPER ))) EVENT [peer_alive] :: `, sPeerUrl );
-	});
-	_oGossiper.on( 'peer_failed', ( sPeerUrl ) =>
-	{
-		console.error( `GOSSIPER ))) EVENT [peer_failed] :: `, sPeerUrl );
-	});
-	_oGossiper.on( 'new_peer', ( sPeerUrl ) =>
-	{
-		console.log( `GOSSIPER ))) EVENT [new_peer] :: `, sPeerUrl );
-		if ( sPeerUrl !== _oGossiperOptions.url &&
-			! _oGossiper.m_oRouter.getSocket( sPeerUrl ) )
-		{
-			connectToPeer( sPeerUrl, ( err, oNewWs ) =>
-			{
-				if ( err )
-				{
-					return console.error( `GOSSIPER ))) failed to connectToPeer: ${ sPeerUrl }.` );
-				}
-				if ( ! oNewWs )
-				{
-					return console.error( `GOSSIPER ))) connectToPeer returns an invalid oNewWs: ${ JSON.stringify( oNewWs ) }.` );
-				}
-
-				//
-				//	update the remote socket
-				//
-				if ( ! DeUtilsCore.isPlainObjectWithKeys( oNewWs, 'url' ) )
-				{
-					oNewWs.url	= sPeerUrl;
-				}
-
-				_oGossiper.updatePeerList({
-					[ sPeerUrl ] : oNewWs
-				});
-			});
-		}
-	});
-
-	//
-	//	start gossiper
-	//
-	_oGossiper.start( {} );
-
-	//
-	//	for testing
-	//
-	setInterval
-	(
-		() =>
-		{
-			gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
-		},
-		DeUtilsCore.getRandomInt( 1000, 2000 )
-	);
-}
-
-function gossiperBroadcast( sKey, vValue, pfnCallback )
-{
-	if ( ! DeUtilsCore.isExistingString( sKey ) )
-	{
-		return pfnCallback( `GOSSIPER ))) call gossiperBroadcast with invalid sKey: ${ JSON.stringify( sKey ) }` );
-	}
-
-	/**
-	 * 	update local value and broadcast it to all connected peers
-	 */
-	_oGossiper.setLocalValue( sKey, vValue, err =>
-	{
-		if ( err )
-		{
-			return pfnCallback( err );
-		}
-
-		pfnCallback( null );
-	});
-}
-
-function gossiperOnReceivedMessage( oWs, oMessage )
-{
-	try
-	{
-		_oGossiper.onReceivedMessage( oWs, oMessage );
-	}
-	catch( oException )
-	{
-		console.error( `GOSSIPER ))) gossiperOnReceivedMessage occurred an exception: ${ JSON.stringify( oException ) }` );
-	}
-}
 
 
 
@@ -3681,7 +3557,17 @@ function startRelay() {
 		//
 		//	start gossiper
 		//
-		gossiperStart();
+		_gossiper.gossiperStart({
+			pfnConnectToPeer	: connectToPeer,
+			pfnSigner		: ( sMessage ) =>
+			{
+				console.log( `network _gossiper callback pfnSigner: `, sMessage );
+			},
+			pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
+			{
+				console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
+			}
+		});
 	}
 
 	//	...
