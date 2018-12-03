@@ -9,7 +9,7 @@ var readline = require('readline');
 
 var conf = require('../config/conf.js');
 var objectHash = require('../base/object_hash.js');
-var db = require('..chat_storage');
+var db = require('trustnote-pow-common/db/db.js');
 var ecdsaSig = require('../encrypt/signature.js');
 var constants = require('../config/constants.js');
 var desktopApp = require('../base/desktop_app.js');
