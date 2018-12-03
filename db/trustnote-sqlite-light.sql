@@ -5,7 +5,6 @@ CREATE TABLE units (
 	alt VARCHAR(3) NOT NULL DEFAULT '1',
 	round_index BIGINT NULL,
 	pow_type INT Null, --  1: pow-equhash 2: trustme 3: coin base 
-	witness_list_unit CHAR(44) NULL,
 	last_ball_unit CHAR(44) NULL,
 	content_hash CHAR(44) NULL,
 	headers_commission INT NOT NULL,
@@ -135,12 +134,12 @@ CREATE TABLE unit_witnesses (
 );
 CREATE INDEX byAddress ON unit_witnesses(address);
 
-CREATE TABLE witness_list_hashes (
-	witness_list_unit CHAR(44) NOT NULL PRIMARY KEY,
-	witness_list_hash CHAR(44) NOT NULL UNIQUE,
-	creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (witness_list_unit) REFERENCES units(unit)
-);
+-- CREATE TABLE witness_list_hashes (
+-- 	witness_list_unit CHAR(44) NOT NULL PRIMARY KEY,
+-- 	witness_list_hash CHAR(44) NOT NULL UNIQUE,
+-- 	creation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- 	FOREIGN KEY (witness_list_unit) REFERENCES units(unit)
+-- );
 
 
 -- if this ball wins headers commission from at least one of the included balls, how it is distributed
