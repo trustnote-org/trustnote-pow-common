@@ -779,7 +779,7 @@ function validateAuthentifiers(conn, address, this_asset, arrDefinition, objUnit
 				var min_mci = args[4] || 0;
 				var value_condition;
 				var index;
-				var params = [arrAddresses, feed_name];
+				var params = feed_name === "timestamp" ? [feed_name] : [arrAddresses, feed_name];
 				if (typeof value === "string"){
 					index = 'byNameStringValue';
 					var isNumber = /^-?\d+\.?\d*$/.test(value);
@@ -800,6 +800,19 @@ function validateAuthentifiers(conn, address, this_asset, arrDefinition, objUnit
 					params.push(value);
 				}
 				params.push(objValidationState.last_ball_mci, min_mci);
+				if(feed_name==="timestamp"){
+					conn.query(
+						"SELECT 1 FROM data_feeds "+db.forceIndex(index)+" CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+						WHERE pow_type="+constants.POW_TYPE_TRUSTME+" AND feed_name=? AND "+value_condition+" \n\
+							AND main_chain_index<=? AND main_chain_index>=? AND sequence='good' AND is_stable=1 LIMIT 1",
+						params,
+						function(rows){
+							console.log(op+" "+feed_name+" "+rows.length);
+							cb2(rows.length > 0);
+						}
+					);
+					break;
+				}
 				conn.query(
 					"SELECT 1 FROM data_feeds "+db.forceIndex(index)+" CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
 					WHERE address IN(?) AND feed_name=? AND "+value_condition+" \n\
