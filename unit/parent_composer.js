@@ -31,29 +31,31 @@ function pickTrustParentUnits(conn, onDone){
 			else if(rowsTrustMe.length !== 1){  
 				throw Error('error trustme unit');
 			}
-			parentUnits.push(rowsTrustMe[0].unit);
-			conn.query(
-				"SELECT \n\
-					unit, version, alt \n\
-				FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
-				LEFT JOIN archived_joints USING(unit) \n\
-				WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
-				// exclude potential parents that were archived and then received again
-				[ constants.MAX_PARENTS_PER_UNIT-1], 
-				function(rows){
-					if (rows.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
-						throw Error('wrong network');
-						//if(witnesses.indexOf(address) === -1)
-					if (rows.length > 0){
-						for (var j=0; j<rows.length; j++){
-							if(parentUnits.indexOf(rows[j].unit) === -1)
-								parentUnits.push(rows[j].unit);
+			else {
+				parentUnits.push(rowsTrustMe[0].unit);
+				conn.query(
+					"SELECT \n\
+						unit, version, alt \n\
+					FROM units "+(conf.storage === 'sqlite' ? "INDEXED BY byFree" : "")+" \n\
+					LEFT JOIN archived_joints USING(unit) \n\
+					WHERE +sequence='good' AND is_free=1 AND archived_joints.unit IS NULL ORDER BY unit LIMIT ?", 
+					// exclude potential parents that were archived and then received again
+					[ constants.MAX_PARENTS_PER_UNIT-1], 
+					function(rows){
+						if (rows.some(function(row){ return (row.version !== constants.version || row.alt !== constants.alt); }))
+							throw Error('wrong network');
+							//if(witnesses.indexOf(address) === -1)
+						if (rows.length > 0){
+							for (var j=0; j<rows.length; j++){
+								if(parentUnits.indexOf(rows[j].unit) === -1)
+									parentUnits.push(rows[j].unit);
+							}
 						}
+						
+						onDone(null, parentUnits, rowsTrustMe[0].ball, rowsTrustMe[0].unit, rowsTrustMe[0].main_chain_index);
 					}
-					
-					onDone(null, parentUnits, rowsTrustMe[0].ball, rowsTrustMe[0].unit, rowsTrustMe[0].main_chain_index);
-				}
-			);
+				);
+			}
 		}
 	);
 }
