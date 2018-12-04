@@ -25,7 +25,7 @@ function pickTrustParentUnits(conn, onDone){
 				conn.query("SELECT ball FROM balls WHERE unit=?", [constants.GENESIS_UNIT], function(rowsBalls){
 					if (rowsBalls.length !== 1)
 						throw Error('error genesis unit without ball');
-					return onDone([constants.GENESIS_UNIT], rowsBalls[0].ball, constants.GENESIS_UNIT, 0);  
+					return onDone(null, [constants.GENESIS_UNIT], rowsBalls[0].ball, constants.GENESIS_UNIT, 0);  
 				});
 			}
 			else if(rowsTrustMe.length !== 1){  
