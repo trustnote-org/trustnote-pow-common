@@ -3457,7 +3457,6 @@ function onWebSocketMessage( sMessage )
 	}
 	catch( e )
 	{
-		console.log( 'failed to json.parse message add ' + e );
 		console.log( 'failed to json.parse message ' + sMessage );
 	}
 }
