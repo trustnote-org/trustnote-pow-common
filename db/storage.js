@@ -58,7 +58,8 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 			var objUnit = unit_rows[0];
 			var objJoint = {unit: objUnit};
 			var main_chain_index = objUnit.main_chain_index;
-			objUnit.hp = objUnit.main_chain_index;
+			if(objUnit.pow_type === constants.POW_TYPE_TRUSTME)
+				objUnit.hp = objUnit.main_chain_index;
 			//delete objUnit.main_chain_index;
 			objUnit.timestamp = parseInt(objUnit.timestamp);
 			var bFinalBad = !!objUnit.content_hash;
