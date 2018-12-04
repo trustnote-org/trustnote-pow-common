@@ -2859,38 +2859,73 @@ function handleJustsaying( oWs, sSubject, vBody )
 			break;
 
 		case 'want_echo':
-			let echo_string = vBody;
-			if (oWs.bOutbound || !echo_string) // ignore
+			let sWantEchoString = vBody;
+			if ( oWs.bOutbound || ! sWantEchoString ) // ignore
+			{
 				break;
-			// inbound only
-			if (!oWs.claimed_url)
+			}
+
+			//	inbound only
+			if ( ! oWs.claimed_url )
+			{
 				break;
-			let reverse_ws = getOutboundPeerWsByUrl(oWs.claimed_url);
-			if (!reverse_ws) // no reverse outbound connection
+			}
+
+			let oReverseWs = getOutboundPeerWsByUrl( oWs.claimed_url );
+			if ( ! oReverseWs )	// no reverse outbound connection
+			{
 				break;
-			sendJustsaying(reverse_ws, 'your_echo', echo_string);
+			}
+			sendJustsaying( oReverseWs, 'your_echo', sWantEchoString );
 			break;
 
-		case 'your_echo': // comes on the same ws as my_url, claimed_url is already set
-			let echo_string = vBody;
-			if (oWs.bOutbound || !echo_string) // ignore
+		case 'your_echo':
+			//	comes on the same ws as my_url, claimed_url is already set
+			let sYourEchoString = vBody;
+			if ( oWs.bOutbound || ! sYourEchoString )	// ignore
+			{
 				break;
-			// inbound only
-			if (!oWs.claimed_url)
+			}
+
+			//	inbound only
+			if ( ! oWs.claimed_url )
+			{
 				break;
-			if (oWs.sent_echo_string !== echo_string)
+			}
+			if ( oWs.sent_echo_string !== sYourEchoString )
+			{
 				break;
-			let outbound_host = getHostByPeer(oWs.claimed_url);
-			let arrQueries = [];
-			db.addQuery(arrQueries, "INSERT " + db.getIgnore() + " INTO peer_hosts (peer_host) VALUES (?)", [outbound_host]);
-			db.addQuery(arrQueries, "INSERT " + db.getIgnore() + " INTO peers (peer_host, peer, learnt_from_peer_host) VALUES (?,?,?)",
-				[outbound_host, oWs.claimed_url, oWs.host]);
-			db.addQuery(arrQueries, "UPDATE peer_host_urls SET is_active=NULL, revocation_date=" + db.getNow() + " WHERE peer_host=?", [oWs.host]);
-			db.addQuery(arrQueries, "INSERT INTO peer_host_urls (peer_host, url) VALUES (?,?)", [oWs.host, oWs.claimed_url]);
-			async.series(arrQueries);
+			}
+
+			let sOutboundHost	= getHostByPeer( oWs.claimed_url );
+			let arrQueries		= [];
+			db.addQuery
+			(
+				arrQueries,
+				"INSERT " + db.getIgnore() + " INTO peer_hosts (peer_host) VALUES (?)",
+				[ sOutboundHost ]
+			);
+			db.addQuery
+			(
+				arrQueries,
+				"INSERT " + db.getIgnore() + " INTO peers (peer_host, peer, learnt_from_peer_host) VALUES (?,?,?)",
+				[ sOutboundHost, oWs.claimed_url, oWs.host ]
+			);
+			db.addQuery
+			(
+				arrQueries,
+				"UPDATE peer_host_urls SET is_active=NULL, revocation_date=" + db.getNow() + " WHERE peer_host=?",
+				[ oWs.host ]
+			);
+			db.addQuery
+			(
+				arrQueries,
+				"INSERT INTO peer_host_urls (peer_host, url) VALUES (?,?)",
+				[ oWs.host, oWs.claimed_url ]
+			);
+			async.series( arrQueries );
 			oWs.sent_echo_string = null;
 			break;
-
 
 		// I'm a hub, the peer wants to authenticate
 		case 'hub/login':
