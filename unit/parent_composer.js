@@ -28,7 +28,7 @@ function pickTrustParentUnits(conn, onDone){
 					return onDone([constants.GENESIS_UNIT], rowsBalls[0].ball, constants.GENESIS_UNIT, 0);  
 				});
 			}
-			if(rowsTrustMe.length !== 1){  
+			else if(rowsTrustMe.length !== 1){  
 				throw Error('error trustme unit');
 			}
 			parentUnits.push(rowsTrustMe[0].unit);
