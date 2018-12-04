@@ -670,7 +670,10 @@ function connectToPeer( sUrl, pfnOnOpen )
 			sendVersion( oWsClient );
 			if ( conf.myUrl )
 			{
+				//
+				//	Client Side
 				//	I can listen too, this is my url to connect to
+				//
 				sendJustsaying( oWsClient, 'my_url', conf.myUrl );
 			}
 			if ( ! conf.bLight )
@@ -2828,75 +2831,140 @@ function handleJustsaying( oWs, sSubject, vBody )
 			break;
 
 		case 'my_url':
-			if (!vBody)
+			//
+			//	Server Side
+			//
+			let sMyUrl = vBody;
+			if ( ! sMyUrl )
+			{
 				return;
-			let url = vBody;
-			if (oWs.bOutbound) // ignore: if you are outbound, I already know your url
+			}
+			if ( oWs.bOutbound )
+			{
+				//	ignore: if you are outbound, I already know your url
 				break;
-			// inbound only
-			if (oWs.bAdvertisedOwnUrl) // allow it only once per connection
+			}
+			if ( oWs.bAdvertisedOwnUrl )
+			{
+				//	inbound only
+				//	allow it only once per connection
 				break;
-			oWs.bAdvertisedOwnUrl = true;
-			if (url.indexOf('ws://') !== 0 && url.indexOf('wss://') !== 0) // invalid url
-				break;
-			oWs.claimed_url = url;
-			db.query("SELECT creation_date AS latest_url_change_date, url FROM peer_host_urls WHERE peer_host=? ORDER BY creation_date DESC LIMIT 1", [oWs.host], function (rows) {
-				let latest_change = rows[0];
-				if (latest_change && latest_change.url === url) // advertises the same url
-					return;
-				//let elapsed_time = Date.now() - Date.parse(latest_change.latest_url_change_date);
-				//if (elapsed_time < 24*3600*1000) // change allowed no more often than once per day
-				//    return;
+			}
 
-				// verify it is really your url by connecting to this url, sending a random string through this new connection, 
-				// and expecting this same string over existing inbound connection
-				oWs.sent_echo_string = crypto.randomBytes(30).toString("base64");
-				findOutboundPeerOrConnect(url, function (err, reverse_ws) {
-					if (!err)
-						sendJustsaying(reverse_ws, 'want_echo', oWs.sent_echo_string);
-				});
-			});
+			//	...
+			oWs.bAdvertisedOwnUrl = true;
+			if ( 0 !== sMyUrl.indexOf( 'ws://' ) && 0 !== sMyUrl.indexOf( 'wss://' ) )
+			{
+				//	invalid url
+				break;
+			}
+
+			//
+			//	???
+			//
+			oWs.claimed_url = sMyUrl;
+			db.query
+			(
+				"SELECT creation_date AS latest_url_change_date, url \
+				FROM peer_host_urls \
+				WHERE peer_host = ? ORDER BY creation_date DESC LIMIT 1",
+				[ oWs.host ],
+				arrRows =>
+				{
+					let oLatestChange = arrRows[ 0 ];
+					if ( oLatestChange && oLatestChange.url === sMyUrl )
+					{
+						//	advertises the same url
+						return;
+					}
+
+					//	let elapsed_time = Date.now() - Date.parse(latest_change.latest_url_change_date);
+					//	if (elapsed_time < 24*3600*1000) // change allowed no more often than once per day
+					//		return;
+
+					//
+					//	verify it is really your url by connecting to this url, sending a random string through this new connection,
+					//	and expecting this same string over existing inbound connection
+					//
+					oWs.sent_echo_string	= crypto.randomBytes( 30 ).toString( "base64" );
+					findOutboundPeerOrConnect
+					(
+						sMyUrl,
+						( err, oWsByMyUrl ) =>
+						{
+							if ( ! err )
+							{
+								//
+								//	send message 'want_echo' to challenger at client,
+								// 	and make the challenger send message 'your_echo' to reply me
+								//
+								sendJustsaying( oWsByMyUrl, 'want_echo', oWs.sent_echo_string );
+							}
+						}
+					);
+				}
+			);
 			break;
 
 		case 'want_echo':
-			let sWantEchoString = vBody;
-			if ( oWs.bOutbound || ! sWantEchoString ) // ignore
+			//
+			//	Client side
+			//	I am a challenger
+			//
+			let sEchoStringFromSerer = vBody;
+			if ( oWs.bOutbound || ! sEchoStringFromSerer )
 			{
+				//	ignore
 				break;
 			}
-
-			//	inbound only
 			if ( ! oWs.claimed_url )
 			{
+				//
+				//	TODO
+				//	???
+				//
+				//	inbound only
+				console.log( `CLIENT SIDE: received message 'want_echo', invalid oWs.claimed_url: ${ oWs.claimed_url }.` );
 				break;
 			}
 
+			//
+			//	send message 'my_url' before,
+			// 	so I can call getOutboundPeerWsByUrl to get the connection by oWs.claimed_url
+			//
 			let oReverseWs = getOutboundPeerWsByUrl( oWs.claimed_url );
-			if ( ! oReverseWs )	// no reverse outbound connection
+			if ( ! oReverseWs )
 			{
+				//	no reverse outbound connection
 				break;
 			}
-			sendJustsaying( oReverseWs, 'your_echo', sWantEchoString );
+			sendJustsaying( oReverseWs, 'your_echo', sEchoStringFromSerer );
 			break;
 
 		case 'your_echo':
+			//
+			//	Server Side
 			//	comes on the same ws as my_url, claimed_url is already set
-			let sYourEchoString = vBody;
-			if ( oWs.bOutbound || ! sYourEchoString )	// ignore
+			//
+			let sEchoStringFromClient = vBody;
+			if ( oWs.bOutbound || ! sEchoStringFromClient )
 			{
+				//	ignore
 				break;
 			}
-
-			//	inbound only
 			if ( ! oWs.claimed_url )
 			{
+				//	inbound only
+				console.log( `SERVER SIDE: received message 'your_echo', invalid oWs.claimed_url: ${ oWs.claimed_url }.` );
 				break;
 			}
-			if ( oWs.sent_echo_string !== sYourEchoString )
+			if ( oWs.sent_echo_string !== sEchoStringFromClient )
 			{
+				console.log( `SERVER SIDE: received message 'your_echo', sent_echo_string not matched: ${ oWs.sent_echo_string } !== ${ sEchoStringFromClient }.` );
 				break;
 			}
 
+			//	...
 			let sOutboundHost	= getHostByPeer( oWs.claimed_url );
 			let arrQueries		= [];
 			db.addQuery
