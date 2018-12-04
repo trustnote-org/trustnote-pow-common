@@ -1301,15 +1301,22 @@ function determinewitnessedLevelAndLimci(conn, objNewUnit, callback){
 		"SELECT unit, level, pow_type,main_chain_index\n\
 		FROM units  \n\
 		WHERE unit IN(?)", 
-		[objUnit.parent_units], 
+		[objNewUnit.parent_units], 
 		function(rows){
 			if (rows.length !==  objNewUnit.parent_units.length)
 				return callback("got wrong number of parents units");
 			var parent_trustme = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
+			// in the first round, maybe no trust me at early time, then genesis unit is selected as parents
+			if(parent_trustme.length === 0 ){ 
+				var hasGenenisUnit = objNewUnit.parent_units.some(function(parent) {return parent.unit === constants.GENESIS_UNIT});
+				if(!hasGenenisUnits)
+					return  callback("neither trustme or genesis unit as parents of unit :" + objNewUnit.unit);
+				return callback(null, 0,0);
+			}
 			if(parent_trustme.length !== 1)
 				return callback("units contains not one trust me unit as parents");
 
-			callback(null, rows[0].level,rows[0].main_chain_index);
+			callback(null, parent_trustme[0].level, parent_trustme[0].main_chain_index);
 		}
 	);
 }
