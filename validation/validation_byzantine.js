@@ -146,7 +146,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 					if (objLastBallUnitProps.is_on_main_chain !== 1)
 						return callback("last ball "+last_ball+" is not on MC");
 					// byzantine add
-					if (objLastBallUnitProps.pow_type !== constants.POW_TYPE_TRUSTME)
+					if (objLastBallUnitProps.pow_type !== constants.POW_TYPE_TRUSTME && !storage.isGenesisBall(objLastBallUnitProps.ball))
 						return callback("last ball "+ last_ball +" is not trustmet type ");
 					if (objLastBallUnitProps.ball && objLastBallUnitProps.ball !== last_ball)
 						return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
