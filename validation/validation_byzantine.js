@@ -111,6 +111,8 @@ function validateParents(conn, objJoint, objValidationState, callback){
 					throw Error("no ball corresponding to parent unit "+parent_unit);
 				if (objParentUnitProps.latest_included_mc_index > objValidationState.max_parent_limci)
 					objValidationState.max_parent_limci = objParentUnitProps.latest_included_mc_index;
+				//callback 	async.eachSeries
+				cb();
 			});
 		}, 
 		function(err){

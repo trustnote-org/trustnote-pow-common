@@ -950,7 +950,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 					if(err)
 						return cb(err);
 					unit_witenessed_level = witenessed_level;
-					objValidationState.witenessed_level = limci;
+					objValidationState.witenessed_level = witenessed_level;
 					objValidationState.limci = limci;
 					cb();
 				});
