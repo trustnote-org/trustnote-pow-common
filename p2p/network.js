@@ -3704,7 +3704,7 @@ function startRelay()
 			//
 			//	update the remote socket
 			//
-			console.log( `GOSSIPER :: connected to a new remote oWsClient: ${ JSON.stringify( oWsClient ) }.` );
+			console.log( `GOSSIPER :: connected to a new remote oWsClient.` );
 			_gossiper.updateConnectedPeer( oWsClient );
 		});
 	}

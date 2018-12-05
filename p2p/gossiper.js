@@ -150,10 +150,12 @@ function updateConnectedPeer( oSockets )
 {
 	if ( ! DeUtilsCore.isPlainObjectWithKeys( oSockets, 'url' ) )
 	{
+		console.error( `GOSSIPER ))) call updateConnectedPeer with invalid oSockets.` );
 		return 0;
 	}
-	if ( ! DeUtilsCore.isExistingString( oSockets.url ) )
+	if ( ! GossiperUtils.isValidPeerUrl( oSockets.url ) )
 	{
+		console.error( `GOSSIPER ))) call updateConnectedPeer with invalid oSockets.url: ${ JSON.stringify( oSockets.url ) }.` );
 		return 0;
 	}
 
