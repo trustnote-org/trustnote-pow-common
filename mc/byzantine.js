@@ -100,7 +100,7 @@ eventBus.on( 'headless_wallet_ready', () =>
  *                      
  */
 function getCoordinators(conn, hp, phase, cb){
-    if (assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
+    if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
         var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
@@ -151,7 +151,7 @@ function startPhase(hp, phase){
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
         if(proposer === address_p){
-            if(!assocByzantinePhase[h_p].phase[p_p]){
+            if(!assocByzantinePhase[h_p] || !assocByzantinePhase[h_p].phase || !assocByzantinePhase[h_p].phase[p_p]){
                 if(validValue_p !== null){
                     pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
