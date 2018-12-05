@@ -36,7 +36,7 @@ var p_precommit_timeout = -1;
 
 var assocByzantinePhase = {};
 
-var maxGossipHp = 0;
+var maxGossipHp = 1;
 var bByzantineUnderWay = false;
 var bTrustMeUnderWay = false;
 
@@ -48,6 +48,7 @@ var bTrustMeUnderWay = false;
 function initByzantine(){
     if(bByzantineUnderWay)
         return;
+    console.log("Byzantine:initByzantine, h_p:" + h_p + ", p_p:" + p_p);
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -68,6 +69,7 @@ function initByzantine(){
                     }        
                     if(maxGossipHp === hp) {
                         startPhase(hp, 0);
+                        console.log("Byzantine:initByzantine 1");
                     }
                     else {
                         setTimeout(function(){
@@ -129,6 +131,7 @@ function getCoordinators(conn, hp, phase, cb){
 //     else
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
+    console.log("Byzantine:startPhase, h_p:" + h_p + ", p_p:" + p_p);
     if(!validationUtils.isValidAddress(address_p)){
         console.log("address_p not known yet");
 		setTimeout(function(){
