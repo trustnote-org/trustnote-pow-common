@@ -1250,7 +1250,10 @@ function _createMiningInputBufferFromObject( objInput )
 	bufRmd160	= _crypto.createHash( 'rmd160' ).update( sInput, 'utf8' ).digest();
 	bufSha384	= _crypto.createHash( 'sha384' ).update( sInput, 'utf8' ).digest();
 
-	return Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
+	let bufInput	= Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
+	console.log( `_createMiningInputBufferFromObject: ${ bufInput.toString( 'hex' ) }` );
+
+	return bufInput;
 }
 
 
