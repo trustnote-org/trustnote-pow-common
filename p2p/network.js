@@ -3561,6 +3561,7 @@ function onWebSocketMessage( sMessage )
 	catch( e )
 	{
 		console.log( 'failed to json.parse message ' + sMessage );
+		console.log( 'failed to json.parse exception: ', e );
 	}
 }
 

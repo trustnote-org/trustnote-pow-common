@@ -144,7 +144,7 @@ function gossiperOnReceivedMessage( oWs, oMessage )
  *	update socket
  *
  *	@param	{object}	oSockets
- *	@return	{number}	- count of successfully updated
+ *	@return	{number}	- count of successfully updated peers
  */
 function updateConnectedPeer( oSockets )
 {
