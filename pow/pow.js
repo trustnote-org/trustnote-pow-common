@@ -608,6 +608,7 @@ function checkProofOfWork( oConn, objInput, sHash, nNonce, pfnCallback )
 
 			//	...
 			let objSelfInput = Object.assign( {}, objInput, { bits : uSelfBits } );
+			console.log( `||| will call _pow_miner.checkProofOfWork with nNonce: ${ nNonce }, sHash: ${ sHash }, inputs: `, objSelfInput );
 			_pow_miner.checkProofOfWork
 			(
 				_createMiningInputBufferFromObject( objSelfInput ),
@@ -1251,7 +1252,7 @@ function _createMiningInputBufferFromObject( objInput )
 	bufSha384	= _crypto.createHash( 'sha384' ).update( sInput, 'utf8' ).digest();
 
 	let bufInput	= Buffer.concat( [ bufSha512, bufMd5, bufRmd160, bufSha384 ], 140 );
-	console.log( `_createMiningInputBufferFromObject: ${ bufInput.toString( 'hex' ) }` );
+	console.log( `||| _createMiningInputBufferFromObject: ${ bufInput.toString( 'hex' ) }` );
 
 	return bufInput;
 }
