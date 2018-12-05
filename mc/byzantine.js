@@ -36,7 +36,7 @@ var p_precommit_timeout = -1;
 
 var assocByzantinePhase = {};
 
-var maxGossipHp = 0;
+var maxGossipHp = 1;
 var bByzantineUnderWay = false;
 var bTrustMeUnderWay = false;
 
@@ -48,6 +48,7 @@ var bTrustMeUnderWay = false;
 function initByzantine(){
     if(bByzantineUnderWay)
         return;
+    console.log("byzantine:initByzantine, h_p:" + h_p + ", p_p:" + p_p);
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -68,6 +69,7 @@ function initByzantine(){
                     }        
                     if(maxGossipHp === hp) {
                         startPhase(hp, 0);
+                        console.log("Byzantine:initByzantine 1");
                     }
                     else {
                         setTimeout(function(){
@@ -139,6 +141,7 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
+    console.log("byzantine:startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(witnesses.indexOf(address_p) === -1)
             return ;
