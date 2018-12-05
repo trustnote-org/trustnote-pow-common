@@ -201,7 +201,7 @@ function getWitnessesByRoundIndex(conn, roundIndex, callback){
     var witnesses  = [];
 	if (roundIndex === 1){// first round
 		witnesses = witnesses.concat(conf.initialWitnesses);
-		if(witnesses.length != constants.COUNT_WITNESSES)
+		if(witnesses.length != constants.TOTAL_COORDINATORS)
 			throw Error("Can not find enough witnesses in conf initialWitnesses");
 		return callback(witnesses);
     }
@@ -434,7 +434,7 @@ function queryCoinBaseListByRoundIndex(conn, roundIndex, callback) {
                     });                    
                 },
                 function(){
-                    if(arrResult.length != constants.COUNT_WITNESSES)
+                    if(arrResult.length != constants.TOTAL_COORDINATORS)
                         throw Error("Can not find enough coinbase witness");
                     return callback(null, arrResult);
                 }
