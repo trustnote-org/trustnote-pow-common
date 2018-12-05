@@ -48,7 +48,7 @@ var bTrustMeUnderWay = false;
 function initByzantine(){
     if(bByzantineUnderWay)
         return;
-    console.log("Byzantine:initByzantine, h_p:" + h_p + ", p_p:" + p_p);
+    console.log("byzantine:initByzantine, h_p:" + h_p + ", p_p:" + p_p);
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -131,7 +131,6 @@ function getCoordinators(conn, hp, phase, cb){
 //     else
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
-    console.log("Byzantine:startPhase, h_p:" + h_p + ", p_p:" + p_p);
     if(!validationUtils.isValidAddress(address_p)){
         console.log("address_p not known yet");
 		setTimeout(function(){
@@ -142,6 +141,7 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
+    console.log("byzantine:startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(witnesses.indexOf(address_p) === -1)
             return ;
