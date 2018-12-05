@@ -3608,20 +3608,29 @@ function startAcceptingConnections()
 					return ws.terminate();
 				}
 
-				// welcome the new peer with the list of free joints
-				//if (!bCatchingUp)
-				//    sendFreeJoints(ws);
+				//
+				//	welcome the new peer with the list of free joints
+				//	if ( ! bCatchingUp )
+				//		sendFreeJoints( ws );
 
-				sendVersion(ws);
+				sendVersion( ws );
 
 				// I'm a hub, send challenge
-				if (conf.bServeAsHub) {
+				if ( conf.bServeAsHub )
+				{
 					ws.challenge = crypto.randomBytes(30).toString("base64");
 					sendJustsaying(ws, 'hub/challenge', ws.challenge);
 				}
-				if (!conf.bLight)
+				if ( ! conf.bLight )
+				{
 					subscribe(ws);
-				eventBus.emit('connected', ws);
+				}
+
+				//
+				//	a peer connected in,
+				//	so there is not .url property with ws
+				//
+				eventBus.emit( 'connected', ws );
 			}
 		);
 		ws.on('message', function (message) { // might come earlier than stats check completes
