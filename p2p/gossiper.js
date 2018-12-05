@@ -148,9 +148,19 @@ function gossiperOnReceivedMessage( oWs, oMessage )
  */
 function updateConnectedPeer( oSockets )
 {
-	if ( ! DeUtilsCore.isPlainObjectWithKeys( oSockets, 'url' ) )
+	if ( ! oSockets )
+	{
+		console.error( `GOSSIPER ))) call updateConnectedPeer with null oSockets.` );
+		return 0;
+	}
+	if ( ! DeUtilsCore.isPlainObject( oSockets ) )
 	{
 		console.error( `GOSSIPER ))) call updateConnectedPeer with invalid oSockets.` );
+		return 0;
+	}
+	if ( ! DeUtilsCore.isPlainObjectWithKeys( oSockets, 'url' ) )
+	{
+		console.error( `GOSSIPER ))) call updateConnectedPeer with invalid oSockets, no url property.` );
 		return 0;
 	}
 	if ( ! GossiperUtils.isValidPeerUrl( oSockets.url ) )
