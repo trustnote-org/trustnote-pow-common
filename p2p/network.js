@@ -3542,7 +3542,7 @@ function onWebSocketMessage( sMessage )
 		switch ( sMessageType )
 		{
 			case 'gossiper':
-				return gossiperOnReceivedMessage( oWs, oJSONContent );
+				return _gossiper.gossiperOnReceivedMessage( oWs, oJSONContent );
 
 			case 'justsaying':
 				return handleJustsaying( oWs, oJSONContent.subject, oJSONContent.body );
