@@ -140,6 +140,32 @@ function gossiperOnReceivedMessage( oWs, oMessage )
 }
 
 
+/**
+ *	update socket
+ *
+ *	@param	{object}	oSockets
+ *	@return	{number}	- count of successfully updated
+ */
+function updateConnectedPeer( oSockets )
+{
+	if ( ! DeUtilsCore.isPlainObjectWithKeys( oSockets, 'url' ) )
+	{
+		return 0;
+	}
+	if ( ! DeUtilsCore.isExistingString( oSockets.url ) )
+	{
+		return 0;
+	}
+
+	return _oGossiper.updatePeerList
+	({
+		[ oSockets.url ]	: oSockets
+	});
+}
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -268,4 +294,5 @@ module.exports	=
 	gossiperStart			: gossiperStart,
 	gossiperBroadcast		: gossiperBroadcast,
 	gossiperOnReceivedMessage	: gossiperOnReceivedMessage,
+	updateConnectedPeer		: updateConnectedPeer,
 };

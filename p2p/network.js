@@ -3651,11 +3651,13 @@ function startAcceptingConnections()
 
 function startRelay()
 {
-	if (process.browser || !conf.port) {
+	if ( process.browser || ! conf.port )
+	{
 		//	no listener on mobile
-		wss = {clients: []};
+		wss = { clients : [] };
 	}
-	else {
+	else
+	{
 		startAcceptingConnections();
 
 		//
@@ -3697,73 +3699,98 @@ function startRelay()
 				getRandomInt( 1000, 2000 )
 			);
 		});
+		eventBus.on( 'connected', oWsClient =>
+		{
+			//
+			//	update the remote socket
+			//
+			console.log( `GOSSIPER :: connected to a new remote oWsClient: ${ JSON.stringify( oWsClient ) }.` );
+			_gossiper.updateConnectedPeer( oWsClient );
+		});
 	}
 
 	//	...
 	checkCatchupLeftovers();
 
-	if (conf.bWantNewPeers) {
-		// outbound connections
+	if ( conf.bWantNewPeers )
+	{
+		//	outbound connections
 		addOutboundPeers();
-		// retry lost and failed connections every 1 minute
-		setInterval(addOutboundPeers, 60 * 1000);
-		setTimeout(checkIfHaveEnoughOutboundPeersAndAdd, 30 * 1000);
-		setInterval(purgeDeadPeers, 30 * 60 * 1000);
+
+		//	retry lost and failed connections every 1 minute
+		setInterval( addOutboundPeers, 60 * 1000 );
+		setTimeout( checkIfHaveEnoughOutboundPeersAndAdd, 30 * 1000 );
+		setInterval( purgeDeadPeers, 30 * 60 * 1000 );
 	}
-	// purge peer_events every 6 hours, removing those older than 3 days ago.
-	setInterval(purgePeerEvents, 6 * 60 * 60 * 1000);
 
-	// request needed joints that were not received during the previous session
+	//
+	//	purge peer_events every 6 hours, removing those older than 3 days ago.
+	//
+	setInterval( purgePeerEvents, 6 * 60 * 60 * 1000 );
+
+	//
+	//	request needed joints that were not received during the previous session
+	//
 	rerequestLostJoints();
-	setInterval(rerequestLostJoints, 8 * 1000);
+	setInterval( rerequestLostJoints, 8 * 1000 );
 
-	setInterval(purgeJunkUnhandledJoints, 30 * 60 * 1000);
-	setInterval(joint_storage.purgeUncoveredNonserialJointsUnderLock, 60 * 1000);
-	setInterval(findAndHandleJointsThatAreReady, 5 * 1000);
+	setInterval( purgeJunkUnhandledJoints, 30 * 60 * 1000 );
+	setInterval( joint_storage.purgeUncoveredNonserialJointsUnderLock, 60 * 1000 );
+	setInterval( findAndHandleJointsThatAreReady, 5 * 1000 );
 }
 
-function startLightClient() {
-	wss = {clients: []};
+function startLightClient()
+{
+	wss = { clients : [] };
+
+	//	...
 	rerequestLostJointsOfPrivatePayments();
-	setInterval(rerequestLostJointsOfPrivatePayments, 5 * 1000);
-	setInterval(handleSavedPrivatePayments, 5 * 1000);
-	setInterval(requestUnfinishedPastUnitsOfSavedPrivateElements, 12 * 1000);
+	setInterval( rerequestLostJointsOfPrivatePayments, 5 * 1000 );
+	setInterval( handleSavedPrivatePayments, 5 * 1000 );
+	setInterval( requestUnfinishedPastUnitsOfSavedPrivateElements, 12 * 1000 );
 }
 
-function start() {
-	console.log("starting network");
+function start()
+{
+	console.log( "starting network" );
 	conf.bLight ? startLightClient() : startRelay();
 
-	setInterval(printConnectionStatus, 6 * 1000);
+	setInterval( printConnectionStatus, 6 * 1000 );
 
 	// if we have exactly same intervals on two clints, they might send heartbeats to each other at the same time
-	setInterval(heartbeat, 3 * 1000 + getRandomInt(0, 1000));
+	setInterval( heartbeat, 3 * 1000 + getRandomInt( 0, 1000 ) );
 }
 
-function closeAllWsConnections() {
-	arrOutboundPeers.forEach(function (ws) {
-		ws.close(1000, 'Re-connect');
+function closeAllWsConnections()
+{
+	arrOutboundPeers.forEach( oWs =>
+	{
+		oWs.close( 1000, 'Re-connect' );
 	});
 }
 
-function isConnected() {
-	return (arrOutboundPeers.length + wss.clients.length);
+function isConnected()
+{
+	return ( arrOutboundPeers.length + wss.clients.length );
 }
 
 
 /**
  *        for unit tests
  */
-if ('object' === typeof process.env && process.env.ENV_UNIT_TEST) {
+if ( 'object' === typeof process.env && process.env.ENV_UNIT_TEST )
+{
 	//	for unit tests
-	wss = {clients: []};
+	wss = { clients: [] };
 }
-else {
-	eventBus.on('mci_became_stable', notifyWatchersAboutStableJoints);
+else
+{
+	eventBus.on( 'mci_became_stable', notifyWatchersAboutStableJoints );
 	setInterval
 	(
-		function () {
-			flushEvents(true);
+		function ()
+		{
+			flushEvents( true );
 		},
 		1000 * 60
 	);
@@ -3771,7 +3798,9 @@ else {
 	start();
 }
 
-// this section is just for friendly UI  to end user  
+//
+//	this section is just for friendly UI  to end user
+//
 let catchup_balls_at_start = -1;
 let catchup_balls_left = 0;
 
