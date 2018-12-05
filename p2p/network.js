@@ -3649,7 +3649,8 @@ function startAcceptingConnections()
 	console.log('WSS running at port ' + conf.port);
 }
 
-function startRelay() {
+function startRelay()
+{
 	if (process.browser || !conf.port) {
 		//	no listener on mobile
 		wss = {clients: []};
@@ -3660,11 +3661,14 @@ function startRelay() {
 		//
 		//	start Gossiper
 		//
+		console.log( `GOSSIPER :: wait for event headless_wallet_ready.` );
 		eventBus.on( 'headless_wallet_ready', () =>
 		{
 			//
 			//	start gossiper
 			//
+			console.log( `GOSSIPER :: will start.` );
+
 			_gossiper.gossiperStart({
 				pfnConnectToPeer	: connectToPeer,
 				pfnSigner		: ( sMessage ) =>
@@ -3685,7 +3689,10 @@ function startRelay() {
 			(
 				() =>
 				{
-					_gossiper.gossiperBroadcast( `test_gossip_now`, Date.now(), err =>{} );
+					let nTestValue	= Date.now();
+					console.log( `GOSSIPER :: will gossiperBroadcast key test_gossip_now with value: ${ nTestValue }.` );
+
+					_gossiper.gossiperBroadcast( `test_gossip_now`, nTestValue, err =>{} );
 				},
 				getRandomInt( 1000, 2000 )
 			);
