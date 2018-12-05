@@ -111,8 +111,11 @@ function getCoordinators(conn, hp, phase, cb){
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
-            assocByzantinePhase[hp].roundIndex = roundIndex;
-            assocByzantinePhase[hp].witnesses = witnesses;
+            if(!assocByzantinePhase[hp]){
+                assocByzantinePhase[hp] = {};
+                assocByzantinePhase[hp].roundIndex = roundIndex;
+                assocByzantinePhase[hp].witnesses = witnesses;
+            }
             var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
             cb(null, witnesses[pIndex], roundIndex, witnesses);
         });        
