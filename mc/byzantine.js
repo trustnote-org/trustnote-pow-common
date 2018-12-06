@@ -274,11 +274,13 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
                 && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                console.log("555555 broadcastPrevote1:" + h_p + ":" + h_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
             }
             else {
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-                return broadcastPrevote(h_p, p_p, null);
+                console.log("555555 broadcastPrevote2:" + h_p + ":" + h_p + ": null");
+                broadcastPrevote(h_p, p_p, null);
             }
             step_p = constants.BYZANTINE_PREVOTE;
         }
@@ -294,11 +296,13 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
                 && (lockedPhase_p <= assocByzantinePhase[h_p][p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                console.log("555555 broadcastPrevote1:" + h_p + ":" + h_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
             }
             else {
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-                return broadcastPrevote(h_p, p_p, null);
+                console.log("555555 broadcastPrevote2:" + h_p + ":" + h_p + ": null");
+                broadcastPrevote(h_p, p_p, null);
             }
             step_p = constants.BYZANTINE_PREVOTE;
         }
