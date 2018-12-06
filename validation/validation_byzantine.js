@@ -62,18 +62,19 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				if (rows.length !==  objUnit.parent_units.length)
 					return callback("got wrong number of parents units");
 				var parent_trustmes = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
-				if(parent_trustmes.length !== 1)
-					return callback("units contains not one trust me unit as parents");
 				
 				// in the first round, maybe no trust me at early time, then genesis unit is selected as parents
 				if(parent_trustmes.length === 0 ){ 
 					var hasGenenisUnit = objUnit.parent_units.some(function(parent) {return parent.unit === constants.GENESIS_UNIT});
 					if(!hasGenenisUnit || objUnit.round_index > 1 )
 						return  callback("neither trustme or genesis unit as parents of unit :" + objUnit.unit);
+				}else{
+					if(parent_trustmes.length !== 1)
+						return callback("units contains not one trust me unit as parents");
+					if(parent_trustmes[0].round_index > objUnit.round_index)
+						return callback("unit round_index is retreated, less than its parents' ");
 				}
 
-				if(parent_trustmes[0].round_index > objUnit.round_index)
-					return callback("unit round_index is retreated, less than its parents' ");
 				callback();
 			}
 		);
