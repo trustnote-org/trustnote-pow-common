@@ -176,6 +176,7 @@ function startPhase(hp, phase){
                     pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                     broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
+                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 }
                 else{
                     composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
