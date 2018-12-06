@@ -119,8 +119,8 @@ eventBus.on( 'headless_wallet_ready', () =>
 function getCoordinators(conn, hp, phase, cb){
     console.log("77777777 getCoordinators in:" + hp + ":" + phase);
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
-        console.log("77777777 assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
         var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
+        console.log("77777777 assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
     if(!validationUtils.isPositiveInteger(hp))
@@ -540,12 +540,13 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
         };
         if(assocByzantinePhase[h].phase[p] != null && assocByzantinePhase[h].phase[p] != "undefined" 
             && assocByzantinePhase[h].phase[p].proposal != null){
-            assocByzantinePhase[h].phase[p].proposal = proposal;
-            
+            assocByzantinePhase[h].phase[p].proposal = proposal;            
+            console.log("77777777 pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
         }
         else{
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
-        }
+            console.log("77777777 pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
+        }        
         onDone();
     });    
 }
