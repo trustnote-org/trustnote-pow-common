@@ -224,7 +224,7 @@ function startPhase(hp, phase){
 /**
  *  byzantine gossip message event
  */
-eventBus.on('byzantine_gossip', function( gossipMessage ) {
+eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
     console.log("999999 byzantine_gossip assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
     console.log("999999 byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage));
     if(maxGossipHp < gossipMessage.h)  // update max gossip h
@@ -481,21 +481,21 @@ function composePrecommitMessage(hp, pp, sig, idv){
 }
 function broadcastProposal(h, p, value, vp){
     console.log("3333333 broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value));
-    gossiper.gossiperBroadcastForByzantine( composeProposalMessage(h, p, value, vp), function(err){
+    gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             console.log("44444444" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
     console.log("3333333 broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcastForByzantine( composePrevoteMessage(h, p, idv), function(err){
+    gossiper.gossiperBroadcast("Prevote"+h+p, composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log("44444444" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("3333333 broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcastForByzantine( composePrecommitMessage(h, p, sig, idv), function(err){
+    gossiper.gossiperBroadcast("Precommit"+h+p, composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log("44444444" + err);
     });
