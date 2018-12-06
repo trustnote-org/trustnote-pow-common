@@ -121,7 +121,7 @@ function getProposalUnitHash(objUnit) {
 	var objStrippedUnit = {
 		content_hash: getUnitContentHash(objUnit),
 		version: objUnit.version,
-		alt: objUnit.alt,
+		alt: objUnit.alt
 	};
 	// pow del
 	// if (objUnit.witness_list_unit)
