@@ -132,6 +132,8 @@ function getCoordinators(conn, hp, phase, cb){
                 assocByzantinePhase[hp] = {};
                 assocByzantinePhase[hp].roundIndex = roundIndex;
                 assocByzantinePhase[hp].witnesses = witnesses;
+                assocByzantinePhase[hp].phase = {};
+                assocByzantinePhase[hp].decision = {};
             }
             var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
             cb(null, witnesses[pIndex], roundIndex, witnesses);
@@ -509,7 +511,7 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             "vp":vp,
             "isValid":isValid
         };
-        if(assocByzantinePhase[h].phase[p] === null){
+        if(assocByzantinePhase[h].phas[p] === null){
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
         else{
