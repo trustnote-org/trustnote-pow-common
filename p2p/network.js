@@ -3700,17 +3700,17 @@ function startRelay()
 			////////////////////////////////////////////////////////////
 			//	for testing
 			////////////////////////////////////////////////////////////
-			setInterval
-			(
-				() =>
-				{
-					let nTestValue	= Date.now();
-					console.log( `GOSSIPER :: will gossiperBroadcastForByzantine key test_gossip_now with value: ${ nTestValue }.` );
-
-					_gossiper.gossiperBroadcast( 'test', nTestValue, err =>{} );
-				},
-				getRandomInt( 1000, 2000 )
-			);
+			// setInterval
+			// (
+			// 	() =>
+			// 	{
+			// 		let nTestValue	= Date.now();
+			// 		console.log( `GOSSIPER :: will gossiperBroadcastForByzantine key test_gossip_now with value: ${ nTestValue }.` );
+			//
+			// 		_gossiper.gossiperBroadcast( 'test', nTestValue, err =>{} );
+			// 	},
+			// 	getRandomInt( 1000, 2000 )
+			// );
 		});
 		eventBus.on( 'connected', oWsClient =>
 		{
