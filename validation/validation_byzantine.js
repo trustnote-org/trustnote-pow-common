@@ -366,7 +366,7 @@ function validateProposalJoint(objJoint, callbacks){
 						return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objJoint.proposer[0].address);
 					if(round_index !== objUnit.round_index)
 						return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
-					objValidationState.unit_hash_to_sign = objectHash.getUnitHashToSign(objUnit);
+					objValidationState.unit_hash_to_sign = objectHash.getProposalHashToSign(objUnit);
 					//validate proposer signature
 					validateProposer(conn, objJoint.proposer[0], objUnit, objValidationState, cb);
 				});
