@@ -117,7 +117,9 @@ eventBus.on( 'headless_wallet_ready', () =>
  *                      
  */
 function getCoordinators(conn, hp, phase, cb){
+    console.log("000000 getCoordinators in:" + hp + ":" + phase);
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
+        console.log("000000 assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.string(assocByzantinePhase[hp].witnesses));
         var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
@@ -127,7 +129,9 @@ function getCoordinators(conn, hp, phase, cb){
         return cb("param phase is not a positive integer");
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
+        console.log("000000 getRoundIndexByNewMci in:" + roundIndex);
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
+            console.log("000000 getWitnessesByRoundIndex in:" + roundIndex + ":" + JSON.string(witnesses));
             if(!assocByzantinePhase[hp]){
                 assocByzantinePhase[hp] = {};
                 assocByzantinePhase[hp].roundIndex = roundIndex;
