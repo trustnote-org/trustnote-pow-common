@@ -245,7 +245,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         console.log("77777777 isValidAddress:" + address_p);
         return;    
     }
-    getCoordinators(null, gossipMessage, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
+    getCoordinators(null, gossipMessage.h, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
         console.log("77777777 getCoordinators:" + JSON.stringify(witnesses) + ":" + address_p);
         if(witnesses.indexOf(address_p) === -1)
             return;
