@@ -59,7 +59,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			WHERE unit IN(?)", 
 			[objUnit.parent_units], 
 			function(rows){
-				if (rows.length !==  objNewUnit.parent_units.length)
+				if (rows.length !==  objUnit.parent_units.length)
 					return callback("got wrong number of parents units");
 				var parent_trustmes = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
 				if(parent_trustmes.length !== 1)
