@@ -3869,7 +3869,6 @@ exports.isConnected = isConnected;
  * 	exports for gossiper
  */
 exports.gossiperBroadcast 		= _gossiper.gossiperBroadcast;
-exports.gossiperBroadcastForByzantine 	= _gossiper.gossiperBroadcastForByzantine;
 
 
 

@@ -330,7 +330,6 @@ module.exports	=
 {
 	gossiperStart			: gossiperStart,
 	gossiperBroadcast		: gossiperBroadcast,
-	gossiperBroadcastForByzantine	: gossiperBroadcastForByzantine,
 	gossiperOnReceivedMessage	: gossiperOnReceivedMessage,
 	updateConnectedPeer		: updateConnectedPeer,
 
