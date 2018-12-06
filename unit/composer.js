@@ -958,7 +958,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 				function(err){
 					if (err)
 						return callback(err);
-					objUnit.unit = objectHash.getUnitHash(objUnit);
+					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.proposer = objJoint.unit.authors;
 					objJoint.phase = phase;
