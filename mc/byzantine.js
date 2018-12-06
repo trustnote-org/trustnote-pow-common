@@ -511,13 +511,15 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             "vp":vp,
             "isValid":isValid
         };
-        if(assocByzantinePhase[h].phase[p] === null || assocByzantinePhase[h].phase[p] === "undefined"){
+        if(assocByzantinePhase[h].phase[p] != null && assocByzantinePhase[h].phase[p] != "undefined" 
+            && assocByzantinePhase[h].phase[p].proposal != null){
             console.log("55555555 pushByzantineProposal assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
-            assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+            assocByzantinePhase[h].phase[p].proposal = proposal;
+            
         }
         else{
             console.log("55555555 pushByzantineProposal assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
-            assocByzantinePhase[h].phase[p].proposal = proposal;
+            assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
         onDone();
     });    
