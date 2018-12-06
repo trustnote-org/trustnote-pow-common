@@ -444,13 +444,22 @@ function composePrecommitMessage(hp, pp, sig, idv){
             "idv": idv};
 }
 function broadcastProposal(h, p, value, vp){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PROPOSE, composeProposalMessage(h, p, value, vp));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PROPOSE, composeProposalMessage(h, p, value, vp), function(err){
+        if(err)
+            console.log(err);
+    });
 }
 function broadcastPrevote(h, p, idv){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PREVOTE, composePrevoteMessage(h, p, idv));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PREVOTE, composePrevoteMessage(h, p, idv), function(err){
+        if(err)
+            console.log(err);
+    });
 }
 function broadcastPrecommit(h, p, sig, idv){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PRECOMMIT, composePrecommitMessage(h, p, sig, idv));
+    gossiper.gossiperBroadcast(constants.BYZANTINE_PRECOMMIT, composePrecommitMessage(h, p, sig, idv), function(err){
+        if(err)
+            console.log(err);
+    });
 }
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
