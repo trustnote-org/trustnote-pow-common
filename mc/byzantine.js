@@ -186,7 +186,7 @@ function startPhase(hp, phase){
                             validation.validateProposalJoint(objJoint, {
                                 ifInvalid: function(err){
                                     console.log("8888888888888888:" + JSON.stringify(objJoint));
-                                    throw Error("startPhase my proposer is Invalid:" + err);
+                                    throw Error("startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
                                 ifNeedWaiting: function(){
                                     throw Error("startPhase my proposer need waiting?");
