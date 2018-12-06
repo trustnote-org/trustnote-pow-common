@@ -288,9 +288,9 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote
-        if(assocByzantinePhase[h_p][p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
-            if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
-                && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+        if(assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
+            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                 console.log("555555 broadcastPrevote1:" + h_p + ":" + h_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
@@ -308,11 +308,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote    
-        if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p][p_p].proposal.vp, 1)
+        if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
             && step_p === constants.BYZANTINE_PROPOSE 
-            && assocByzantinePhase[h_p][p_p].proposal.vp >= 0  && assocByzantinePhase[h_p][p_p].proposal.vp < p_p){
-            if(assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
-                && (lockedPhase_p <= assocByzantinePhase[h_p][p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p][p_p].proposal))){
+            && assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p){
+            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                 console.log("555555 broadcastPrevote3:" + h_p + ":" + h_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
@@ -342,15 +342,15 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     validValuep ← v
         //     validRoundp ← roundp
         if(PrevoteBiggerThan2f1(h_p, p_p, 1)
-            && assocByzantinePhase[h_p][p_p].proposal.isValid === 1 
+            && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
             && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
             if(step_p === constants.BYZANTINE_PREVOTE){
-                lockedValue_p = assocByzantinePhase[h_p][p_p].proposal;
+                lockedValue_p = assocByzantinePhase[h_p].phase[p_p].proposal;
                 lockedPhase_p = p_p;
                 broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 step_p = constants.BYZANTINE_PRECOMMIT;
             }
-            validValue_p = assocByzantinePhase[h_p][p_p].proposal;
+            validValue_p = assocByzantinePhase[h_p].phase[p_p].proposal;
             validPhase_p = p_p;
         }
         // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
@@ -396,11 +396,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         if(assocByzantinePhase[h_p].decision === null){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-                if(assocByzantinePhase[h_p][current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
-                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p][current_p].proposal.unit;
-                    if(assocByzantinePhase[h_p][current_p].proposal.address === address_p){
+                if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
+                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal.unit;
+                    if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                         // compose new trustme unit
-                        decisionTrustMe(assocByzantinePhase[h_p][current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                        decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
                     }
                 }
             });
