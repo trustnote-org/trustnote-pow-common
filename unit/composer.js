@@ -958,12 +958,12 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 				function(err){
 					if (err)
 						return callback(err);
-					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
-					console.log("8888888888"+ JSON.stringify(objUnit));
-					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.proposer = objJoint.unit.authors;
 					objJoint.phase = phase;
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
+					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
+					console.log(require('util').inspect(objJoint, {depth:null}));
+					delete objJoint.unit.authors;					
 					callback(null, objJoint);
 				}
 			);
