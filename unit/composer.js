@@ -810,7 +810,8 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 	var objUnit = {
 		version: constants.version, 
 		alt: constants.alt,
-		messages: arrMessages
+		messages: arrMessages,
+		authors: []
 	};
 
 	var objJoint = {unit: objUnit};
