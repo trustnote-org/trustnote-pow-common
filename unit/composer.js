@@ -796,6 +796,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 		throw Error("proposalJoint must have 1 author");
 	}
 	
+	var assocSigningPaths = {};
 	var timestamp = Date.now();
 	var datafeed = {timestamp: timestamp};
 	var objMessage = {
@@ -978,6 +979,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 		authentifiers: {}
 	};
 	var authors = [objAuthor];
+	var assocSigningPaths = {};
 	async.series([
 		function(cb){ // start transaction
 			db.takeConnectionFromPool(function(new_conn){
@@ -1048,6 +1050,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 	
 	var unlock_callback;
 	var conn;
+	var assocSigningPaths = {};
 	
 	var handleError = function(err){
 		//profiler.stop('compose');
