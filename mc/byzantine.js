@@ -64,12 +64,28 @@ function initByzantine(){
                 [constants.POW_TYPE_TRUSTME], 
                 function(rows){
                     var hp = 1;     // just after genesis or catchup from fresh start
+                    if (rows.length === 0){  
+                        db.query(
+                            "SELECT main_chain_index FROM units \n\
+                            WHERE unit=?", 
+                            [constants.GENESIS_UNIT],
+                            function(rowGenesis){
+                                if(rowGenesis.length === 0){
+                                    setTimeout(function(){
+                                        initByzantine();
+                                    }, 3000);
+                                }
+                                else{
+                                    startPhase(hp, 0);
+                                }
+                            }
+                        );
+                    }  
                     if (rows.length === 1){  
                         hp = rows[0].main_chain_index + 1;
                     }        
                     if(maxGossipHp === hp) {
                         startPhase(hp, 0);
-                        console.log("Byzantine:initByzantine 1");
                     }
                     else {
                         setTimeout(function(){
