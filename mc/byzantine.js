@@ -192,6 +192,7 @@ function startPhase(hp, phase){
                                 },
                                 ifOk: function(){
                                     pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
+                                    console.log("8888888" + JSON.stringify(assocByzantinePhase));
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastProposal(h_p, p_p, objJoint, validPhase_p);
                                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
