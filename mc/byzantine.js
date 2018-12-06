@@ -64,17 +64,34 @@ function initByzantine(){
                 [constants.POW_TYPE_TRUSTME], 
                 function(rows){
                     var hp = 1;     // just after genesis or catchup from fresh start
-                    if (rows.length === 1){  
-                        hp = rows[0].main_chain_index + 1;
-                    }        
-                    if(maxGossipHp === hp) {
-                        startPhase(hp, 0);
-                        console.log("Byzantine:initByzantine 1");
+                    if (rows.length === 0){  
+                        db.query(
+                            "SELECT main_chain_index FROM units \n\
+                            WHERE unit=?", 
+                            [constants.GENESIS_UNIT],
+                            function(rowGenesis){
+                                if(rowGenesis.length === 0){
+                                    setTimeout(function(){
+                                        initByzantine();
+                                    }, 3000);
+                                }
+                                else{
+                                    startPhase(hp, 0);
+                                }
+                            }
+                        );
                     }
-                    else {
-                        setTimeout(function(){
-                            initByzantine();
-                        }, 3000);
+                    else if (rows.length === 1){  
+                        hp = rows[0].main_chain_index + 1;
+                            
+                        if(maxGossipHp === hp) {
+                            startPhase(hp, 0);
+                        }
+                        else {
+                            setTimeout(function(){
+                                initByzantine();
+                            }, 3000);
+                        }
                     }
                 }
             );
@@ -444,19 +461,19 @@ function composePrecommitMessage(hp, pp, sig, idv){
             "idv": idv};
 }
 function broadcastProposal(h, p, value, vp){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PROPOSE, composeProposalMessage(h, p, value, vp), function(err){
+    gossiper.gossiperBroadcastForByzantine( composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             console.log(err);
     });
 }
 function broadcastPrevote(h, p, idv){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PREVOTE, composePrevoteMessage(h, p, idv), function(err){
+    gossiper.gossiperBroadcastForByzantine( composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log(err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
-    gossiper.gossiperBroadcast(constants.BYZANTINE_PRECOMMIT, composePrecommitMessage(h, p, sig, idv), function(err){
+    gossiper.gossiperBroadcastForByzantine( composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log(err);
     });

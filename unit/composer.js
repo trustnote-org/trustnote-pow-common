@@ -796,6 +796,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 		throw Error("proposalJoint must have 1 author");
 	}
 	
+	var assocSigningPaths = {};
 	var timestamp = Date.now();
 	var datafeed = {timestamp: timestamp};
 	var objMessage = {
@@ -809,7 +810,8 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 	var objUnit = {
 		version: constants.version, 
 		alt: constants.alt,
-		messages: arrMessages
+		messages: arrMessages,
+		authors: []
 	};
 
 	var objJoint = {unit: objUnit};
@@ -929,7 +931,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(objUnit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(objUnit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -956,7 +958,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 				function(err){
 					if (err)
 						return callback(err);
-					objUnit.unit = objectHash.getUnitHash(objUnit);
+					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.proposer = objJoint.unit.authors;
 					objJoint.phase = phase;
@@ -978,6 +980,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 		authentifiers: {}
 	};
 	var authors = [objAuthor];
+	var assocSigningPaths = {};
 	async.series([
 		function(cb){ // start transaction
 			db.takeConnectionFromPool(function(new_conn){
@@ -1009,7 +1012,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(joint.unit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(joint.unit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -1048,6 +1051,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 	
 	var unlock_callback;
 	var conn;
+	var assocSigningPaths = {};
 	
 	var handleError = function(err){
 		//profiler.stop('compose');
@@ -1149,7 +1153,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(objUnit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(objUnit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -1179,9 +1183,8 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 					objUnit.unit = objectHash.getUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
-					if (Object.keys(assocPrivatePayloads).length === 0)
-						assocPrivatePayloads = null;
-					callbacks.ifOk(objJoint, assocPrivatePayloads, unlock_callback);
+					
+					callbacks.ifOk(objJoint, null, unlock_callback);
 				}
 			);
 		});
