@@ -3690,10 +3690,7 @@ function startRelay()
 				pfnPeerUpdate		: ( sPeerUrl, sKey, vValue ) =>
 				{
 					console.log( `network _gossiper callback pfnPeerUpdate: `, sPeerUrl, sKey, vValue );
-					if ( _gossiper.Keys.KEY_BYZANTINE === sKey )
-					{
-						eventBus.emit( 'byzantine_gossip', vValue );
-					}
+					eventBus.emit( 'byzantine_gossip', sPeerUrl, sKey, vValue );
 				}
 			});
 
@@ -3868,7 +3865,7 @@ exports.isConnected = isConnected;
 /**
  * 	exports for gossiper
  */
-exports.gossiperBroadcastForByzantine 	= _gossiper.gossiperBroadcastForByzantine;
+exports.gossiperBroadcast 		= _gossiper.gossiperBroadcast;
 
 
 

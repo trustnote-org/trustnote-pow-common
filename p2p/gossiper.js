@@ -100,22 +100,9 @@ function gossiperStart( oOptions )
 /**
  *	broadcast
  *
- *	@param	{}		vValue
- *	@param	{function}	pfnCallback
- *	@return {*}
- */
-function gossiperBroadcastForByzantine( vValue, pfnCallback )
-{
-	return gossiperBroadcast( KEY_BYZANTINE, vValue, pfnCallback );
-}
-
-
-/**
- *	broadcast
- *
  *	@param	{string}	sKey
  *	@param	{}		vValue
- *	@param	{function}	pfnCallback
+ *	@param	{function}	pfnCallback( err )
  *	@return {*}
  */
 function gossiperBroadcast( sKey, vValue, pfnCallback )
@@ -330,7 +317,6 @@ module.exports	=
 {
 	gossiperStart			: gossiperStart,
 	gossiperBroadcast		: gossiperBroadcast,
-	gossiperBroadcastForByzantine	: gossiperBroadcastForByzantine,
 	gossiperOnReceivedMessage	: gossiperOnReceivedMessage,
 	updateConnectedPeer		: updateConnectedPeer,
 
