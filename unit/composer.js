@@ -977,6 +977,8 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 	if (conf.bLight)
 		throw Error("can not be a coordinator for light");
 
+	var conn;
+
 	var objAuthor = {
 		address: coordinator_address,
 		authentifiers: {}
@@ -996,6 +998,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 				assocSigningPaths[coordinator_address] = arrSigningPaths;
 				for (var j=0; j<arrSigningPaths.length; j++)
 					objAuthor.authentifiers[arrSigningPaths[j]] = repeatString("-", assocLengthsBySigningPaths[arrSigningPaths[j]]);
+				cb();
 			});
 		}
 	], function(err){

@@ -193,6 +193,7 @@ function startPhase(hp, phase){
                                     pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                 }
                             });                        
                         }
