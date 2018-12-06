@@ -94,6 +94,19 @@ function gossiperStart( oOptions )
 /**
  *	broadcast
  *
+ *	@param	{}		vValue
+ *	@param	{function}	pfnCallback
+ *	@return {*}
+ */
+function gossiperBroadcastForByzantine( vValue, pfnCallback )
+{
+	return gossiperBroadcast( 'byzantine', vValue, pfnCallback );
+}
+
+
+/**
+ *	broadcast
+ *
  *	@param	{string}	sKey
  *	@param	{}		vValue
  *	@param	{function}	pfnCallback
@@ -119,6 +132,7 @@ function gossiperBroadcast( sKey, vValue, pfnCallback )
 		pfnCallback( null );
 	});
 }
+
 
 /**
  *	on received gossiper message
@@ -305,6 +319,7 @@ module.exports	=
 {
 	gossiperStart			: gossiperStart,
 	gossiperBroadcast		: gossiperBroadcast,
+	gossiperBroadcastForByzantine	: gossiperBroadcastForByzantine,
 	gossiperOnReceivedMessage	: gossiperOnReceivedMessage,
 	updateConnectedPeer		: updateConnectedPeer,
 };

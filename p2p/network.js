@@ -3702,9 +3702,9 @@ function startRelay()
 				() =>
 				{
 					let nTestValue	= Date.now();
-					console.log( `GOSSIPER :: will gossiperBroadcast key test_gossip_now with value: ${ nTestValue }.` );
+					console.log( `GOSSIPER :: will gossiperBroadcastForByzantine key test_gossip_now with value: ${ nTestValue }.` );
 
-					_gossiper.gossiperBroadcast( `test_gossip_now`, nTestValue, err =>{} );
+					_gossiper.gossiperBroadcast( 'test', nTestValue, err =>{} );
 				},
 				getRandomInt( 1000, 2000 )
 			);
@@ -3865,7 +3865,7 @@ exports.isConnected = isConnected;
 /**
  * 	exports for gossiper
  */
-exports.gossiperBroadcast 	= _gossiper.gossiperBroadcast;
+exports.gossiperBroadcastForByzantine 	= _gossiper.gossiperBroadcastForByzantine;
 
 
 
