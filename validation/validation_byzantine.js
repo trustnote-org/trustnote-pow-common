@@ -278,8 +278,11 @@ function validateProposalJoint(objJoint, callbacks){
 		return callbacks.ifInvalid("wrong unit length");
 	
 	// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
-	if (objectHash.getProposalUnitHash(objUnit) !== objUnit.unit)
-		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getUnitHash(objUnit)+" != "+objUnit.unit);
+	if (objectHash.getProposalUnitHash(objUnit) !== objUnit.unit){
+		console.log("==============Pro[posal joint : " + JSON.stringify(objJoint));
+		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
+	}
+		
 	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type", "parent_units", "last_ball", "last_ball_unit","messages", "hp"]))
 		return callbacks.ifInvalid("unknown fields in nonserial unit");
 	
