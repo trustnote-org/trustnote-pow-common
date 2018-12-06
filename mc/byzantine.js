@@ -173,10 +173,13 @@ function startPhase(hp, phase){
         if(proposer === address_p){
             if(!assocByzantinePhase[h_p] || !assocByzantinePhase[h_p].phase || !assocByzantinePhase[h_p].phase[p_p]){
                 if(validValue_p !== null){
-                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1);
-                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                    broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
-                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
+                        if(err)
+                            throw Error("push valid byzantine proposal error:" + err);
+                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                        broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
+                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    });
                 }
                 else{
                     composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
@@ -185,17 +188,20 @@ function startPhase(hp, phase){
                                 throw Error("startPhase compose proposal joint err" + err);
                             validation.validateProposalJoint(objJoint, {
                                 ifInvalid: function(err){
-                                    throw Error("startPhase my proposer is Invalid1:" + err +",objJoint:" + JSON.stringify(objJoint));
+                                    throw Error("startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
                                 ifNeedWaiting: function(err){
                                     throw Error("startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
-                                    pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
-                                    console.log("8888888" + JSON.stringify(assocByzantinePhase));
-                                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                                    broadcastProposal(h_p, p_p, objJoint, validPhase_p);
-                                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                                    pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1, function(err){
+                                        if(err)
+                                            throw Error("push new byzantine proposal error:" + err);
+                                        console.log("8888888" + JSON.stringify(assocByzantinePhase));
+                                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                                        broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                                    });
                                 }
                             });                        
                         }
@@ -230,13 +236,19 @@ eventBus.on('byzantine_gossip', function( gossipMessage ) {
             case constants.BYZANTINE_PROPOSE: 
                 validation.validateProposalJoint(gossipMessage.v, {
                     ifInvalid: function(){
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0);
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
+                            console.log("push new byzantine proposal from Invalid gossip error:" + err);
+                        });
                     },
                     ifNeedWaiting: function(){
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1);
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
+                            console.log("push new byzantine proposal from NeedWaiting gossip error:" + err);
+                        });
                     },
                     ifOk: function(){
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1);
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
+                            console.log("push new byzantine proposal from ok gossip error:" + err);
+                        });
                     }
                 });            
                 break;
@@ -484,10 +496,10 @@ function broadcastPrecommit(h, p, sig, idv){
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
 }
-function pushByzantineProposal(h, p, joint, vp, isValid) {
+function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
     composer.composeCoordinatorSig(address_p, joint, supernode.signerProposal, function(err, objAuthor){
         if(err)
-            throw Error("compose coordinator sig joint err" + err);
+            onDone(err);
         var proposal = {
             "address":joint.proposer.address,
             "unit":joint.unit,
@@ -502,6 +514,7 @@ function pushByzantineProposal(h, p, joint, vp, isValid) {
         else{
             assocByzantinePhase[h].phase[p].proposal = proposal;
         }
+        onDone();
     });    
 }
 // isApproved: 1 approved ; 0 opposed

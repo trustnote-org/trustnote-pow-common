@@ -963,7 +963,6 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					delete objJoint.unit.authors;
 					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
-					console.log("8888888888"+JSON.stringify(objJoint));
 					//throw Error("composer my proposer objJoint:" + JSON.stringify(objJoint));
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					callback(null, objJoint);
