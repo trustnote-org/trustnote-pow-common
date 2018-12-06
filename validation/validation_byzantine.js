@@ -335,7 +335,7 @@ function validateProposalJoint(objJoint, callbacks){
 				round.getCurrentRoundIndex(conn, function(curRoundIndex){
 					if(objUnit.round_index < curRoundIndex)
 						return cb("proposer's round_index is too old, curRoundIndex: " + curRoundIndex + " proposer round_index: " +objUnit.round_index );
-					if(objUnit.round_index > curRoundIndex);
+					if(objUnit.round_index > curRoundIndex)
 						return cb({error_code: "unresolved_dependency", errorMessage:"propose round_index is ahead of me , curRoundIndex: " + curRoundIndex + " proposer round_index: " +objUnit.round_index });
 					storage.getMaxMci(conn,function(curMCI){
 						if(objUnit.hp < curMCI + 1) // recieve old proposal
