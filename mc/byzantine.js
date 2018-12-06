@@ -229,29 +229,39 @@ function startPhase(hp, phase){
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
     console.log("999999 byzantine_gossip assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
     console.log("999999 byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage));
-    if(maxGossipHp < gossipMessage.h)  // update max gossip h
+    if(maxGossipHp < gossipMessage.h) { // update max gossip h
+        console.log("000000 maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
         maxGossipHp = gossipMessage.h;
-    if(!bByzantineUnderWay || gossipMessage.h < h_p)
+    }
+    if(!bByzantineUnderWay || gossipMessage.h < h_p){
+        console.log("000000 !bByzantineUnderWay || gossipMessage.h < h_p:" + bByzantineUnderWay + h_p);
         return;
-    if(!validationUtils.isValidAddress(address_p))
+    }
+    if(!validationUtils.isValidAddress(address_p)){
+        console.log("000000 isValidAddress:" + address_p);
         return;    
+    }
     getCoordinators(null, gossipMessage, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
+        console.log("000000 getCoordinators:" + JSON.stringify(witnesses) + ":" + address_p);
         if(witnesses.indexOf(address_p) === -1)
             return;
         switch(gossipMessage.type){
             case constants.BYZANTINE_PROPOSE: 
                 validation.validateProposalJoint(gossipMessage.v, {
                     ifInvalid: function(){
+                        console.log("000000 BYZANTINE_PROPOSE ifInvalid:" );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
                             console.log("push new byzantine proposal from Invalid gossip error:" + err);
                         });
                     },
                     ifNeedWaiting: function(){
+                        console.log("000000 BYZANTINE_PROPOSE ifNeedWaiting:" );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
                             console.log("push new byzantine proposal from NeedWaiting gossip error:" + err);
                         });
                     },
                     ifOk: function(){
+                        console.log("000000 BYZANTINE_PROPOSE ifOk:" );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
                             console.log("push new byzantine proposal from ok gossip error:" + err);
                         });
@@ -259,9 +269,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 });            
                 break;
             case constants.BYZANTINE_PREVOTE: 
+                console.log("000000 BYZANTINE_PREVOTE:" );
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
                 break;
             case constants.BYZANTINE_PRECOMMIT:
+                console.log("000000 BYZANTINE_PRECOMMIT:" );
                 pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
                 break;
             default: 
