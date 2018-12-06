@@ -340,8 +340,9 @@ function validateProposalJoint(objJoint, callbacks){
 					storage.getMaxMci(conn,function(curMCI){
 						if(objUnit.hp < curMCI + 1) // recieve old proposal
 							return cb("proposal hp is old, will discard it");
-						if(objUnit.hp > curMCI +1) // propose mci is ahead of me 
+						if(objUnit.hp > curMCI + 1 ) // propose mci is ahead of me 
 							return cb({error_code: "unresolved_dependency", errorMessage:"propose mci is ahead of me, will handle it once come up with it " });
+						cb();
 					});
 				});
 			},
@@ -385,7 +386,7 @@ function validateProposalJoint(objJoint, callbacks){
 				if (typeof err === "object"){
 					if (err.error_code === "unresolved_dependency"){
 						console.log(err.errorMessage);
-						callbacks.ifNeedWaiting();
+						callbacks.ifNeedWaiting(err.errorMessage);
 					}
 					else
 						throw Error("unknown error code");
