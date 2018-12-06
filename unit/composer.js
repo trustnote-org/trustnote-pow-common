@@ -931,7 +931,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(objUnit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(objUnit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -1012,7 +1012,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(joint.unit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(joint.unit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -1153,7 +1153,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(objUnit, assocPrivatePayloads, address, path, function(err, signature){
+								signer.sign(objUnit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
@@ -1183,9 +1183,8 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 					objUnit.unit = objectHash.getUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
-					if (Object.keys(assocPrivatePayloads).length === 0)
-						assocPrivatePayloads = null;
-					callbacks.ifOk(objJoint, assocPrivatePayloads, unlock_callback);
+					
+					callbacks.ifOk(objJoint, null, unlock_callback);
 				}
 			);
 		});
