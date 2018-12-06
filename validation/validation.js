@@ -603,7 +603,9 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 		if(objUnit.authors.length !== 1)
 			return cb("trust me unit consist of more than one author")
 		// getProposer method can ensure prop[oser is among top 10 pow unit address.]
-		byzantine.getProposer(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index){
+		byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
+			if(err)
+				return cb("error occured when getCoordinators");
 			if(proposer !== objUnit.authors[0].address)
 				return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
 			if(round_index !== objUnit.round_index)
