@@ -302,6 +302,11 @@ function _gossiperStartWithOptions( oOptions )
 			});
 		}
 	});
+	_oGossiper.on( 'log', ( sType, vData ) =>
+	{
+		console.log( `GOSSIPER ))) EVENT [log/${ sType }] :: `, vData );
+	});
+
 
 	//
 	//	start gossiper
