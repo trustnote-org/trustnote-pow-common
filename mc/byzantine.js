@@ -482,19 +482,19 @@ function composePrecommitMessage(hp, pp, sig, idv){
 function broadcastProposal(h, p, value, vp){
     gossiper.gossiperBroadcastForByzantine( composeProposalMessage(h, p, value, vp), function(err){
         if(err)
-            console.log(err);
+            console.log("44444444" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
     gossiper.gossiperBroadcastForByzantine( composePrevoteMessage(h, p, idv), function(err){
         if(err)
-            console.log(err);
+            console.log("44444444" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     gossiper.gossiperBroadcastForByzantine( composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
-            console.log(err);
+            console.log("44444444" + err);
     });
 }
 function getTimeout(p){
