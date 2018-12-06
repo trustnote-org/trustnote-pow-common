@@ -511,7 +511,7 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             "vp":vp,
             "isValid":isValid
         };
-        if(assocByzantinePhase[h].phas[p] === null){
+        if(assocByzantinePhase[h].phase[p] === null){
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
         else{
