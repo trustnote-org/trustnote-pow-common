@@ -80,17 +80,18 @@ function initByzantine(){
                                 }
                             }
                         );
-                    }  
-                    if (rows.length === 1){  
-                        hp = rows[0].main_chain_index + 1;
-                    }        
-                    if(maxGossipHp === hp) {
-                        startPhase(hp, 0);
                     }
-                    else {
-                        setTimeout(function(){
-                            initByzantine();
-                        }, 3000);
+                    else if (rows.length === 1){  
+                        hp = rows[0].main_chain_index + 1;
+                            
+                        if(maxGossipHp === hp) {
+                            startPhase(hp, 0);
+                        }
+                        else {
+                            setTimeout(function(){
+                                initByzantine();
+                            }, 3000);
+                        }
                     }
                 }
             );
