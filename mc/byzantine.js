@@ -480,21 +480,21 @@ function composePrecommitMessage(hp, pp, sig, idv){
             "idv": idv};
 }
 function broadcastProposal(h, p, value, vp){
-    console.log("3333333" + broadcastProposal+h+p+":" + JSON.stringify(value));
+    console.log("3333333 broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value));
     gossiper.gossiperBroadcastForByzantine( composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             console.log("44444444" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
-    console.log("3333333" + broadcastPrevote+h+p+":" + JSON.stringify(idv));
+    console.log("3333333 broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
     gossiper.gossiperBroadcastForByzantine( composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log("44444444" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
-    console.log("3333333" + broadcastPrecommit+h+p+":" + JSON.stringify(idv));
+    console.log("3333333 broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
     gossiper.gossiperBroadcastForByzantine( composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log("44444444" + err);
