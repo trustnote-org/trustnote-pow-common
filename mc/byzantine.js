@@ -223,6 +223,7 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function( gossipMessage ) {
+    console.log("999999 byzantine_gossip assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
     if(maxGossipHp < gossipMessage.h)  // update max gossip h
         maxGossipHp = gossipMessage.h;
     if(!bByzantineUnderWay || gossipMessage.h < h_p)
