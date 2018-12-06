@@ -186,8 +186,8 @@ function startPhase(hp, phase){
                                 ifInvalid: function(err){
                                     throw Error("startPhase my proposer is Invalid1:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
-                                ifNeedWaiting: function(){
-                                    throw Error("startPhase my proposer need waiting?");
+                                ifNeedWaiting: function(err){
+                                    throw Error("startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
                                     pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1);
