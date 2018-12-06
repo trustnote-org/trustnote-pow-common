@@ -283,7 +283,7 @@ function validateProposalJoint(objJoint, callbacks){
 		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
 	}
 		
-	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type", "parent_units", "last_ball", "last_ball_unit","messages", "hp"]))
+	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "parent_units", "last_ball", "last_ball_unit","messages", "hp"]))
 		return callbacks.ifInvalid("unknown fields in nonserial unit");
 	
 	if (objUnit.version !== constants.version)
