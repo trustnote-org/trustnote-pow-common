@@ -1007,7 +1007,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 			conn.release();
 			if (err)
 				return callback(err);
-			var text_to_sign = objectHash.getUnitHashToSign(joint.unit);
+			var text_to_sign = objectHash.getProposalHashToSign(joint.unit);
 			async.each(
 				authors,
 				function(author, cb2){
