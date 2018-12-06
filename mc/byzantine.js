@@ -512,9 +512,11 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             "isValid":isValid
         };
         if(assocByzantinePhase[h].phase[p] === null || assocByzantinePhase[h].phase[p] === "undefined"){
+            console.log("55555555 pushByzantineProposal assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
         else{
+            console.log("55555555 pushByzantineProposal assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
             assocByzantinePhase[h].phase[p].proposal = proposal;
         }
         onDone();
