@@ -278,8 +278,8 @@ function validateProposalJoint(objJoint, callbacks){
 		return callbacks.ifInvalid("wrong unit length");
 	
 	// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
-	if (objectHash.getProposalUnitHash(objUnit) !== objUnit.unit){
-		console.log("==============Pro[posal joint : " + JSON.stringify(objJoint));
+	if (objectHas(objUnit) !== objUnit.unit){
+		console.log("*****************Pro[posal joint : " + JSON.stringify(objJoint));
 		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
 	}
 		
