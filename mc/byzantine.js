@@ -180,6 +180,7 @@ function startPhase(hp, phase){
                 else{
                     composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
                         function(err, objJoint){
+                            console.log("8888888888888888:" + JSON.stringify(objJoint));
                             if(err)
                                 throw Error("startPhase compose proposal joint err" + err);
                             validation.validateProposalJoint(objJoint, {
