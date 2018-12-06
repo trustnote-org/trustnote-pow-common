@@ -12,6 +12,12 @@ const { DeUtilsCore }		= require( 'deutils.js' );
 const { DeUtilsNetwork }	= require( 'deutils.js' );
 
 
+/**
+ * 	@constant
+ */
+const KEY_BYZANTINE		= 'byzantine';
+
+
 
 /**
  * 	@options
@@ -100,7 +106,7 @@ function gossiperStart( oOptions )
  */
 function gossiperBroadcastForByzantine( vValue, pfnCallback )
 {
-	return gossiperBroadcast( 'byzantine', vValue, pfnCallback );
+	return gossiperBroadcast( KEY_BYZANTINE, vValue, pfnCallback );
 }
 
 
@@ -327,4 +333,9 @@ module.exports	=
 	gossiperBroadcastForByzantine	: gossiperBroadcastForByzantine,
 	gossiperOnReceivedMessage	: gossiperOnReceivedMessage,
 	updateConnectedPeer		: updateConnectedPeer,
+
+	Keys				:
+	{
+		KEY_BYZANTINE	: KEY_BYZANTINE,
+	}
 };

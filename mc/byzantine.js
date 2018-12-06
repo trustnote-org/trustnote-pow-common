@@ -215,7 +215,7 @@ function startPhase(hp, phase){
 /**
  *  byzantine gossip message event
  */
-eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage){
+eventBus.on('byzantine_gossip', function( gossipMessage ) {
     if(maxGossipHp < gossipMessage.h)  // update max gossip h
         maxGossipHp = gossipMessage.h;
     if(!bByzantineUnderWay || gossipMessage.h < h_p)
