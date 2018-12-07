@@ -131,14 +131,17 @@ function validate(objJoint, callbacks) {
 		if (objUnit.messages.length > constants.MAX_MESSAGES_PER_UNIT)
 			return callbacks.ifUnitError("too many messages");
 
-		if (objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
-			return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
-		if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
-			console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
-			console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
-			console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
-			return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
+		if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
+			if ( objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
+				return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
+			if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
+				console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
+				console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
+				console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
+				return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
+			}
 		}
+		
 	}
 	
 	if (!isNonemptyArray(objUnit.authors))
