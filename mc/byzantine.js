@@ -117,10 +117,10 @@ eventBus.on( 'headless_wallet_ready', () =>
  *                      
  */
 function getCoordinators(conn, hp, phase, cb){
-    console.log("bylllog66666666 getCoordinators in:" + hp + ":" + phase);
+    console.log("bylllog getCoordinators in:" + hp + ":" + phase);
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
         var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
-        console.log("bylllog66666666 assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
+        console.log("bylllog getCoordinators assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
     if(!validationUtils.isPositiveInteger(hp))
@@ -129,9 +129,9 @@ function getCoordinators(conn, hp, phase, cb){
         return cb("param phase is not a positive integer");
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
-        console.log("bylllog66666666 getRoundIndexByNewMci in:" + roundIndex);
+        console.log("bylllog getCoordinators getRoundIndexByNewMci in:" + roundIndex);
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
-            console.log("bylllog66666666 getWitnessesByRoundIndex in:" + roundIndex + ":" + JSON.stringify(witnesses));
+            console.log("bylllog getCoordinators getWitnessesByRoundIndex in:" + roundIndex + ":" + JSON.stringify(witnesses));
             if(!assocByzantinePhase[hp]){
                 assocByzantinePhase[hp] = {};
                 assocByzantinePhase[hp].roundIndex = roundIndex;
@@ -232,7 +232,7 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
-    console.log("bylllog 99999999 byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
+    console.log("bylllog byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
         " --- h_p:" + h_p + " --- p_p:" + p_p );
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
         console.log("bylllog maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
