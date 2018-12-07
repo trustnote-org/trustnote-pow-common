@@ -571,12 +571,12 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
 }
 // isApproved: 1 approved ; 0 opposed
 function pushByzantinePrevote(h, p, idv, address, isApproved) {
-    if(idv !== null && address !== null && assocByzantinePhase[h].phase[p].proposal.idv === idv 
-       && assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
-        if(isApproved === 1){
+    if(address !== null && assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
+        if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){   
             assocByzantinePhase[h].phase[p].prevote_approved.push(address);
         }
-        else if (isApproved === 0){
+        //else if (isApproved === 0){   // ???
+        else {
             assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
         }
     }    
@@ -590,12 +590,12 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
             break;
         }
     }
-    if(idv !== null && address !== null && assocByzantinePhase[h].phase[p].proposal.idv === idv
-        && !ifIncluded && assocByzantinePhase[h].phase[p].precommit_opposed.indexOf(address) === -1){
-        if(isApproved === 1 && sig !== null && sig.address !== null && sig.address === address){
+    if(address !== null && !ifIncluded && assocByzantinePhase[h].phase[p].precommit_opposed.indexOf(address) === -1){
+        if(isApproved === 1 && sig !== null && sig.address !== null && sig.address === address && assocByzantinePhase[h].phase[p].proposal.idv === idv){
             assocByzantinePhase[h].phase[p].precommit_approved.push(sig);
         }
-        else if (isApproved === 0){
+        // else if (isApproved === 0){  // ???
+        else {  
             assocByzantinePhase[h].phase[p].precommit_opposed.push(address);
         }
     }    
