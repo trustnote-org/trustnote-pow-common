@@ -1069,6 +1069,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 	};
 	
 	var objJoint = {unit: objUnit};
+	objUnit.authors = [];
 	
 	var arrPayingAddresses = [proposer_address];
 	var arrFromAddresses = arrPayingAddresses.sort();
