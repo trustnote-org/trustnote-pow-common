@@ -412,7 +412,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         console.log("byllloggggggggg sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
             + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
-        if(assocByzantinePhase[h_p].decision === null){
+        if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal.unit;
@@ -626,6 +626,7 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
         return false;
 }
 function decisionTrustMe(objUnit, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
+    console.log("bylllog  decisionTrustMe:" + JSON.stringify(objUnit));
     bTrustMeUnderWay = true;
     function onError(){
         bTrustMeUnderWay = false;
