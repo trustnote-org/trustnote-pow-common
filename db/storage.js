@@ -1309,7 +1309,7 @@ function determinewitnessedLevelAndLimci(conn, objNewUnit, callback){
 			// in the first round, maybe no trust me at early time, then genesis unit is selected as parents
 			if(parent_trustme.length === 0 ){ 
 				var hasGenenisUnit = objNewUnit.parent_units.some(function(parent) {return parent.unit === constants.GENESIS_UNIT});
-				if(!hasGenenisUnits)
+				if(!hasGenenisUnit)
 					return  callback("neither trustme or genesis unit as parents of unit :" + objNewUnit.unit);
 				return callback(null, 0,0);
 			}
