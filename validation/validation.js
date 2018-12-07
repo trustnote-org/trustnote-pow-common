@@ -101,7 +101,7 @@ function validate(objJoint, callbacks) {
 	}
 	else{ // serial
 		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "hp","round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"])){
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt","phase","hp","round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"])){
 			return callbacks.ifUnitError("unknown fields in unit :" + JSON.stringify(objUnit));
 		}
 			
