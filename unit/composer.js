@@ -963,7 +963,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					delete objJoint.unit.authors;
 					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
-					objJoint.last_ball_mci = last_ball_mci;  // add last_ball_mci prop ,used in composeCoordinatorTrustMe
+					objJoint.last_ball_mci = last_ball_mci;  // add last_ball_mci for only proposal joint, used for final trustme unit
 					//throw Error("composer my proposer objJoint:" + JSON.stringify(objJoint));
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					callback(null, objJoint);

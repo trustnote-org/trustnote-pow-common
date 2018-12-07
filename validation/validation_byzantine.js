@@ -283,8 +283,8 @@ function validateProposalJoint(objJoint, callbacks){
 		console.log("888888888888888888888888--Proposal joint : " + JSON.stringify(objJoint));
 		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
 	}
-		
-	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "parent_units", "last_ball", "last_ball_unit","messages", "hp"]))
+	// add last_ball_mci for only proposal joint, used for final trustme unit
+	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "parent_units", "last_ball", "last_ball_unit", "last_ball_mci", "messages", "hp"]))
 		return callbacks.ifInvalid("unknown fields in nonserial unit");
 	
 	if (objUnit.version !== constants.version)
