@@ -419,7 +419,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal.unit;
                     if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                         // compose new trustme unit
-                        return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                        return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
                     }
                     else{
                         return ;
@@ -631,8 +631,8 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
     else 
         return false;
 }
-function decisionTrustMe(objUnit, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
-    console.log("bylllog  decisionTrustMe:" + JSON.stringify(objUnit));
+function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
+    console.log("bylllog  decisionTrustMe:" + JSON.stringify(proposal));
     bTrustMeUnderWay = true;
     function onError(){
         bTrustMeUnderWay = false;
@@ -648,7 +648,7 @@ function decisionTrustMe(objUnit, phase, approvedCoordinators, onDecisionError, 
 		}
 	});
 		
-	composer.composeCoordinatorTrustMe(address_p, objUnit, phase, approvedCoordinators, supernode.signer, callbacks);      
+	composer.composeCoordinatorTrustMe(address_p, proposal, phase, approvedCoordinators, supernode.signer, callbacks);      
 }
 // private function end
 

@@ -963,6 +963,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
 					delete objJoint.unit.authors;
 					objUnit.unit = objectHash.getProposalUnitHash(objUnit);
+					objJoint.last_ball_mci = last_ball_mci;  // add last_ball_mci prop ,used in composeCoordinatorTrustMe
 					//throw Error("composer my proposer objJoint:" + JSON.stringify(objJoint));
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					callback(null, objJoint);
@@ -1049,7 +1050,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 		});
 	});
 }
-function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoordinators, signer, callbacks){
+function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCoordinators, signer, callbacks){
 	if (conf.bLight)
 		throw Error("light node can not compose trustme unit");	
 	
@@ -1067,7 +1068,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 		}
 		callbacks.ifError(err);
 	};
-	
+	var objUnit = proposal.unit;
 	var objJoint = {unit: objUnit};
 	objUnit.authors = [];
 	
@@ -1118,7 +1119,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 						"SELECT 1 FROM unit_authors CROSS JOIN units USING(unit) \n\
 						WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
 						LIMIT 1", 
-						[from_address, last_ball_mci], 
+						[from_address, proposal.last_ball_mci], 
 						function(rows){
 							if (rows.length === 0) // first message from this address
 								return setDefinition();
@@ -1128,7 +1129,7 @@ function composeCoordinatorTrustMe(proposer_address, objUnit, phase, approvedCoo
 								FROM address_definition_changes CROSS JOIN units USING(unit) LEFT JOIN definitions USING(definition_chash) \n\
 								WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
 								ORDER BY level DESC LIMIT 1", 
-								[from_address, last_ball_mci],
+								[from_address, proposal.last_ball_mci],
 								function(rows){
 									if (rows.length === 0) // no definition changes at all
 										return cb2();
