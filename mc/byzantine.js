@@ -393,7 +393,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
         //         StartRound(0)
         function onDecisionError(phase){
-            startPhase(h_p, phase+1);          
+            startPhase(h_p, phase++);          
         }
         function onDecisionDone(){
             // //reset params
@@ -495,7 +495,7 @@ function OnTimeoutPrecommit(){
     if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
-        startPhase(h_p, p_p+1);
+        startPhase(h_p, p_p++);
     }
 }
 // public function end
