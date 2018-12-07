@@ -1308,7 +1308,7 @@ function determinewitnessedLevelAndLimci(conn, objNewUnit, callback){
 			var parent_trustme = rows.filter(function(row){ return row.pow_type === constants.POW_TYPE_TRUSTME});
 			// in the first round, maybe no trust me at early time, then genesis unit is selected as parents
 			if(parent_trustme.length === 0 ){ 
-				var hasGenenisUnit = objNewUnit.parent_units.some(function(parent) {return parent.unit === constants.GENESIS_UNIT});
+				var hasGenenisUnit = objNewUnit.parent_units.some(function(parent) {return parent === constants.GENESIS_UNIT});
 				if(!hasGenenisUnit)
 					return  callback("neither trustme or genesis unit as parents of unit :" + objNewUnit.unit);
 				return callback(null, 0,0);
