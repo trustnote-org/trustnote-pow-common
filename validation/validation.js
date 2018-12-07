@@ -850,7 +850,7 @@ function validateMessages(conn, arrMessages, objUnit, objValidationState, callba
 		function(err){
 			if (err)
 				return callback(err);
-			if (!objValidationState.bHasBasePayment)
+			if (!objValidationState.bHasBasePayment && objUnit.pow_type !== constants.POW_TYPE_TRUSTME)
 				return callback("no base payment message");
 			callback();
 		}
