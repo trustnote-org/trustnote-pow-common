@@ -167,7 +167,7 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
-    console.log("bylllog bylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
+    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(witnesses.indexOf(address_p) === -1)
             return ;
@@ -232,7 +232,7 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
-    console.log("bylllog bylllogbylllogbylllog byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
+    console.log("bylllog bylllogbylllogbylllogbylllog byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
         " --- h_p:" + h_p + " --- p_p:" + p_p );
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
         console.log("bylllog maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
@@ -514,21 +514,21 @@ function composePrecommitMessage(hp, pp, sig, idv){
             "idv": idv};
 }
 function broadcastProposal(h, p, value, vp){
-    console.log("bylllog in broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value) + ":" + vp);
+    console.log("bylllog bylllogbylllog in broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value) + ":" + vp);
     gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             console.log("bylllog broadcastProposal err:" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
-    console.log("bylllog in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
+    console.log("bylllog bylllogbylllog in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
     gossiper.gossiperBroadcast("Prevote"+h+p, composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log("bylllog broadcastPrevote err:" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
-    console.log("bylllog in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
+    console.log("bylllog bylllogbylllog in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
     gossiper.gossiperBroadcast("Precommit"+h+p, composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log("bylllog broadcastPrecommit err:" + err);
