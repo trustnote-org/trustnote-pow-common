@@ -314,9 +314,9 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     stepp ← prevote    
         console.log("bylllogbbbbbbbb sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
                 + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
-        if(PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
-            && step_p === constants.BYZANTINE_PROPOSE 
-            && assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p){
+        if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
+            && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
+            && step_p === constants.BYZANTINE_PROPOSE ){
             console.log("8888888888888888888888");
             if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
                 && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
