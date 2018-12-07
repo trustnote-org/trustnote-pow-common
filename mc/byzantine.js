@@ -396,19 +396,20 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             startPhase(h_p, phase+1);          
         }
         function onDecisionDone(){
-            //reset params
-            lockedValue_p = null;
-            lockedPhase_p = -1;
-            validValue_p  = null;
-            validPhase_p  = -1;
-            h_propose_timeout   = -1;
-            p_propose_timeout   = -1; 
-            h_prevote_timeout   = -1;
-            p_prevote_timeout   = -1; 
-            h_precommit_timeout = -1;
-            p_precommit_timeout = -1; 
-            // start new h_p
-            startPhase(h_p+1, 0);
+            // //reset params
+            // lockedValue_p = null;
+            // lockedPhase_p = -1;
+            // validValue_p  = null;
+            // validPhase_p  = -1;
+            // h_propose_timeout   = -1;
+            // p_propose_timeout   = -1; 
+            // h_prevote_timeout   = -1;
+            // p_prevote_timeout   = -1; 
+            // h_precommit_timeout = -1;
+            // p_precommit_timeout = -1; 
+            // // start new h_p
+            // startPhase(h_p+1, 0);
+            console.log("bylllog onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
         }
         console.log("byllloggggggggg sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
             + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
@@ -418,7 +419,10 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal.unit;
                     if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                         // compose new trustme unit
-                        decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                        return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal.unit, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                    }
+                    else{
+                        return ;
                     }
                 }
             });
@@ -429,7 +433,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         var messagesCount = 0;
         Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
             if(current_p > p_p){
-                if(assocByzantinePhase[h_p].phase[current_p].proposal !== null)
+                if(Object.keys(assocByzantinePhase[h_p].phase[current_p].proposal).length > 0)
                     messagesCount = messagesCount + 1;
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
@@ -546,9 +550,11 @@ function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
 }
 function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
+    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(joint));
     composer.composeCoordinatorSig(address_p, joint, supernode.signerProposal, function(err, objAuthor){
         if(err)
             onDone(err);
+        console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(joint));
         var proposal = {
             "address":joint.proposer.address,
             "unit":joint.unit,
