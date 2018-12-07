@@ -556,7 +556,7 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             onDone(err);
         console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(joint));
         var proposal = {
-            "address":joint.proposer.address,
+            "address":joint.proposer[0].address,
             "unit":joint.unit,
             "idv":objectHash.getProposalUnitHash(joint.unit),
             "sig":objAuthor,
