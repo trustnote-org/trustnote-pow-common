@@ -101,13 +101,10 @@ function validate(objJoint, callbacks) {
 	}
 	else{ // serial
 		// Victor ShareAddress add arrShareDefinition field
-		if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "hp","round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"]))
-			return callbacks.ifUnitError("unknown fields in unit");
-
-		if (typeof objUnit.headers_commission !== "number")
-			return callbacks.ifJointError("no headers_commission");
-		if (typeof objUnit.payload_commission !== "number")
-			return callbacks.ifJointError("no payload_commission");
+		if (hasFieldsExcept(objUnit, ["unit", "version", "alt","phase","hp","round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"])){
+			return callbacks.ifUnitError("unknown fields in unit :" + JSON.stringify(objUnit));
+		}
+		
 		//Pow add:
 		if (objUnit.pow_type){
 			if (typeof objUnit.round_index !== "number")
@@ -129,14 +126,21 @@ function validate(objJoint, callbacks) {
 		if (objUnit.messages.length > constants.MAX_MESSAGES_PER_UNIT)
 			return callbacks.ifUnitError("too many messages");
 
-		if (objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
-			return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
-		if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
-			console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
-			console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
-			console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
-			return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
+		if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
+			if (typeof objUnit.headers_commission !== "number")
+				return callbacks.ifJointError("no headers_commission");
+			if (typeof objUnit.payload_commission !== "number")
+				return callbacks.ifJointError("no payload_commission");
+			if ( objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
+				return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
+			if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
+				console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
+				console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
+				console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
+				return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
+			}
 		}
+		
 	}
 	
 	if (!isNonemptyArray(objUnit.authors))
@@ -846,7 +850,7 @@ function validateMessages(conn, arrMessages, objUnit, objValidationState, callba
 		function(err){
 			if (err)
 				return callback(err);
-			if (!objValidationState.bHasBasePayment)
+			if (!objValidationState.bHasBasePayment && objUnit.pow_type !== constants.POW_TYPE_TRUSTME)
 				return callback("no base payment message");
 			callback();
 		}
