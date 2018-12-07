@@ -104,12 +104,7 @@ function validate(objJoint, callbacks) {
 		if (hasFieldsExcept(objUnit, ["unit", "version", "alt","phase","hp","round_index","pow_type","timestamp", "authors", "coordinators", "messages", "last_ball", "last_ball_unit", "parent_units", "headers_commission", "payload_commission", "arrShareDefinition"])){
 			return callbacks.ifUnitError("unknown fields in unit :" + JSON.stringify(objUnit));
 		}
-			
-
-		if (typeof objUnit.headers_commission !== "number")
-			return callbacks.ifJointError("no headers_commission");
-		if (typeof objUnit.payload_commission !== "number")
-			return callbacks.ifJointError("no payload_commission");
+		
 		//Pow add:
 		if (objUnit.pow_type){
 			if (typeof objUnit.round_index !== "number")
@@ -132,6 +127,10 @@ function validate(objJoint, callbacks) {
 			return callbacks.ifUnitError("too many messages");
 
 		if(objUnit.pow_type !== constants.POW_TYPE_TRUSTME){
+			if (typeof objUnit.headers_commission !== "number")
+				return callbacks.ifJointError("no headers_commission");
+			if (typeof objUnit.payload_commission !== "number")
+				return callbacks.ifJointError("no payload_commission");
 			if ( objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
 				return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
 			if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
