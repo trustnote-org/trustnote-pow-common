@@ -169,15 +169,15 @@ function startPhase(hp, phase){
     step_p = constants.BYZANTINE_PROPOSE;   // propose
     console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
-        if(witnesses.indexOf(address_p) === -1)
-            return ;
         if(err)
             throw Error("startPhase get proposer err" + err);
+        if(witnesses.indexOf(address_p) === -1)
+            return ;
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
         if(proposer === address_p){
-            if(!assocByzantinePhase[h_p] || !assocByzantinePhase[h_p].phase || !assocByzantinePhase[h_p].phase[p_p]){
+            if(!assocByzantinePhase[h_p].phase[p_p]){
                 if(validValue_p !== null){
                     pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
                         if(err)
@@ -196,10 +196,10 @@ function startPhase(hp, phase){
                                 throw Error("startPhase compose proposal joint err" + err);
                             validation.validateProposalJoint(objJoint, {
                                 ifInvalid: function(err){
-                                    throw Error("startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
+                                    throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
                                 ifNeedWaiting: function(err){
-                                    throw Error("startPhase my proposer need waiting?" + err);
+                                    throw Error("??????startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
                                     pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1, function(err){
@@ -317,23 +317,19 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
             && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
             && step_p === constants.BYZANTINE_PROPOSE ){
-            console.log("8888888888888888888888");
             if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
                 && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
-                    console.log("7777777777777777777");
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                 console.log("bylllog broadcastPrevote 3:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
             }
             else {
-                console.log("66666666666666666666");
                 pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
                 console.log("bylllog broadcastPrevote 4:" + h_p + ":" + p_p + ": null");
                 broadcastPrevote(h_p, p_p, null);
             }
             step_p = constants.BYZANTINE_PREVOTE;
         }
-        console.log("999999999999999999999");
         // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
         //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
         console.log("bylllogcccccccc sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
@@ -665,7 +661,7 @@ function shrinkByzantineCache(){
     }
 }
 
-//setInterval(shrinkByzantineCache, 10*1000);
+//setInterval(shrinkByzantineCache, 100*1000);
 
 // cache end
 
