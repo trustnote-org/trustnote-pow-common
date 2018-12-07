@@ -167,7 +167,7 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
-    console.log("bylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
+    console.log("bylllog bylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(witnesses.indexOf(address_p) === -1)
             return ;
@@ -232,7 +232,7 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
-    console.log("bylllog byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
+    console.log("bylllog bylllogbylllogbylllog byzantine_gossip gossipMessage:" + JSON.stringify(gossipMessage) + " --- assocByzantinePhase:" + JSON.stringify(assocByzantinePhase) + 
         " --- h_p:" + h_p + " --- p_p:" + p_p );
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
         console.log("bylllog maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
