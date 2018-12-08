@@ -151,7 +151,7 @@ function saveJoint(objJoint, objValidationState, preCommitCallback, onDone) {
 							break;
 						case "pow_equihash":  // pow add
 							var powEquihash = message.payload;
-							conn.addQuery(arrQueries, "INSERT INTO "+db.getIgnore()+" pow (unit, solution) VALUES (?,?)", 
+							conn.addQuery(arrQueries, "INSERT "+db.getIgnore()+" INTO pow (unit, solution) VALUES (?,?)", 
 								[objUnit.unit, JSON.stringify(powEquihash.solution)]);
 							break;
 						case "attestation":
