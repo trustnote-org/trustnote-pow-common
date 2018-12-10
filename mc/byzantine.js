@@ -164,6 +164,10 @@ function startPhase(hp, phase){
 		}, 1000);
 		return;    
     }
+    if(h_p > hp)
+        return;
+    else if(h_p === hp && p_p >= phase)
+        return;
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
