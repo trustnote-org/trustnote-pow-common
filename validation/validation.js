@@ -605,15 +605,15 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 	if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
 		// validate proposer ID
 		if(objUnit.authors.length !== 1)
-			return cb("trust me unit consist of more than one author")
+			return callback("trust me unit consist of more than one author")
 		// getProposer method can ensure prop[oser is among top 10 pow unit address.]
 		byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
 			if(err)
-				return cb("error occured when getCoordinators");
+				return callback("error occured when getCoordinators");
 			if(proposer !== objUnit.authors[0].address)
-				return cb("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
+				return callback("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
 			if(round_index !== objUnit.round_index)
-				return cb("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
+				return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
 			async.eachSeries(arrAuthors, function(objAuthor, cb){
 				validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
 			}, callback);
@@ -1018,7 +1018,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 // validate coordinators and trustme unit fork condition
 function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, objValidationState, callback) {
 	console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
-
+	console.log("validating objUnit: " + JSON.stringify(objUnit));
 	//check only single main chain without fork ,there is no two trust me units with same mci
 	storage.getUnitsInfoWithMci(conn,objUnit.hp, function(units){
 		if(units.length > 0)
@@ -1038,7 +1038,6 @@ function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, 
 		}
 
 		console.log("validating coordinators: " + JSON.stringify(coordinators));
-		console.log("validating objUnit: " + JSON.stringify(objUnit));
 		async.eachSeries(coordinators, function(coordinator, cb){
 			// Make sure all coordinators are correct witness of round
 			round.getWitnessesByRoundIndex(conn, objUnit.round_index, function(witnesses){

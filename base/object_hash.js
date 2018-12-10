@@ -77,6 +77,7 @@ function getNakedUnit(objUnit){
 	delete objNakedUnit.pow_type;
 	//byzantine del as phase field not in proposal unit
 	delete objNakedUnit.phase;
+	delete objNakedUnit.coordinators;
 	//delete objNakedUnit.last_ball_unit;
 	if (objNakedUnit.messages){
 		for (var i=0; i<objNakedUnit.messages.length; i++){
