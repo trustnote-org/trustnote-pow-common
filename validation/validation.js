@@ -1038,6 +1038,7 @@ function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, 
 		}
 
 		console.log("validating coordinators: " + JSON.stringify(coordinators));
+		console.log("validating objUnit: " + JSON.stringify(objUnit));
 		async.eachSeries(coordinators, function(coordinator, cb){
 			// Make sure all coordinators are correct witness of round
 			round.getWitnessesByRoundIndex(conn, objUnit.round_index, function(witnesses){
