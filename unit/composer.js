@@ -1017,6 +1017,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
+								console.log("composeCoordinatorSig unit:"+JSON.stringify(joint.unit));
 								signer.sign(joint.unit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
