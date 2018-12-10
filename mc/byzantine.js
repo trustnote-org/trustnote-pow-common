@@ -393,6 +393,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
         //         StartRound(0)
         function onDecisionError(phase){
+            console.log("bylllog startPhase onDecisionError:" + h_p + ":" + p_p);
             startPhase(h_p, phase++);          
         }
         function onDecisionDone(){
@@ -440,6 +441,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
                 if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
+                    console.log("bylllog startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
                     startPhase(h_p, current_p);
                 }
             }
@@ -459,6 +461,7 @@ eventBus.on('mci_became_stable', function(mci){
      h_precommit_timeout = -1;
      p_precommit_timeout = -1; 
      // start new h_p
+     console.log("bylllog startPhase mci_became_stable:" + h_p + ":" + p_p);
      startPhase(mci+1, 0);
 });
 
@@ -495,6 +498,7 @@ function OnTimeoutPrecommit(){
     if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
+        console.log("bylllog startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
         startPhase(h_p, p_p++);
     }
 }
