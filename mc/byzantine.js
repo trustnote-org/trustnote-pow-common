@@ -223,11 +223,9 @@ function startPhase(hp, phase){
             }
         }
         else{
-            if(h_propose_timeout === -1 && p_propose_timeout === -1){
-                h_propose_timeout = h_p;
-                p_propose_timeout = p_p;
-                setTimeout(OnTimeoutPropose, getTimeout(p_p));
-            }
+            h_propose_timeout = h_p;
+            p_propose_timeout = p_p;
+            setTimeout(OnTimeoutPropose, getTimeout(p_p));
         }
     });
 }
@@ -502,6 +500,10 @@ function OnTimeoutPrecommit(){
     if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
+        h_prevote_timeout   = -1;
+        p_prevote_timeout   = -1;
+        h_propose_timeout = -1;
+        p_propose_timeout = -1;
         console.log("bylllog startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
         startPhase(h_p, p_p+1);
     }
