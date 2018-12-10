@@ -1018,7 +1018,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 // validate coordinators and trustme unit fork condition
 function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, objValidationState, callback) {
 	console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
-
+	console.log("validating objUnit: " + JSON.stringify(objUnit));
 	//check only single main chain without fork ,there is no two trust me units with same mci
 	storage.getUnitsInfoWithMci(conn,objUnit.hp, function(units){
 		if(units.length > 0)
@@ -1038,7 +1038,6 @@ function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, 
 		}
 
 		console.log("validating coordinators: " + JSON.stringify(coordinators));
-		console.log("validating objUnit: " + JSON.stringify(objUnit));
 		async.eachSeries(coordinators, function(coordinator, cb){
 			// Make sure all coordinators are correct witness of round
 			round.getWitnessesByRoundIndex(conn, objUnit.round_index, function(witnesses){
