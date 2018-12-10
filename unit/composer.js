@@ -1017,7 +1017,6 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								console.log("composeCoordinatorSig unit:"+JSON.stringify(joint.unit));
 								signer.sign(joint.unit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
@@ -1054,7 +1053,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCoordinators, signer, callbacks){
 	if (conf.bLight)
 		throw Error("light node can not compose trustme unit");	
-	
+	console.log("composeCoordinatorTrustMe proposal:"+JSON.stringify(proposal)+",approvedCoordinators:"+JSON.stringify(approvedCoordinators));
 	var unlock_callback;
 	var conn;
 	var assocSigningPaths = {};
@@ -1190,7 +1189,7 @@ function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCo
 					objUnit.unit = objectHash.getUnitHash(objUnit);
 					console.log(require('util').inspect(objJoint, {depth:null}));
 					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
-					
+					console.log("composeCoordinatorTrustMe objJoint:"+JSON.stringify(objJoint));
 					callbacks.ifOk(objJoint, null, unlock_callback);
 				}
 			);
