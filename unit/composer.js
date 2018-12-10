@@ -1079,7 +1079,7 @@ function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCo
 	}
 
 	objJoint.unit.phase = phase;
-	objJoint.unit.coordinators = approvedCoordinators.sort();
+	objJoint.unit.coordinators = approvedCoordinators.sort(function(o1, o2){ return (o1.address < o2.address) ? -1 : 1; });
 
 	async.series([
 		function(cb){ // lock
