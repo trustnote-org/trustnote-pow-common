@@ -198,7 +198,8 @@ function startPhase(hp, phase){
                         function(err, objJoint){
                             if(err)
                                 throw Error("startPhase compose proposal joint err" + err);
-                            validation.validateProposalJoint(objJoint, {
+                            var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
+                            validation.validateProposalJoint(proposal, {
                                 ifInvalid: function(err){
                                     throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
@@ -206,12 +207,12 @@ function startPhase(hp, phase){
                                     throw Error("??????startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
-                                    pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1, function(err){
+                                    pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
                                         if(err)
                                             throw Error("push new byzantine proposal error:" + err);
                                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                         console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(objJoint) + ":" + validPhase_p);
-                                        broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                                        broadcastProposal(h_p, p_p, proposal, validPhase_p);
                                         console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                         broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     });
@@ -559,20 +560,27 @@ function broadcastPrecommit(h, p, sig, idv){
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
 }
-function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
-    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(joint));
-    composer.composeCoordinatorSig(address_p, joint, supernode.signerProposal, function(err, objAuthor){
+function convertJointToProposal(joint, vp, isValid){
+    return {
+        "address":joint.proposer[0].address,
+        "unit":joint.unit,
+        "idv":objectHash.getProposalUnitHash(joint.unit),
+        "sig":{},
+        "vp":vp,
+        "isValid":isValid,
+        "proposer":joint.proposer,
+        "phase":joint.phase
+    };
+}
+function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
+    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(proposal));
+    composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
             onDone(err);
-        console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(joint));
-        var proposal = {
-            "address":joint.proposer[0].address,
-            "unit":joint.unit,
-            "idv":objectHash.getProposalUnitHash(joint.unit),
-            "sig":objAuthor,
-            "vp":vp,
-            "isValid":isValid
-        };
+        console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(proposal));
+        proposal.sig = objAuthor;
+        proposal.vp = vp;
+        proposal.isValid = isValid;        
         if(assocByzantinePhase[h].phase[p] === undefined){
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             console.log("bylllog  pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));

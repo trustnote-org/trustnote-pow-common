@@ -973,7 +973,7 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 	});
 }
 
-function composeCoordinatorSig(coordinator_address, joint, signer, callback){
+function composeCoordinatorSig(coordinator_address, unit, signer, callback){
 	if (conf.bLight)
 		throw Error("can not be a coordinator for light");
 
@@ -1008,7 +1008,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 			conn.release();
 			if (err)
 				return callback(err);
-			var text_to_sign = objectHash.getProposalHashToSign(joint.unit);
+			var text_to_sign = objectHash.getProposalHashToSign(unit);
 			async.each(
 				authors,
 				function(author, cb2){
@@ -1017,7 +1017,7 @@ function composeCoordinatorSig(coordinator_address, joint, signer, callback){
 						assocSigningPaths[address],
 						function(path, cb3){
 							if (signer.sign){
-								signer.sign(joint.unit, null, address, path, function(err, signature){
+								signer.sign(unit, null, address, path, function(err, signature){
 									if (err)
 										return cb3(err);
 									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
