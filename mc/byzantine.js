@@ -198,7 +198,8 @@ function startPhase(hp, phase){
                         function(err, objJoint){
                             if(err)
                                 throw Error("startPhase compose proposal joint err" + err);
-                            validation.validateProposalJoint(objJoint, {
+                            var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
+                            validation.validateProposalJoint(proposal, {
                                 ifInvalid: function(err){
                                     throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
                                 },
@@ -206,12 +207,12 @@ function startPhase(hp, phase){
                                     throw Error("??????startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
-                                    pushByzantineProposal(h_p, p_p, convertJointToProposal(objJoint, validPhase_p, 1), validPhase_p, 1, function(err){
+                                    pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
                                         if(err)
                                             throw Error("push new byzantine proposal error:" + err);
                                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                         console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(objJoint) + ":" + validPhase_p);
-                                        broadcastProposal(h_p, p_p, objJoint, validPhase_p);
+                                        broadcastProposal(h_p, p_p, proposal, validPhase_p);
                                         console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                         broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     });
@@ -566,7 +567,9 @@ function convertJointToProposal(joint, vp, isValid){
         "idv":objectHash.getProposalUnitHash(joint.unit),
         "sig":{},
         "vp":vp,
-        "isValid":isValid
+        "isValid":isValid,
+        "proposer":joint.proposer,
+        "phase":joint.phase
     };
 }
 function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
