@@ -645,7 +645,7 @@ function getMaxMci(conn, handleResult){
 function getUnitsInfoWithMci(conn, mci,handleResult){
 	var conn = conn || db;
 	conn.query(
-		"SELECT unit,pow_type FROM units WHERE main_chain_index = ?"
+		"SELECT unit,pow_type FROM units WHERE main_chain_index = ?",
 		[mci],
 		function(rows){
 			handleResult(rows);
