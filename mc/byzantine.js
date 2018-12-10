@@ -571,37 +571,46 @@ function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
             "vp":vp,
             "isValid":isValid
         };
-        if(assocByzantinePhase[h].phase[p] != null && assocByzantinePhase[h].phase[p] != "undefined" 
-            && assocByzantinePhase[h].phase[p].proposal != null){
+        if(assocByzantinePhase[h].phase[p] === undefined){
+            assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+            console.log("bylllog  pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
+        }      
+        else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
             assocByzantinePhase[h].phase[p].proposal = proposal;            
             console.log("bylllog  pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
         }
-        else{
-            assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
-            console.log("bylllog  pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
-        }        
         onDone();
     });    
 }
 // isApproved: 1 approved ; 0 opposed
 function pushByzantinePrevote(h, p, idv, address, isApproved) {
-    if(address !== null && assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
-        if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){   
-            assocByzantinePhase[h].phase[p].prevote_approved.push(address);
+    if(address !== null ){
+        if(assocByzantinePhase[h].phase[p] === undefined){
+            assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
-        //else if (isApproved === 0){   // ???
-        else {
-            assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
+        if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
+            if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){  
+                assocByzantinePhase[h].phase[p].prevote_approved.push(address);
+            }
+            else{
+                assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
+            }
         }
-    }    
+    }
+   
 }
 // isApproved: 1 approved ; 0 opposed
 function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
     var ifIncluded = false;
-    for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
-        if(assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
-            ifIncluded = true;
-            break;
+    if(assocByzantinePhase[h].phase[p] === undefined){
+        assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+    }
+    else{
+        for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
+            if(assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
+                ifIncluded = true;
+                break;
+            }
         }
     }
     if(address !== null && !ifIncluded && assocByzantinePhase[h].phase[p].precommit_opposed.indexOf(address) === -1){
