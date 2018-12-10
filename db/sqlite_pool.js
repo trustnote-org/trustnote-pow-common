@@ -81,8 +81,8 @@ module.exports = function(db_name, MAX_CONNECTIONS, bReadOnly){
 					last_arg = function(){};
 
 				var sql = arguments[0];
-				 console.log( "======= SQLite query, SQL : " + sql );
-				 console.log( "======= SQLite query, ARG : ", arguments[ 1 ] );
+				// console.log( "======= SQLite query, SQL : " + sql );
+				// console.log( "======= SQLite query, ARG : ", arguments[ 1 ] );
 
 				var bSelect = !!sql.match(/^SELECT/i);
 				var count_arguments_without_callback = bHasCallback ? (arguments.length-1) : arguments.length;
@@ -99,7 +99,7 @@ module.exports = function(db_name, MAX_CONNECTIONS, bReadOnly){
 				new_args.push(function(err, result){
 					//console.log("query done: "+sql);
 					if (err){
-						console.error("\nfailed query:"+sql, new_args);
+						console.error("\nfailed query:", new_args);
 						throw Error(err+"\n"+sql+"\n"+new_args[1].map(function(param){ if (param === null) return 'null'; if (param === undefined) return 'undefined'; return param;}).join(', '));
 					}
 					// note that sqlite3 sets nonzero this.changes even when rows were matched but nothing actually changed (new values are same as old)
