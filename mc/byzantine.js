@@ -206,7 +206,7 @@ function startPhase(hp, phase){
                                     throw Error("??????startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
-                                    pushByzantineProposal(h_p, p_p, objJoint, validPhase_p, 1, function(err){
+                                    pushByzantineProposal(h_p, p_p, convertJointToProposal(objJoint, validPhase_p, 1), validPhase_p, 1, function(err){
                                         if(err)
                                             throw Error("push new byzantine proposal error:" + err);
                                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
@@ -559,20 +559,25 @@ function broadcastPrecommit(h, p, sig, idv){
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
 }
-function pushByzantineProposal(h, p, joint, vp, isValid, onDone) {
-    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(joint));
-    composer.composeCoordinatorSig(address_p, joint, supernode.signerProposal, function(err, objAuthor){
+function convertJointToProposal(joint, vp, isValid){
+    return {
+        "address":joint.proposer[0].address,
+        "unit":joint.unit,
+        "idv":objectHash.getProposalUnitHash(joint.unit),
+        "sig":{},
+        "vp":vp,
+        "isValid":isValid
+    };
+}
+function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
+    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(proposal));
+    composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
             onDone(err);
-        console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(joint));
-        var proposal = {
-            "address":joint.proposer[0].address,
-            "unit":joint.unit,
-            "idv":objectHash.getProposalUnitHash(joint.unit),
-            "sig":objAuthor,
-            "vp":vp,
-            "isValid":isValid
-        };
+        console.log("bylllog before pushByzantineProposal1 222:" + JSON.stringify(proposal));
+        proposal.sig = objAuthor;
+        proposal.vp = vp;
+        proposal.isValid = isValid;        
         if(assocByzantinePhase[h].phase[p] === undefined){
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             console.log("bylllog  pushByzantineProposal1:" + JSON.stringify(assocByzantinePhase));
