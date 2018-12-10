@@ -503,7 +503,7 @@ function OnTimeoutPrecommit(){
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
         console.log("bylllog startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
-        startPhase(h_p, p_p++);
+        startPhase(h_p, p_p+1);
     }
 }
 // public function end
