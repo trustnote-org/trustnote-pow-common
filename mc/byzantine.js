@@ -164,6 +164,7 @@ function startPhase(hp, phase){
 		}, 1000);
 		return;    
     }
+    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p + ", hp:" + hp + ", phase:" + phase);
     if(h_p > hp)
         return;
     else if(h_p === hp && p_p >= phase)
@@ -171,7 +172,6 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
-    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p);
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(err)
             throw Error("startPhase get proposer err" + err);
