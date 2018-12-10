@@ -569,7 +569,8 @@ function convertJointToProposal(joint, vp, isValid){
         "vp":vp,
         "isValid":isValid,
         "proposer":joint.proposer,
-        "phase":joint.phase
+        "phase":joint.phase,
+        "last_ball_mci":joint.last_ball_mci,
     };
 }
 function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
