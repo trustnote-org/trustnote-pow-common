@@ -284,7 +284,8 @@ function validateProposalJoint(objJoint, callbacks){
 		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
 	}
 	
-	if (hasFieldsExcept(objUnit, ["unit", "version", "alt", "round_index","pow_type","timestamp", "parent_units", "last_ball", "last_ball_unit", "messages", "hp"]))
+
+	if (hasFieldsExcept(objUnit, ["unit", "version", "alt" ,"round_index","pow_type","timestamp", "parent_units", "last_ball", "last_ball_unit", "messages", "hp"]))
 		return callbacks.ifInvalid("unknown fields in nonserial unit");
 	
 	if (objUnit.version !== constants.version)
@@ -312,7 +313,7 @@ function validateProposalJoint(objJoint, callbacks){
 		return callbacks.ifInvalid("only one message allowed in proposal unit");
 	
 	// Joint fields validation   add last_ball_mci for only proposal joint, used for final trustme unit
-	if (hasFieldsExcept(objJoint, ["unit", "proposer", "phase", "last_ball_mci"]))
+	if (hasFieldsExcept(objJoint, ["unit", "proposer", "phase", "address","last_ball_mci", "idv","vp","isValid","sig"]))
 		return callbacks.ifInvalid("unknown fields in joint unit");
 	
 	if (typeof objJoint.phase !== "number" || objJoint.phase < 0 )
