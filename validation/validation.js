@@ -1039,10 +1039,11 @@ function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, 
 		
 		async.eachSeries(coordinators, function(coordinator, cb){
 			// Make sure all coordinators are correct witness of round
-			round.getWitnessesByRoundIndex(objUnit.round_index, function(witnesses){
+			round.getWitnessesByRoundIndex(conn, objUnit.round_index, function(witnesses){
 				if(witnesses.indexOf(coordinator.address) === -1)
 					return cb("Incorrect coordinator deteced :" + coordinator.address);
 				// Validate signature
+				console.log("come to validateeach coordinator")
 				objValidationState.unit_hash_to_sign = objectHash.getProposalHashToSign(objUnit);
 				validateAuthor(conn, coordinator, objUnit, objValidationState, cb);
 			});
