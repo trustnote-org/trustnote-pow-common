@@ -318,7 +318,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote    
-        console.log("bylllogbbbbbbbb sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("bylllogbbbbbbbb h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
             && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
@@ -338,7 +338,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
         //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
-        console.log("bylllogcccccccc sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("bylllogcccccccc h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
@@ -355,7 +355,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         stepp ← precommit
         //     validValuep ← v
         //     validRoundp ← roundp
-        console.log("bylllogdddddddd sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("bylllogdddddddd h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 1)
             && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
@@ -373,16 +373,16 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
         //     broadcast <PRECOMMIT,hp,roundp,nil>
         //     step p ← precommit
-        console.log("bylllogeeeeeeee sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("bylllogeeeeeeee h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
             console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ": null");
-            broadcastPrecommit(h_p, p_p, null);
+            broadcastPrecommit(h_p, p_p, null, null);
             step_p = constants.BYZANTINE_PRECOMMIT;
         }
         // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
         //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
-        console.log("bylllogffffffff sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("bylllogffffffff h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
             if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
@@ -418,7 +418,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             // startPhase(h_p+1, 0);
             console.log("bylllog onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
         }
-        console.log("byllloggggggggg sKey:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("byllloggggggggg h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
@@ -491,7 +491,7 @@ function OnTimeoutPropose(){
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
         console.log("bylllog broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
-        broadcastPrecommit(h_p, p_p, null);
+        broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
         h_prevote_timeout   = -1;
         p_prevote_timeout   = -1;
