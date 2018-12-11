@@ -364,6 +364,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 lockedValue_p = assocByzantinePhase[h_p].phase[p_p].proposal;
                 lockedPhase_p = p_p;
                 console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
                 broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 step_p = constants.BYZANTINE_PRECOMMIT;
             }
@@ -377,6 +378,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
             console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ": null");
+            pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
             broadcastPrecommit(h_p, p_p, null, null);
             step_p = constants.BYZANTINE_PRECOMMIT;
         }
@@ -477,6 +479,7 @@ eventBus.on('mci_became_stable', function(mci){
 //         stepp ← prevote
 function OnTimeoutPropose(){
     if(h_propose_timeout === h_p && p_propose_timeout === p_p && step_p === constants.BYZANTINE_PROPOSE){
+        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
         console.log("bylllog broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ": null");
         broadcastPrevote(h_p, p_p, null);
         step_p = constants.BYZANTINE_PREVOTE;
@@ -491,6 +494,7 @@ function OnTimeoutPropose(){
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
         console.log("bylllog broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
+        pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
         broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
         h_prevote_timeout   = -1;
