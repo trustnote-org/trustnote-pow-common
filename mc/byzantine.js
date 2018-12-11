@@ -423,7 +423,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
-                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal.unit;
+                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                     if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                         // compose new trustme unit
                         return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
