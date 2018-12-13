@@ -4,8 +4,10 @@ var chash = require('../encrypt/chash.js');
 
 function hasFieldsExcept(obj, arrFields){
 	for (var field in obj)
-		if (arrFields.indexOf(field) === -1)
+		if (arrFields.indexOf(field) === -1){
+			console.log("123123123123" + field + " --- obj:" + JSON.stringify(obj))
 			return true;
+		}
 	return false;
 }
 
