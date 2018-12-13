@@ -633,7 +633,7 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
         console.log("bylllog  precommit_approved: assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
         for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
             console.log("bylllog  precommit_approved:" + JSON.stringify(assocByzantinePhase[h].phase[p].precommit_approved[j]));
-            if(assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
+            if(assocByzantinePhase[h].phase[p].precommit_approved[j] && assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
                 ifIncluded = true;
                 break;
             }
