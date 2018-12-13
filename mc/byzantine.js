@@ -493,7 +493,7 @@ function OnTimeoutPropose(){
 //         stepp ← precommit
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
-        console.log("bylllog broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
+        console.log("bylllog broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null" + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
         pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
         broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
@@ -625,6 +625,7 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
     }
     else{
         for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
+            console.log("bylllog  precommit_approved:" + JSON.stringify(assocByzantinePhase[h].phase[p].precommit_approved[j]));
             if(assocByzantinePhase[h].phase[p].precommit_approved[j].address === sig.address){
                 ifIncluded = true;
                 break;

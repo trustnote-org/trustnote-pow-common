@@ -31,8 +31,8 @@ const _oGossiperOptions	= {
 	pfnConnectToPeer	: null,
 	pfnPeerUpdate		: null,
 };
-let _oGossiper		= null;
-
+let _oGossiper			= null;
+let _oPendingUpdatePeerSockets	= {};
 
 
 
@@ -176,10 +176,27 @@ function updateConnectedPeer( oSockets )
 		return 0;
 	}
 
-	return _oGossiper.updatePeerList
-	({
-		[ oSockets.url ]	: oSockets
-	});
+
+	//
+	//	copy the socket to pending memory cache
+	//
+	_oPendingUpdatePeerSockets[ oSockets.url ] = oSockets;
+
+	if ( _oGossiper )
+	{
+		//
+		//	try to update them
+		//
+		_oGossiper.updatePeerList( Object.assign( {}, _oPendingUpdatePeerSockets ) );
+		_oPendingUpdatePeerSockets = {};
+	}
+	else
+	{
+		//
+		//	Ops, our gossiper service is not ready yet!
+		//	we have added the socket to associated memory cache, they will be safely updated in the future.
+		//
+	}
 }
 
 
