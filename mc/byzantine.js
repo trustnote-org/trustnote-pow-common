@@ -229,6 +229,8 @@ function startPhase(hp, phase){
             assocByzantinePhase[h_p].decision = {};
             h_propose_timeout = h_p;
             p_propose_timeout = p_p;
+            console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
+                + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
             setTimeout(OnTimeoutPropose, getTimeout(p_p));
         }
     });
@@ -344,6 +346,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
                 h_prevote_timeout = h_p;
                 p_prevote_timeout = p_p;
+                console.log("bylllogoooooooo setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
+                + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
                 setTimeout(OnTimeoutPrevote, getTimeout(p_p));
             }
         }
@@ -390,6 +394,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
                 h_precommit_timeout = h_p;
                 p_precommit_timeout = p_p;
+                console.log("bylllogoooooooo setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
+                + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
                 setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
             }
         }
