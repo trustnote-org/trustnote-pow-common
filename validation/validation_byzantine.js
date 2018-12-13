@@ -123,7 +123,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				conn.query("SELECT error FROM known_bad_joints WHERE unit IN(?)", [arrMissingParentUnits], function(rows){
 					(rows.length > 0)
 						? callback("some of the unit's parents are known bad: "+rows[0].error)
-						: callback({error_code: "unresolved_dependency", errorMessage: "some of parents are missing "});
+						: callback({error_code: "unresolved_dependency", errorMessage: "some of parents are missing ", arrMissingUnits: arrMissingParentUnits});
 				});
 				return;
 			}
@@ -403,8 +403,16 @@ function validateProposalJoint(objJoint, callbacks){
 		}
 	); // async.series
 	
-	
 }
+
+// A problem is with the joint rather than with the unit. That is, the field that has an issue is not covered by unit hash.
+function createJointError(err){
+	return {
+		error_code: "invalid_joint", 
+		message: err
+	};
+}
+
 
 
 exports.validateParents = validateParents;
