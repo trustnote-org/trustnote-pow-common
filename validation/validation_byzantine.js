@@ -314,7 +314,7 @@ function validateProposalJoint(objJoint, callbacks){
 	
 	// Joint fields validation   add last_ball_mci for only proposal joint, used for final trustme unit
 	if (hasFieldsExcept(objJoint, ["unit", "proposer", "phase", "address","last_ball_mci", "idv","vp","isValid","sig"]))
-		return callbacks.ifInvalid("unknown fields in joint unit");
+		return callbacks.ifInvalid("unknown fields in joint unit " + json.stringify(objJoint));
 	
 	if (typeof objJoint.phase !== "number" || objJoint.phase < 0 )
 		return callbacks.ifInvalid("joint phase invalid");
