@@ -113,6 +113,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 				if (objParentUnitProps.latest_included_mc_index > objValidationState.max_parent_limci)
 					objValidationState.max_parent_limci = objParentUnitProps.latest_included_mc_index;
 				//callback 	async.eachSeries
+				arrPrevParentUnitProps.push(objParentUnitProps);
 				cb();
 			});
 		}, 
