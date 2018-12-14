@@ -168,7 +168,7 @@ function readJointDirectly(conn, unit, callbacks, bRetrying) {
 					});
 				},
 				function(callback){ // coordinators
-					if(objUnit.pow_type && objUnit.pow_type !== constants.POW_TYPE_TRUSTME)
+					if(!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_TRUSTME)
 						return callback();
 					conn.query("SELECT address FROM coordinator_authentifiers WHERE unit=? ORDER BY address", [unit], function(rows){
 						objUnit.coordinators = [];
