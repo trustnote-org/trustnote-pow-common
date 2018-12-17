@@ -48,7 +48,7 @@ var bTrustMeUnderWay = false;
 function initByzantine(){
     if(bByzantineUnderWay)
         return;
-    console.log("byzantine:initByzantine, h_p:" + h_p + ", p_p:" + p_p);
+    console.log("byzantine:initByzantine1, h_p:" + h_p + ", p_p:" + p_p);
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
