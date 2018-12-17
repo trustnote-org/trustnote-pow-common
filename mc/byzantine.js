@@ -100,6 +100,7 @@ function initByzantine(){
 }
 eventBus.on( 'headless_wallet_ready', () =>
 {
+    console.log("byzantine:headless_wallet_ready, h_p:" + h_p + ", p_p:" + p_p);
     initByzantine();
 });
 
