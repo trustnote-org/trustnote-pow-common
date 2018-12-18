@@ -237,6 +237,8 @@ function getRoundIndexByNewMci(conn, mci, callback){
 		LIMIT 1",  
     [constants.POW_TYPE_TRUSTME, mci - 1],
     function(rows){
+        if (rows.length === 0)
+            return callback(-1); //have not get the last mci yet 
         if (rows.length !== 1)
             throw Error("Can not find right witnesses of mci" + mci);
         var roundIndexOfLastMci = rows[0].round_index;

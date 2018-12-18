@@ -131,6 +131,8 @@ function getCoordinators(conn, hp, phase, cb){
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
         console.log("bylllog getCoordinators getRoundIndexByNewMci in:" + roundIndex);
+        if(roundIndex === -1)
+            return cb("have not get the last mci yet ");
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
             console.log("bylllog getCoordinators getWitnessesByRoundIndex in:" + roundIndex + ":" + JSON.stringify(witnesses));
             if(!assocByzantinePhase[hp]){
@@ -174,10 +176,14 @@ function startPhase(hp, phase){
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
-        if(err)
-            throw Error("startPhase get proposer err" + err);
-        if(witnesses.indexOf(address_p) === -1)
-            return ;
+        if(err){
+            console.log("get coordinators err:" + err);
+            return;
+        }
+        if(witnesses.indexOf(address_p) === -1){
+            console.log("i am not the coordinators of round:" + roundIndex);
+            return;
+        }
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
