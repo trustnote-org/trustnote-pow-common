@@ -180,6 +180,10 @@ function startPhase(hp, phase){
             console.log("get coordinators err:" + err);
             return;
         }
+        if(witnesses.length !== constants.TOTAL_COORDINATORS){
+            console.log("coordinators count err:" + witnesses.length );
+            return;
+        }
         if(witnesses.indexOf(address_p) === -1){
             console.log("i am not the coordinators of round:" + roundIndex);
             return;
@@ -263,6 +267,14 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         return;    
     }
     getCoordinators(null, gossipMessage.h, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
+        if(err){
+            console.log("get coordinators err:" + err);
+            return;
+        }
+        if(witnesses.length !== constants.TOTAL_COORDINATORS){
+            console.log("coordinators count err:" + witnesses.length );
+            return;
+        }
         console.log("bylllog byzantine_gossip getCoordinators callback:" + JSON.stringify(witnesses) + ":" + address_p);
         if(witnesses.indexOf(address_p) === -1)
             return;
