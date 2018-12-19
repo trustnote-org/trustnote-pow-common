@@ -4,6 +4,7 @@
 var constants = require('../config/constants.js');
 //var conf = require('../config/conf.js');
 var db = require('../db/db.js');
+var _ = require('lodash');
 //var async = require('async');
 var validationUtils = require('../validation/validation_utils.js');
 var validation = require('../validation/validation.js');
@@ -143,7 +144,7 @@ function getCoordinators(conn, hp, phase, cb){
                 assocByzantinePhase[hp].phase = {};
                 assocByzantinePhase[hp].decision = {};    
             }            
-            var pIndex = Math.abs(hp-phase+1000)%constants.TOTAL_COORDINATORS;
+            var pIndex = Math.abs(hp-phase+999)%constants.TOTAL_COORDINATORS;
             cb(null, witnesses[pIndex], roundIndex, witnesses);
         });        
     });
@@ -391,14 +392,14 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
             && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
             if(step_p === constants.BYZANTINE_PREVOTE){
-                lockedValue_p = assocByzantinePhase[h_p].phase[p_p].proposal;
+                lockedValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
                 lockedPhase_p = p_p;
                 console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
                 broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                 step_p = constants.BYZANTINE_PRECOMMIT;
             }
-            validValue_p = assocByzantinePhase[h_p].phase[p_p].proposal;
+            validValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
             validPhase_p = p_p;
         }
         // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
@@ -637,7 +638,9 @@ function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
 // isApproved: 1 approved ; 0 opposed
 function pushByzantinePrevote(h, p, idv, address, isApproved) {
     if(address !== null ){
-        if(typeof assocByzantinePhase[h].phase[p] === 'undefined'){
+        if(!assocByzantinePhase[h].phase[p] || 
+            typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
+            Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
             assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
         }
         if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
@@ -654,7 +657,9 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
 // isApproved: 1 approved ; 0 opposed
 function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
     var ifIncluded = false;
-    if(typeof assocByzantinePhase[h].phase[p] === 'undefined'){
+    if(!assocByzantinePhase[h].phase[p] || 
+        typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
+        Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
         assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
     }
     else{
@@ -716,8 +721,8 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
             onDecisionDone();
 		}
 	});
-		
-	composer.composeCoordinatorTrustMe(address_p, proposal, phase, approvedCoordinators, supernode.signer, callbacks);      
+    var objNakedProposal = _.cloneDeep(proposal);
+	composer.composeCoordinatorTrustMe(address_p, objNakedProposal, phase, approvedCoordinators, supernode.signer, callbacks);      
 }
 // private function end
 
