@@ -122,7 +122,7 @@ eventBus.on('headless_wallet_ready', () =>
 function getCoordinators(conn, hp, phase, cb){
     console.log("bylllog getCoordinators in:" + hp + ":" + phase);
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
-        var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
+        var pIndex = Math.abs(hp-phase+999)%constants.TOTAL_COORDINATORS;
         console.log("bylllog getCoordinators assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
