@@ -1053,7 +1053,8 @@ function composeCoordinatorSig(coordinator_address, unit, signer, callback){
 function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCoordinators, signer, callbacks){
 	if (conf.bLight)
 		throw Error("light node can not compose trustme unit");	
-	console.log("composeCoordinatorTrustMe proposal:"+JSON.stringify(proposal)+",approvedCoordinators:"+JSON.stringify(approvedCoordinators));
+	var objNakedProposal = _.cloneDeep(proposal);
+	console.log("composeCoordinatorTrustMe proposal:"+JSON.stringify(objNakedProposal)+",approvedCoordinators:"+JSON.stringify(approvedCoordinators));
 	var unlock_callback;
 	var conn;
 	var assocSigningPaths = {};
@@ -1068,7 +1069,7 @@ function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCo
 		}
 		callbacks.ifError(err);
 	};
-	var objUnit = proposal.unit;
+	var objUnit = objNakedProposal.unit;
 	var objJoint = {unit: objUnit};
 	objUnit.authors = [];
 	
@@ -1119,7 +1120,7 @@ function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCo
 						"SELECT 1 FROM unit_authors CROSS JOIN units USING(unit) \n\
 						WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
 						LIMIT 1", 
-						[from_address, proposal.last_ball_mci], 
+						[from_address, objNakedProposal.last_ball_mci], 
 						function(rows){
 							if (rows.length === 0) // first message from this address
 								return setDefinition();
@@ -1129,7 +1130,7 @@ function composeCoordinatorTrustMe(proposer_address, proposal, phase, approvedCo
 								FROM address_definition_changes CROSS JOIN units USING(unit) LEFT JOIN definitions USING(definition_chash) \n\
 								WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
 								ORDER BY level DESC LIMIT 1", 
-								[from_address, proposal.last_ball_mci],
+								[from_address, objNakedProposal.last_ball_mci],
 								function(rows){
 									if (rows.length === 0) // no definition changes at all
 										return cb2();
