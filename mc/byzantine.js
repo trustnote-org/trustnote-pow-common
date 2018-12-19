@@ -197,11 +197,12 @@ function startPhase(hp, phase){
                 typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
                 if(validValue_p !== null){
-                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
+                    console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
+                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err, newProposal){
                         if(err)
                             throw Error("push valid byzantine proposal error:" + err);
-                        console.log("bylllog before broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(validValue_p) + ":" + validPhase_p);
-                        broadcastProposal(h_p, p_p, validValue_p, validPhase_p);
+                        console.log("bylllog before broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(newProposal) + ":" + validPhase_p);
+                        broadcastProposal(h_p, p_p, newProposal, validPhase_p);
                         console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                         broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
@@ -222,11 +223,12 @@ function startPhase(hp, phase){
                                     throw Error("??????startPhase my proposer need waiting?" + err);
                                 },
                                 ifOk: function(){
-                                    pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
+                                    console.log("bylllog BYZANTINE_PROPOSE startPhase proposal2:" );
+                                    pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err, newProposal){
                                         if(err)
                                             throw Error("push new byzantine proposal error:" + err);
-                                        console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(objJoint) + ":" + validPhase_p);
-                                        broadcastProposal(h_p, p_p, proposal, validPhase_p);
+                                        console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(newProposal) + ":" + validPhase_p);
+                                        broadcastProposal(h_p, p_p, newProposal, validPhase_p);
                                         console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                         broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
@@ -287,21 +289,21 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             case constants.BYZANTINE_PROPOSE: 
                 validation.validateProposalJoint(gossipMessage.v, {
                     ifInvalid: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE ifInvalid:" );
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
-                            console.log("bylllog push new byzantine proposal from Invalid gossip error:" + err);
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifInvalid:" );
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err, newProposal){
+                            console.log("bylllog push new byzantine proposal from Invalid gossip:" + err);
                         });
                     },
                     ifNeedWaiting: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE ifNeedWaiting:" );
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
-                            console.log("bylllog push new byzantine proposal from NeedWaiting gossip error:" + err);
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifNeedWaiting:" );
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err, newProposal){
+                            console.log("bylllog push new byzantine proposal from NeedWaiting gossip:" + err);
                         });
                     },
                     ifOk: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE ifOk:" );
-                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
-                            console.log("bylllog push new byzantine proposal from ok gossip error:" + err);
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifOk:" );
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err, newProposal){
+                            console.log("bylllog push new byzantine proposal from ok gossip:" + err);
                         });
                     }
                 });            
@@ -578,7 +580,6 @@ function broadcastProposal(h, p, value, vp){
     gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             return console.log("bylllog broadcastProposal err:" + err);
-        
     });
 }
 function broadcastPrevote(h, p, idv){
@@ -612,7 +613,7 @@ function convertJointToProposal(joint, vp, isValid){
     };
 }
 function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
-    console.log("bylllog before pushByzantineProposal1 111:");
+    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(proposal));
     composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
             return onDone(err);
@@ -630,7 +631,7 @@ function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
             assocByzantinePhase[h].phase[p].proposal = proposal;            
             console.log("bylllog  pushByzantineProposal11:");
         }
-        onDone();
+        onDone(null, proposal);
     });    
 }
 // isApproved: 1 approved ; 0 opposed
