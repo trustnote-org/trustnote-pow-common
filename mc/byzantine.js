@@ -143,7 +143,7 @@ function getCoordinators(conn, hp, phase, cb){
                 assocByzantinePhase[hp].phase = {};
                 assocByzantinePhase[hp].decision = {};    
             }            
-            var pIndex = Math.abs(hp-phase)%constants.TOTAL_COORDINATORS;
+            var pIndex = Math.abs(hp-phase+1000)%constants.TOTAL_COORDINATORS;
             cb(null, witnesses[pIndex], roundIndex, witnesses);
         });        
     });
