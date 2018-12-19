@@ -613,11 +613,11 @@ function convertJointToProposal(joint, vp, isValid){
     };
 }
 function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
-    console.log("bylllog before pushByzantineProposal1 111:" + JSON.stringify(proposal));
+    console.log("bylllog BYZANTINE_PROPOSE before pushByzantineProposal1 111:" + JSON.stringify(proposal));
     composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
             return onDone(err);
-        console.log("bylllog before pushByzantineProposal1 222:");
+        console.log("bylllog BYZANTINE_PROPOSE before pushByzantineProposal1 222:");
         proposal.sig = objAuthor;
         proposal.vp = vp;
         proposal.isValid = isValid;        
@@ -625,11 +625,11 @@ function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
             typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
             Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
             assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
-            console.log("bylllog  pushByzantineProposal10:");
+            console.log("bylllog BYZANTINE_PROPOSE pushByzantineProposal10:");
         }      
         else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
             assocByzantinePhase[h].phase[p].proposal = proposal;            
-            console.log("bylllog  pushByzantineProposal11:");
+            console.log("bylllog BYZANTINE_PROPOSE pushByzantineProposal11:");
         }
         onDone(null, proposal);
     });    
