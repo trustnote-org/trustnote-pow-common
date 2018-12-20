@@ -736,7 +736,8 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
 		}
 	});
     var objNakedProposal = _.cloneDeep(proposal);
-	composer.composeCoordinatorTrustMe(address_p, objNakedProposal, phase, approvedCoordinators, supernode.signer, callbacks);      
+    var objNakedApprovedCoordinators = _.cloneDeep(approvedCoordinators);
+	composer.composeCoordinatorTrustMe(address_p, objNakedProposal, phase, objNakedApprovedCoordinators, supernode.signer, callbacks);      
 }
 // private function end
 
