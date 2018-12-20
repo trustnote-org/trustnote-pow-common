@@ -205,15 +205,6 @@ function startPhase(hp, phase){
              Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
             console.log("bylllog startPhase good1:" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p]));
         }
-        if(!assocByzantinePhase[h_p].phase[p_p]){
-            console.log("bylllog startPhase good2:");
-        }
-        if(typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined'){
-            console.log("bylllog startPhase good3:");
-        }
-        if(Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
-            console.log("bylllog startPhase good4:");
-        }
         console.log("bylllog getCoordinators after:2");
         if(proposer === address_p){    // i am proposer
             console.log("bylllog getCoordinators after:3");
