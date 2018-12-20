@@ -195,11 +195,11 @@ function startPhase(hp, phase){
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
         console.log("bylllog getCoordinators after:1");
-        if(!assocByzantinePhase[h_p].phase[p_p] || 
-            typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
-            Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
-            assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};
-        }
+        // if(!assocByzantinePhase[h_p].phase[p_p] || 
+        //     typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
+        //     Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
+        //     assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};
+        // }
         console.log("bylllog getCoordinators after:2");
         if(proposer === address_p){    // i am proposer
             console.log("bylllog getCoordinators after:3");
