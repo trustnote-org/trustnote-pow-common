@@ -198,67 +198,65 @@ function startPhase(hp, phase){
         if(!assocByzantinePhase[h_p].phase[p_p] || 
             typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
             Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
-            console.log("bylllog getCoordinators after:2");
-            if(proposer === address_p){    // i am proposer
-                console.log("bylllog getCoordinators after:3");
-                if(validValue_p !== null){
-                    console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
-                    pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
-                        if(err)
-                            throw Error("push valid byzantine proposal error:" + err);
-                        console.log("bylllog before broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
-                        broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
-                        console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        assocByzantinePhase[h_p].decision = {};
-                    });
-                }
-                else{
-                    console.log("bylllog getCoordinators after:4");
-                    composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
-                        function(err, objJoint){
-                            if(err)
-                                throw Error("startPhase compose proposal joint err" + err);
-                            var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
-                            validation.validateProposalJoint(proposal, {
-                                ifInvalid: function(err){
-                                    throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
-                                },
-                                ifNeedWaiting: function(err){
-                                    throw Error("??????startPhase my proposer need waiting?" + err);
-                                },
-                                ifOk: function(){
-                                    console.log("bylllog BYZANTINE_PROPOSE startPhase proposal2:" );
-                                    pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
-                                        if(err)
-                                            throw Error("push new byzantine proposal error:" + err);
-                                        console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
-                                        broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
-                                        console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + p_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                                        assocByzantinePhase[h_p].decision = {};
-                                    });
-                                }
-                            });                        
-                        }
-                    ); 
-                }
+            assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};
+        }
+        console.log("bylllog getCoordinators after:2");
+        if(proposer === address_p){    // i am proposer
+            console.log("bylllog getCoordinators after:3");
+            if(validValue_p !== null){
+                console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
+                pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
+                    if(err)
+                        throw Error("push valid byzantine proposal error:" + err);
+                    console.log("bylllog before broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
+                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                    console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    assocByzantinePhase[h_p].decision = {};
+                });
             }
             else{
-                console.log("bylllog getCoordinators after:5");
-                //console.log("bylllog initialize proposal :" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p]));
-                //assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
-                assocByzantinePhase[h_p].decision = {};
-                h_propose_timeout = h_p;
-                p_propose_timeout = p_p;
-                console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
-                setTimeout(OnTimeoutPropose, getTimeout(p_p));
+                console.log("bylllog getCoordinators after:4");
+                composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
+                    function(err, objJoint){
+                        if(err)
+                            throw Error("startPhase compose proposal joint err" + err);
+                        var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
+                        validation.validateProposalJoint(proposal, {
+                            ifInvalid: function(err){
+                                throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
+                            },
+                            ifNeedWaiting: function(err){
+                                throw Error("??????startPhase my proposer need waiting?" + err);
+                            },
+                            ifOk: function(){
+                                console.log("bylllog BYZANTINE_PROPOSE startPhase proposal2:" );
+                                pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
+                                    if(err)
+                                        throw Error("push new byzantine proposal error:" + err);
+                                    console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
+                                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                                    console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + p_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                                    assocByzantinePhase[h_p].decision = {};
+                                });
+                            }
+                        });                        
+                    }
+                ); 
             }
         }
         else{
-            console.log("bylllog getCoordinators after:6");
+            console.log("bylllog getCoordinators after:5");
+            //console.log("bylllog initialize proposal :" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p]));
+            //assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+            assocByzantinePhase[h_p].decision = {};
+            h_propose_timeout = h_p;
+            p_propose_timeout = p_p;
+            console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+            setTimeout(OnTimeoutPropose, getTimeout(p_p));
         }
     });
 }
