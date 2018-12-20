@@ -230,7 +230,7 @@ function startPhase(hp, phase){
                                             throw Error("push new byzantine proposal error:" + err);
                                         console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(newProposal) + ":" + validPhase_p);
                                         broadcastProposal(h_p, p_p, newProposal, validPhase_p);
-                                        console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                                        console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + p_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                         pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                         broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                         assocByzantinePhase[h_p].decision = {};
