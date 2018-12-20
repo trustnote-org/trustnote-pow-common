@@ -497,7 +497,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
                 if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
-                    console.log("bylllog startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
+                    console.log("bylllog startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p  + "typeof current_p" + typeof(current_p));
                     startPhase(h_p, current_p);
                 }
             }
