@@ -242,7 +242,7 @@ function startPhase(hp, phase){
                 }
             }
             else{
-                assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+                //assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
                 assocByzantinePhase[h_p].decision = {};
                 h_propose_timeout = h_p;
                 p_propose_timeout = p_p;
