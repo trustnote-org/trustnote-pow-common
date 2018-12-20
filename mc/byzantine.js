@@ -169,7 +169,7 @@ function startPhase(hp, phase){
 		}, 1000);
 		return;    
     }
-    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p + ", hp:" + hp + ", phase:" + phase);
+    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p + ", hp:" + hp + ", phase:" + phase + "typeof p_p" + typeof(p_p));
     if(h_p > hp)
         return;
     else if(h_p === hp && p_p >= phase)
@@ -205,7 +205,7 @@ function startPhase(hp, phase){
              Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
             console.log("bylllog startPhase good1:" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p]));
         }
-        console.log("bylllog getCoordinators after:2");
+        console.log("bylllog getCoordinators after:2" + "typeof p_p" + typeof(p_p));
         if(proposer === address_p){    // i am proposer
             console.log("bylllog getCoordinators after:3");
             if(validValue_p !== null){
@@ -222,7 +222,7 @@ function startPhase(hp, phase){
                 });
             }
             else{
-                console.log("bylllog getCoordinators after:4");
+                console.log("bylllog getCoordinators after:4" + "typeof p_p" + typeof(p_p));
                 composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
                     function(err, objJoint){
                         if(err)
