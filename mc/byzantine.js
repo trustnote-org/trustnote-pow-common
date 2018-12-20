@@ -196,7 +196,7 @@ function startPhase(hp, phase){
         if(!assocByzantinePhase[h_p].phase[p_p] || 
             typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
             Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
-            if(proposer === address_p){
+            if(proposer === address_p){    // i am proposer
                 if(validValue_p !== null){
                     console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
                     pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err, newProposal){
@@ -242,7 +242,7 @@ function startPhase(hp, phase){
                 }
             }
             else{
-                //assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+                assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
                 assocByzantinePhase[h_p].decision = {};
                 h_propose_timeout = h_p;
                 p_propose_timeout = p_p;
@@ -614,7 +614,8 @@ function convertJointToProposal(joint, vp, isValid){
         "last_ball_mci":joint.last_ball_mci
     };
 }
-function pushByzantineProposal(h, p, proposal, vp, isValid, onDone) {
+function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
+    var proposal = _.cloneDeep(tempProposal);
     console.log("bylllog BYZANTINE_PROPOSE before pushByzantineProposal1 111:" + JSON.stringify(proposal));
     composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
