@@ -193,10 +193,10 @@ function startPhase(hp, phase){
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
-        if(proposer === address_p){
-            if(!assocByzantinePhase[h_p].phase[p_p] || 
-                typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
-                Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
+        if(!assocByzantinePhase[h_p].phase[p_p] || 
+            typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
+            Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
+            if(proposer === address_p){
                 if(validValue_p !== null){
                     console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
                     pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err, newProposal){
@@ -241,13 +241,14 @@ function startPhase(hp, phase){
                     ); 
                 }
             }
-        }
-        else{
-            assocByzantinePhase[h_p].decision = {};
-            h_propose_timeout = h_p;
-            p_propose_timeout = p_p;
-            console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
-            setTimeout(OnTimeoutPropose, getTimeout(p_p));
+            else{
+                assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
+                assocByzantinePhase[h_p].decision = {};
+                h_propose_timeout = h_p;
+                p_propose_timeout = p_p;
+                console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+                setTimeout(OnTimeoutPropose, getTimeout(p_p));
+            }
         }
     });
 }
