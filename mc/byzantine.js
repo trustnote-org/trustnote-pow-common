@@ -162,6 +162,7 @@ function getCoordinators(conn, hp, phase, cb){
 //     else
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
+    phase = parseInt(phase);
     if(!validationUtils.isValidAddress(address_p)){
         console.log("bylllog startPhase address_p not known yet");
 		setTimeout(function(){
@@ -497,7 +498,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
                 messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
                 if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
-                    console.log("bylllog startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p  + "typeof current_p" + typeof(current_p));
+                    console.log("bylllog startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
                     startPhase(h_p, current_p);
                 }
             }
