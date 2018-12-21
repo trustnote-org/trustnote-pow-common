@@ -218,6 +218,7 @@ function startPhase(hp, phase){
                                 throw Error("??????startPhase my proposer need waiting?" + err);
                             },
                             ifOk: function(){
+                                console.log("bylllog BYZANTINE_PROPOSE startPhase ifOk:" +h_p + p_p  );
                                 pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
                                     if(err)
                                         throw Error("push new byzantine proposal error:" + err);
@@ -281,19 +282,19 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             case constants.BYZANTINE_PROPOSE: 
                 validation.validateProposalJoint(gossipMessage.v, {
                     ifInvalid: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE gossip ifInvalid:" );
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifInvalid:" +gossipMessage.h + gossipMessage.p  );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
                             console.log("bylllog push new byzantine proposal from Invalid gossip:" + err);
                         });
                     },
                     ifNeedWaiting: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE gossip ifNeedWaiting:" );
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifNeedWaiting:" +gossipMessage.h + gossipMessage.p );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
                             console.log("bylllog push new byzantine proposal from NeedWaiting gossip:" + err);
                         });
                     },
                     ifOk: function(){
-                        console.log("bylllog BYZANTINE_PROPOSE gossip ifOk:" );
+                        console.log("bylllog BYZANTINE_PROPOSE gossip ifOk:" +gossipMessage.h + gossipMessage.p  );
                         pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
                             console.log("bylllog push new byzantine proposal from ok gossip:" + err);
                         });
@@ -301,11 +302,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 });            
                 break;
             case constants.BYZANTINE_PREVOTE: 
-                console.log("bylllog BYZANTINE_PREVOTE:" );
+                console.log("bylllog BYZANTINE_PREVOTE:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv );
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
                 break;
             case constants.BYZANTINE_PRECOMMIT:
-                console.log("bylllog BYZANTINE_PRECOMMIT:" );
+                console.log("bylllog BYZANTINE_PRECOMMIT:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv);
                 pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
                 break;
             default: 
@@ -433,7 +434,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
 
         console.log("bylllog atlast h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
+        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase[h_p]));
 
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
