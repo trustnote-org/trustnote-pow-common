@@ -311,15 +311,14 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 break;
             default: 
         }
-
         // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
         //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
         //         broadcast <PREVOTE,hp,roundp,id(v)>
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote
-        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
-                 Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){
+        if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
+                 Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
             if(assocByzantinePhase[h_p].phase[p_p].proposal && assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
                 if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
                     && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
@@ -341,8 +340,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote  
-        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
-                 Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){ 
+        if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
+                 Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){ 
             if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
                 && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
                 && step_p === constants.BYZANTINE_PROPOSE ){
@@ -378,8 +377,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         stepp ← precommit
         //     validValuep ← v
         //     validRoundp ← roundp
-        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
-        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){ 
+        if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
+        Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){ 
             if(PrevoteBiggerThan2f1(h_p, p_p, 1)
                 && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
                 && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
