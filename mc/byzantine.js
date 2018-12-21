@@ -50,7 +50,6 @@ var bTrustMeUnderWay = false;
 function initByzantine(){
     if(bByzantineUnderWay)
         return;
-    console.log("bylllog byzantine:initByzantine1, h_p:" + h_p + ", p_p:" + p_p);
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -103,7 +102,6 @@ function initByzantine(){
 
 eventBus.on('headless_wallet_ready', () =>
 {
-    console.log("bylllog byzantine:headless_wallet_ready, h_p:" + h_p + ", p_p:" + p_p);
     initByzantine();
 });
 
@@ -121,10 +119,8 @@ eventBus.on('headless_wallet_ready', () =>
  *                      
  */
 function getCoordinators(conn, hp, phase, cb){
-    console.log("bylllog getCoordinators in:" + hp + ":" + phase);
     var pIndex = Math.abs(hp-phase+999)%constants.TOTAL_COORDINATORS;
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
-        console.log("bylllog getCoordinators assocByzantinePhase in:" + assocByzantinePhase[hp].witnesses[pIndex] + ":" + JSON.stringify(assocByzantinePhase[hp].witnesses));
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
     if(!validationUtils.isPositiveInteger(hp))
@@ -133,11 +129,9 @@ function getCoordinators(conn, hp, phase, cb){
         return cb("param phase is not a positive integer");
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
-        console.log("bylllog getCoordinators getRoundIndexByNewMci in:" + roundIndex);
         if(roundIndex === -1)
             return cb("have not get the last mci yet ");
         round.getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
-            console.log("bylllog getCoordinators getWitnessesByRoundIndex in:" + roundIndex + ":" + JSON.stringify(witnesses));
             if(!assocByzantinePhase[hp] || typeof assocByzantinePhase[hp] === 'undefined' || Object.keys(assocByzantinePhase[hp]).length === 0){
                 assocByzantinePhase[hp] = {};
                 assocByzantinePhase[hp].roundIndex = roundIndex;
@@ -170,7 +164,7 @@ function startPhase(hp, phase){
 		}, 1000);
 		return;    
     }
-    console.log("bylllog bylllogbylllogbylllogbylllogbylllogbylllog startPhase, h_p:" + h_p + ", p_p:" + p_p + ", hp:" + hp + ", phase:" + phase + "typeof p_p" + typeof(p_p));
+    console.log("bylllog startPhase, h_p:" + h_p + ", p_p:" + p_p + ", hp:" + hp + ", phase:" + phase + "typeof p_p" + typeof(p_p));
     if(h_p > hp)
         return;
     else if(h_p === hp && p_p >= phase)
@@ -179,7 +173,6 @@ function startPhase(hp, phase){
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
-        console.log("bylllog getCoordinators after:" + proposer + ":" + roundIndex + ":" + JSON.stringify(witnesses));
         if(err){
             console.log("bylllog get coordinators err:" + err);
             return;
@@ -195,35 +188,23 @@ function startPhase(hp, phase){
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
         bByzantineUnderWay = true;
-        console.log("bylllog getCoordinators after:1");
         // if(!assocByzantinePhase[h_p].phase[p_p] || 
         //     typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
         //     Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
         //     assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};
         // }
-        if(!assocByzantinePhase[h_p].phase[p_p] || 
-             typeof assocByzantinePhase[h_p].phase[p_p] === 'undefined' || 
-             Object.keys(assocByzantinePhase[h_p].phase[p_p]).length === 0){
-            console.log("bylllog startPhase good1:" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p]));
-        }
-        console.log("bylllog getCoordinators after:2" + "typeof p_p" + typeof(p_p));
         if(proposer === address_p){    // i am proposer
-            console.log("bylllog getCoordinators after:3");
             if(validValue_p !== null){
-                console.log("bylllog BYZANTINE_PROPOSE startPhase proposal1:" );
                 pushByzantineProposal(h_p, p_p, validValue_p, validPhase_p, 1, function(err){
                     if(err)
                         throw Error("push valid byzantine proposal error:" + err);
-                    console.log("bylllog before broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
                     broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
-                    console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + h_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                     assocByzantinePhase[h_p].decision = {};
                 });
             }
             else{
-                console.log("bylllog getCoordinators after:4" + "typeof p_p" + typeof(p_p));
                 composer.composeProposalJoint(proposer, roundIndex, h_p, p_p, supernode.signerProposal, 
                     function(err, objJoint){
                         if(err)
@@ -237,13 +218,10 @@ function startPhase(hp, phase){
                                 throw Error("??????startPhase my proposer need waiting?" + err);
                             },
                             ifOk: function(){
-                                console.log("bylllog BYZANTINE_PROPOSE startPhase proposal2:" );
                                 pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
                                     if(err)
                                         throw Error("push new byzantine proposal error:" + err);
-                                    console.log("bylllog broadcastProposal startPhase:" + h_p + ":" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p].proposal) + ":" + validPhase_p);
                                     broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
-                                    console.log("bylllog broadcastPrevote startPhase:" + h_p + ":" + p_p + ":"+assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     assocByzantinePhase[h_p].decision = {};
@@ -255,13 +233,12 @@ function startPhase(hp, phase){
             }
         }
         else{
-            console.log("bylllog getCoordinators after:5");
             //console.log("bylllog initialize proposal :" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p]));
             //assocByzantinePhase[h_p].phase[p_p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             assocByzantinePhase[h_p].decision = {};
             h_propose_timeout = h_p;
             p_propose_timeout = p_p;
-            console.log("bylllogoooooooo setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+            console.log("bylllog setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
             setTimeout(OnTimeoutPropose, getTimeout(p_p));
         }
     });
@@ -271,7 +248,7 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
-    console.log("bylllog bylllogbylllogbylllogbylllog byzantine_gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
+    console.log("bylllog gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
         + " --- gossipMessage:" + JSON.stringify(gossipMessage) + 
         " --- h_p:" + h_p + " --- p_p:" + p_p );
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
@@ -288,7 +265,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
     }
    
     getCoordinators(null, gossipMessage.h, gossipMessage.p, function(err, proposer, roundIndex, witnesses){
-        console.log("bylllog getCoordinators after:" + proposer + ":" + roundIndex + ":" + JSON.stringify(witnesses));
         if(err){
             console.log("bylllog get coordinators err:" + err);
             return;
@@ -297,7 +273,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             console.log("bylllog coordinators count err:" + witnesses.length );
             return;
         }
-        console.log("bylllog byzantine_gossip getCoordinators callback:" + JSON.stringify(witnesses) + ":" + address_p);
         if(witnesses.indexOf(address_p) === -1)
             return;
         
@@ -342,8 +317,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote
-        console.log("bylllogaaaaaaaa h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-            + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
             if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
                 && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
@@ -364,8 +337,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote    
-        console.log("bylllogbbbbbbbb h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
             && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
             && step_p === constants.BYZANTINE_PROPOSE ){
@@ -384,13 +355,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
         //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
-        console.log("bylllogcccccccc h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
                 h_prevote_timeout = h_p;
                 p_prevote_timeout = p_p;
-                console.log("bylllogoooooooo setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+                console.log("bylllog setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
                 setTimeout(OnTimeoutPrevote, getTimeout(p_p));
             }
         }
@@ -402,8 +371,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         stepp ← precommit
         //     validValuep ← v
         //     validRoundp ← roundp
-        console.log("bylllogdddddddd h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 1)
             && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
             && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
@@ -421,8 +388,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
         //     broadcast <PRECOMMIT,hp,roundp,nil>
         //     step p ← precommit
-        console.log("bylllogeeeeeeee h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
             console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ": null");
             pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
@@ -431,14 +396,11 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
         //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
-        console.log("bylllogffffffff h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
         if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
             if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
                 h_precommit_timeout = h_p;
                 p_precommit_timeout = p_p;
-                console.log("bylllogoooooooo setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" 
-                + step_p);
+                console.log("bylllog setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
                 setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
             }
         }
@@ -469,8 +431,10 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             // startPhase(h_p+1, 0);
             console.log("bylllog onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
         }
-        console.log("byllloggggggggg h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+
+        console.log("bylllog atlast h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
+
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
@@ -478,9 +442,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                     if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                         // compose new trustme unit
                         return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
-                    }
-                    else{
-                        return ;
                     }
                 }
             });
@@ -631,11 +592,9 @@ function convertJointToProposal(joint, vp, isValid){
 }
 function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
     var proposal = _.cloneDeep(tempProposal);
-    console.log("bylllog BYZANTINE_PROPOSE before pushByzantineProposal1 111:" + JSON.stringify(proposal));
     composer.composeCoordinatorSig(address_p, proposal.unit, supernode.signerProposal, function(err, objAuthor){
         if(err)
             return onDone(err);
-        console.log("bylllog BYZANTINE_PROPOSE before pushByzantineProposal1 222:");
         proposal.sig = objAuthor;
         proposal.vp = vp;
         proposal.isValid = isValid;        
@@ -644,11 +603,9 @@ function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
                 typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
                 assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
-                console.log("bylllog BYZANTINE_PROPOSE pushByzantineProposal10:");
             }      
             else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
                 assocByzantinePhase[h].phase[p].proposal = proposal;            
-                console.log("bylllog BYZANTINE_PROPOSE pushByzantineProposal11:");
             }
             unlock();
             onDone();
@@ -733,7 +690,7 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
         return false;
 }
 function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
-    console.log("bylllog  decisionTrustMe:" + JSON.stringify(proposal));
+    console.log("bylllog decisionTrustMe:" + JSON.stringify(proposal));
     bTrustMeUnderWay = true;
     function onError(){
         bTrustMeUnderWay = false;
