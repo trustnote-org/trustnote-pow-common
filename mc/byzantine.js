@@ -318,41 +318,47 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
         //     stepp ← prevote
-        if(assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
-            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-                && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
-                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                console.log("bylllog broadcastPrevote 1:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
+                 Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){
+            if(assocByzantinePhase[h_p].phase[p_p].proposal && assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
+                if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                    && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
+                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                    console.log("bylllog broadcastPrevote 1:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                }
+                else {
+                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+                    console.log("bylllog broadcastPrevote 2:" + h_p + ":" + p_p + ": null");
+                    broadcastPrevote(h_p, p_p, null);
+                }
+                step_p = constants.BYZANTINE_PREVOTE;
             }
-            else {
-                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-                console.log("bylllog broadcastPrevote 2:" + h_p + ":" + p_p + ": null");
-                broadcastPrevote(h_p, p_p, null);
-            }
-            step_p = constants.BYZANTINE_PREVOTE;
         }
         // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
         //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
         //         broadcast <PREVOTE,hp,roundp,id(v)>
         //     else
         //         broadcast <PREVOTE,hp,roundp,nil>
-        //     stepp ← prevote    
-        if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
-            && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
-            && step_p === constants.BYZANTINE_PROPOSE ){
-            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-                && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
-                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                console.log("bylllog broadcastPrevote 3:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+        //     stepp ← prevote  
+        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
+                 Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){ 
+            if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
+                && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
+                && step_p === constants.BYZANTINE_PROPOSE ){
+                if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                    && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
+                    pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                    console.log("bylllog broadcastPrevote 3:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                }
+                else {
+                    pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                    console.log("bylllog broadcastPrevote 4:" + h_p + ":" + p_p + ": null");
+                    broadcastPrevote(h_p, p_p, null);
+                }
+                step_p = constants.BYZANTINE_PREVOTE;
             }
-            else {
-                pushByzantinePrevote(h_p, p_p, null, address_p, 0);
-                console.log("bylllog broadcastPrevote 4:" + h_p + ":" + p_p + ": null");
-                broadcastPrevote(h_p, p_p, null);
-            }
-            step_p = constants.BYZANTINE_PREVOTE;
         }
         // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
         //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
@@ -372,19 +378,22 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         //         stepp ← precommit
         //     validValuep ← v
         //     validRoundp ← roundp
-        if(PrevoteBiggerThan2f1(h_p, p_p, 1)
-            && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-            && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
-            if(step_p === constants.BYZANTINE_PREVOTE){
-                lockedValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
-                lockedPhase_p = p_p;
-                console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
-                broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                step_p = constants.BYZANTINE_PRECOMMIT;
+        if(assocByzantinePhase[h_p].phase[p_p].proposal && typeof assocByzantinePhase[h_p].phase[p_p].proposal !== 'undefined' &&
+        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length > 0){ 
+            if(PrevoteBiggerThan2f1(h_p, p_p, 1)
+                && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
+                if(step_p === constants.BYZANTINE_PREVOTE){
+                    lockedValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
+                    lockedPhase_p = p_p;
+                    console.log("bylllog broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
+                    broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                    step_p = constants.BYZANTINE_PRECOMMIT;
+                }
+                validValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
+                validPhase_p = p_p;
             }
-            validValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
-            validPhase_p = p_p;
         }
         // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
         //     broadcast <PRECOMMIT,hp,roundp,nil>
