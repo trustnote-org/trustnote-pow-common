@@ -501,7 +501,7 @@ eventBus.on('mci_became_stable', function(mci){
 function OnTimeoutPropose(){
     if(h_propose_timeout === h_p && p_propose_timeout === p_p && step_p === constants.BYZANTINE_PROPOSE){
         pushByzantinePrevote(h_p, p_p, null, address_p, 0);
-        console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ": null");
+        console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ":" + h_propose_timeout + ":" + p_propose_timeout + ": null");
         broadcastPrevote(h_p, p_p, null);
         step_p = constants.BYZANTINE_PREVOTE;
         h_propose_timeout = -1;
@@ -514,7 +514,7 @@ function OnTimeoutPropose(){
 //         stepp ← precommit
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
-        console.log("byllllogg timeout broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
+        console.log("byllllogg timeout broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_prevote_timeout + ":" + p_prevote_timeout + ": null");
         pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
         broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
@@ -533,7 +533,7 @@ function OnTimeoutPrecommit(){
         p_prevote_timeout   = -1;
         h_propose_timeout = -1;
         p_propose_timeout = -1;
-        console.log("byllllogg timeout startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
+        console.log("byllllogg timeout startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
         startPhase(h_p, p_p+1);
     }
 }
