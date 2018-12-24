@@ -631,6 +631,7 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
                 assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
+                console.log("byllllogg BYZANTINE_PREVOTE1:" +h + p + "-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                 if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){  
                     assocByzantinePhase[h].phase[p].prevote_approved.push(address);
                 }
