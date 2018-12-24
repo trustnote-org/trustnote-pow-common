@@ -35,6 +35,7 @@ var h_prevote_timeout   = -1;
 var p_prevote_timeout   = -1; 
 var h_precommit_timeout = -1;
 var p_precommit_timeout = -1; 
+var h_timeout;
 
 var assocByzantinePhase = {};
 
@@ -241,7 +242,8 @@ function startPhase(hp, phase){
             p_propose_timeout = p_p;
             var timeout = getTimeout(p_p);
             console.log("byllllogg timeout setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-            setTimeout(OnTimeoutPropose, timeout);
+            clearTimeout(h_timeout);
+            h_timeout = setTimeout(OnTimeoutPropose, timeout);
         }
     });
 }
@@ -367,7 +369,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 p_prevote_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                setTimeout(OnTimeoutPrevote, timeout);
+                clearTimeout(h_timeout);
+                h_timeout = setTimeout(OnTimeoutPrevote, timeout);
             }
         }
         // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
@@ -412,7 +415,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 p_precommit_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                setTimeout(OnTimeoutPrecommit, timeout);
+                clearTimeout(h_timeout);
+                h_timeout = setTimeout(OnTimeoutPrecommit, timeout);
             }
         }
 
