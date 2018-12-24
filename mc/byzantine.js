@@ -631,11 +631,13 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
                 assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
-                console.log("byllllogg BYZANTINE_PREVOTE1:" +h + p + "-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
+                console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-1-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                 if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){  
+                    console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-2-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                     assocByzantinePhase[h].phase[p].prevote_approved.push(address);
                 }
                 else{
+                    console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-3-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                     assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
                 }
             }
