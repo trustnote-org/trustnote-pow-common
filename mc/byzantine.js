@@ -441,7 +441,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
         }
 
-        console.log("byllllogg  atlast h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("byllllogl  atlast h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase[h_p]));
 
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
