@@ -239,8 +239,9 @@ function startPhase(hp, phase){
             assocByzantinePhase[h_p].decision = {};
             h_propose_timeout = h_p;
             p_propose_timeout = p_p;
-            console.log("byllllogg setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
-            setTimeout(OnTimeoutPropose, getTimeout(p_p));
+            var timeout = getTimeout(p_p);
+            console.log("byllllogg timeout setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
+            setTimeout(OnTimeoutPropose, timeout);
         }
     });
 }
@@ -364,8 +365,9 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
                 h_prevote_timeout = h_p;
                 p_prevote_timeout = p_p;
-                console.log("byllllogg setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
-                setTimeout(OnTimeoutPrevote, getTimeout(p_p));
+                var timeout = getTimeout(p_p);
+                console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
+                setTimeout(OnTimeoutPrevote, timeout);
             }
         }
         // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
@@ -408,8 +410,9 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
                 h_precommit_timeout = h_p;
                 p_precommit_timeout = p_p;
-                console.log("byllllogg setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
-                setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
+                var timeout = getTimeout(p_p);
+                console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
+                setTimeout(OnTimeoutPrecommit, timeout);
             }
         }
 
@@ -441,7 +444,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
 
         console.log("byllllogl " + h_p + "-" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase[h_p]));
+        + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
 
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
@@ -498,7 +501,7 @@ eventBus.on('mci_became_stable', function(mci){
 function OnTimeoutPropose(){
     if(h_propose_timeout === h_p && p_propose_timeout === p_p && step_p === constants.BYZANTINE_PROPOSE){
         pushByzantinePrevote(h_p, p_p, null, address_p, 0);
-        console.log("byllllogg broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ": null");
+        console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ": null");
         broadcastPrevote(h_p, p_p, null);
         step_p = constants.BYZANTINE_PREVOTE;
         h_propose_timeout = -1;
@@ -511,7 +514,7 @@ function OnTimeoutPropose(){
 //         stepp ← precommit
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
-        console.log("byllllogg broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
+        console.log("byllllogg timeout broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ": null");
         pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
         broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
@@ -530,7 +533,7 @@ function OnTimeoutPrecommit(){
         p_prevote_timeout   = -1;
         h_propose_timeout = -1;
         p_propose_timeout = -1;
-        console.log("byllllogg startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
+        console.log("byllllogg timeout startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p);
         startPhase(h_p, p_p+1);
     }
 }
