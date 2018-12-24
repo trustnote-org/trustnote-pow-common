@@ -249,9 +249,8 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
-    console.log("byllllogg gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
-        + " --- gossipMessage:" + JSON.stringify(gossipMessage) + 
-        " --- h_p:" + h_p + " --- p_p:" + p_p );
+    console.log("byllllogg " + h_p + "-" + p_p + " gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
+        + " --- gossipMessage:" + JSON.stringify(gossipMessage));
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
         console.log("byllllogg maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
         maxGossipHp = gossipMessage.h;
@@ -365,7 +364,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
                 h_prevote_timeout = h_p;
                 p_prevote_timeout = p_p;
-                console.log("byllllogg setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+                console.log("byllllogg setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
                 setTimeout(OnTimeoutPrevote, getTimeout(p_p));
             }
         }
@@ -409,7 +408,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
                 h_precommit_timeout = h_p;
                 p_precommit_timeout = p_p;
-                console.log("byllllogg setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
+                console.log("byllllogg setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p);
                 setTimeout(OnTimeoutPrecommit, getTimeout(p_p));
             }
         }
@@ -441,7 +440,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
         }
 
-        console.log("byllllogl  atlast h_p:" + h_p + " --- p_p:" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+        console.log("byllllogl " + h_p + "-" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
         + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase[h_p]));
 
         if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
