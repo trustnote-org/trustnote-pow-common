@@ -703,7 +703,7 @@ function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
                 typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
                 assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], 
-                    "precommit_approved":[], "precommit_opposed":[], "temp_gossip":[]};    
+                    "precommit_approved":[], "precommit_opposed":[], "temp_gossip":{}};    
             }      
             else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
                 assocByzantinePhase[h].phase[p].proposal = proposal;            
@@ -722,7 +722,7 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
                 typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
                 assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], 
-                    "precommit_approved":[], "precommit_opposed":[], "temp_gossip":[]};    
+                    "precommit_approved":[], "precommit_opposed":[], "temp_gossip":{}};    
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
                 console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-1-idv:"+idv + "-pidv:" + assocByzantinePhase[h].phase[p].proposal.idv + "-address:" 
@@ -748,7 +748,7 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
             typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
             Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
             assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], 
-                "precommit_approved":[], "precommit_opposed":[], "temp_gossip":[]};    
+                "precommit_approved":[], "precommit_opposed":[], "temp_gossip":{}};    
         }
         else{
             for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
