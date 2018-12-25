@@ -552,7 +552,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage; 
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+gossipMessage.address] = gossipMessage; 
             }                    
             else {
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
@@ -564,7 +564,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage;
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+gossipMessage.address] = gossipMessage;
             }                    
             else {
                 pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
@@ -595,7 +595,7 @@ function handleTempGossipMessage(temp_h, temp_p){
                 console.log("byllllogg BYZANTINE_PRECOMMIT:temp " +tempMessage.h + tempMessage.p +tempMessage.idv + "-address:" + tempMessage.address);
                 if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                     && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
-                    pushByzantinePrecommit(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? null : tempMessagetempMessage.sig, tempMessage.idv === null ? 0 : 1);
+                    pushByzantinePrecommit(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? null : tempMessage.sig, tempMessage.idv === null ? 0 : 1);
                     delete assocByzantinePhase[temp_h].phase[temp_p].temp_gossip[tempKey]; 
                 }
                 break;
@@ -630,21 +630,21 @@ function composePrecommitMessage(hp, pp, sig, idv){
 }
 function broadcastProposal(h, p, value, vp){
     console.log("byllllogg bylllloggbyllllogg in broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value) + ":" + vp);
-    gossiper.gossiperBroadcast("Proposal"+h+p+address_p, composeProposalMessage(h, p, value, vp), function(err){
+    gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             return console.log("byllllogg broadcastProposal err:" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Prevote"+h+p+address_p, composePrevoteMessage(h, p, idv), function(err){
+    gossiper.gossiperBroadcast("Prevote"+h+p, composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log("byllllogg broadcastPrevote err:" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Precommit"+h+p+address_p, composePrecommitMessage(h, p, sig, idv), function(err){
+    gossiper.gossiperBroadcast("Precommit"+h+p, composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log("byllllogg broadcastPrecommit err:" + err);
     });
