@@ -551,7 +551,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                         if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                             && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
                             pushByzantinePrevote(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? 0 : 1);
-                            delete assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey]; 
+                            delete assocByzantinePhase[tempMessage.h].phase[tempMessage.p].temp_gossip[tempKey]; 
                         }                
                         break;
                     case constants.BYZANTINE_PRECOMMIT:
@@ -559,7 +559,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                         if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                             && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
                             pushByzantinePrecommit(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? null : tempMessagetempMessage.sig, tempMessage.idv === null ? 0 : 1);
-                            delete assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey]; 
+                            delete assocByzantinePhase[tempMessage.h].phase[tempMessage.p].temp_gossip[tempKey]; 
                         }
                         break;
                     default: 
