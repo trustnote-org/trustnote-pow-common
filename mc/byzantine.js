@@ -544,12 +544,14 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             }); 
             // handle temp gossip messages
             Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip).forEach(function(tempKey){    
-                var tempMessage = assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey];      
+                var tempMessage = assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey];   
+                console.log("byllllogg BYZANTINE_PREVOTE1:temp "+JSON.stringify(tempMessage));   
                 switch(tempMessage.type){
                     case constants.BYZANTINE_PREVOTE: 
-                        console.log("byllllogg BYZANTINE_PREVOTE:temp " +tempMessage.h + tempMessage.p +tempMessage.idv + "-address:" + tempMessage.address);
+                        console.log("byllllogg BYZANTINE_PREVOTE2:temp " +tempMessage.h + tempMessage.p +tempMessage.idv + "-address:" + tempMessage.address);
                         if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                             && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
+                            console.log("byllllogg BYZANTINE_PREVOTE3:temp " +tempMessage.h + tempMessage.p +tempMessage.idv + "-address:" + tempMessage.address);
                             pushByzantinePrevote(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? 0 : 1);
                             delete assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey]; 
                         }                
