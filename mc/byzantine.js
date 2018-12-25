@@ -223,6 +223,7 @@ function startPhase(hp, phase){
                                 pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 1, function(err){
                                     if(err)
                                         throw Error("push new byzantine proposal error:" + err);
+                                    console.log("byllllogg BYZANTINE_PROPOSE startPhase before broadcast:" +h_p + p_p  );
                                     broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
@@ -631,7 +632,7 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
                 assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "precommit_approved":[], "precommit_opposed":[]};    
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
-                console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-1-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
+                console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-1-idv:"+idv + "-pidv:" + assocByzantinePhase[h].phase[p].proposal.idv + "-address:" + address+"-isApproved:"+isApproved+":"+(isApproved === 1)+ (assocByzantinePhase[h].phase[p].proposal.idv === idv));
                 if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv){  
                     console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-2-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                     assocByzantinePhase[h].phase[p].prevote_approved.push(address);
