@@ -570,15 +570,16 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             
             break;
         case constants.BYZANTINE_PREVOTE: 
-            console.log("byllllogg BYZANTINE_PREVOTE:before" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
+            console.log("byllllogg BYZANTINE_PREVOTE:before0:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                console.log("byllllogg BYZANTINE_PREVOTE:before1" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
+                console.log("byllllogg BYZANTINE_PREVOTE:before1:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+gossipMessage.address] = gossipMessage; 
+                console.log("byllllogg BYZANTINE_PREVOTE:before1:" + JSON.stringify(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip));
             }                    
             else {
-                console.log("byllllogg BYZANTINE_PREVOTE:before2" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
+                console.log("byllllogg BYZANTINE_PREVOTE:before2:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
             }     
             return callback();           
@@ -725,8 +726,7 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
                 console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-1-idv:"+idv + "-pidv:" + assocByzantinePhase[h].phase[p].proposal.idv + "-address:" 
-                    + address+"-isApproved:"+isApproved+":"+(isApproved === 1)+ (assocByzantinePhase[h].phase[p].proposal.idv === idv)
-                    + "-assocByzantinePhase:" + JSON.stringify(assocByzantinePhase));
+                    + address+"-isApproved:"+isApproved+":"+(isApproved === 1)+ (assocByzantinePhase[h].phase[p].proposal.idv === idv));
                 if(isApproved === 1 && assocByzantinePhase[h].phase[p].proposal.idv === idv && assocByzantinePhase[h].phase[p].proposal.isValid === 1){  
                     console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-2-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                     assocByzantinePhase[h].phase[p].prevote_approved.push(address);
