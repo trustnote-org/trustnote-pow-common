@@ -279,7 +279,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         if(witnesses.indexOf(address_p) === -1)
             return;
-        handleGossipMessage(sKey, gossipMessage, function(err){
+        handleGossipMessage(sPeerUrl, sKey, gossipMessage, function(err){
             if(err){
                 console.log("handle gossip message err:" + err);
                 return;
@@ -509,7 +509,7 @@ function OnTimeoutPrecommit(){
 // public function end
 
 // private function begin 
-function handleGossipMessage(sKey, gossipMessage, callback){
+function handleGossipMessage(sPeerUrl, sKey, gossipMessage, callback){
     if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] || 
         typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] === 'undefined' || 
         Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length === 0){
@@ -551,7 +551,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                         if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                             && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
                             pushByzantinePrevote(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? 0 : 1);
-                            delete assocByzantinePhase[tempMessage.h].phase[tempMessage.p].temp_gossip[tempKey]; 
+                            delete assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey]; 
                         }                
                         break;
                     case constants.BYZANTINE_PRECOMMIT:
@@ -559,7 +559,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                         if(assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv 
                             && typeof assocByzantinePhase[tempMessage.h].phase[tempMessage.p].proposal.idv !== 'undefined'){
                             pushByzantinePrecommit(tempMessage.h, tempMessage.p, tempMessage.idv, tempMessage.address, tempMessage.idv === null ? null : tempMessagetempMessage.sig, tempMessage.idv === null ? 0 : 1);
-                            delete assocByzantinePhase[tempMessage.h].phase[tempMessage.p].temp_gossip[tempKey]; 
+                            delete assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[tempKey]; 
                         }
                         break;
                     default: 
@@ -572,7 +572,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage; 
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+sPeerUrl] = gossipMessage; 
             }                    
             else {
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
@@ -583,7 +583,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage;
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+sPeerUrl] = gossipMessage;
             }                    
             else {
                 pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
