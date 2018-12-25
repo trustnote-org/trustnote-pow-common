@@ -279,7 +279,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         }
         if(witnesses.indexOf(address_p) === -1)
             return;
-        handleGossipMessage(sPeerUrl, sKey, gossipMessage, function(err){
+        handleGossipMessage(sKey, gossipMessage, function(err){
             if(err){
                 console.log("handle gossip message err:" + err);
                 return;
@@ -509,7 +509,7 @@ function OnTimeoutPrecommit(){
 // public function end
 
 // private function begin 
-function handleGossipMessage(sPeerUrl, sKey, gossipMessage, callback){
+function handleGossipMessage(sKey, gossipMessage, callback){
     if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] || 
         typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] === 'undefined' || 
         Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length === 0){
@@ -572,7 +572,7 @@ function handleGossipMessage(sPeerUrl, sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+sPeerUrl] = gossipMessage; 
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage; 
             }                    
             else {
                 pushByzantinePrevote(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? 0 : 1);
@@ -583,7 +583,7 @@ function handleGossipMessage(sPeerUrl, sKey, gossipMessage, callback){
             if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
                 // The gossip message cannot be handled for the time being
-                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+sPeerUrl] = gossipMessage;
+                assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey] = gossipMessage;
             }                    
             else {
                 pushByzantinePrecommit(gossipMessage.h, gossipMessage.p, gossipMessage.idv, gossipMessage.address, gossipMessage.idv === null ? null : gossipMessage.sig, gossipMessage.idv === null ? 0 : 1);
@@ -621,21 +621,21 @@ function composePrecommitMessage(hp, pp, sig, idv){
 }
 function broadcastProposal(h, p, value, vp){
     console.log("byllllogg bylllloggbyllllogg in broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value) + ":" + vp);
-    gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
+    gossiper.gossiperBroadcast("Proposal"+h+p+address_p, composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             return console.log("byllllogg broadcastProposal err:" + err);
     });
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Prevote"+h+p, composePrevoteMessage(h, p, idv), function(err){
+    gossiper.gossiperBroadcast("Prevote"+h+p+address_p, composePrevoteMessage(h, p, idv), function(err){
         if(err)
             console.log("byllllogg broadcastPrevote err:" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Precommit"+h+p, composePrecommitMessage(h, p, sig, idv), function(err){
+    gossiper.gossiperBroadcast("Precommit"+h+p+address_p, composePrecommitMessage(h, p, sig, idv), function(err){
         if(err)
             console.log("byllllogg broadcastPrecommit err:" + err);
     });
