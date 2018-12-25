@@ -502,16 +502,16 @@ function OnTimeoutPrevote(){
     h_prevote_timeout   = -1;
     p_prevote_timeout   = -1;
 
-    // if proposer down
-    if(!assocByzantinePhase[h_p].phase[p_p].proposal.idv 
-        || typeof assocByzantinePhase[h_p].phase[gossipMessage.p].proposal.idv === 'undefined'){
-        console.log("byllllogg timeout startPhase OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
-        h_propose_timeout = -1;
-        p_propose_timeout = -1; 
-        h_precommit_timeout = -1;
-        p_precommit_timeout = -1; 
-        startPhase(h_p, p_p+1);        
-    }
+    // // if proposer down
+    // if(!assocByzantinePhase[h_p].phase[p_p].proposal.idv 
+    //     || typeof assocByzantinePhase[h_p].phase[gossipMessage.p].proposal.idv === 'undefined'){
+    //     console.log("byllllogg timeout startPhase OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
+    //     h_propose_timeout = -1;
+    //     p_propose_timeout = -1; 
+    //     h_precommit_timeout = -1;
+    //     p_precommit_timeout = -1; 
+    //     startPhase(h_p, p_p+1);        
+    // }
 }
 // Function OnTimeoutPrecommit(height, round) :
 //     if height=hp ∧ round=roundp then
