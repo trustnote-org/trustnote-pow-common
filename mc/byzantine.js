@@ -478,8 +478,11 @@ function OnTimeoutPropose(){
     p_propose_timeout = -1;
     
     // if proposer down
-    if(!assocByzantinePhase[h_p].phase[p_p].proposal.idv 
-        || typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
+    if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
+        typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
+        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
+        !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
+        typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
             console.log("byllllogg timeout startPhase OnTimeoutPropose:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
         h_prevote_timeout   = -1;
         p_prevote_timeout   = -1;
@@ -503,8 +506,11 @@ function OnTimeoutPrevote(){
     p_prevote_timeout   = -1;
 
     // if proposer down
-    if(!assocByzantinePhase[h_p].phase[p_p].proposal.idv 
-        || typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
+    if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
+        typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
+        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
+        !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
+        typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
         console.log("byllllogg timeout startPhase OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
         h_propose_timeout = -1;
         p_propose_timeout = -1; 
