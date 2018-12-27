@@ -783,6 +783,7 @@ function compareIfValueEqual(v1, v2){
 }
 // isApproved: 1 approved ; 0 opposed; 2 all
 function PrevoteBiggerThan2f1(h, p, isApproved){
+    console.log("byllllogg timeout setTimeout OnTimeoutPrevote PrevoteBiggerThan2f1"+h+p+isApproved+":" + JSON.stringify(assocByzantinePhase[h].phase[p]));
     if(isApproved === 1)
         return assocByzantinePhase[h].phase[p].prevote_approved.length >= constants.TOTAL_BYZANTINE*2 + 1;
     else if(isApproved === 0)
