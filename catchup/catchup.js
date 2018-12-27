@@ -46,10 +46,10 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	{
 		return callbacks.ifError( "no last_known_mci" );
 	}
-	if ( last_stable_mci >= last_known_mci && ( last_known_mci > 0 || last_stable_mci > 0 ) )
-	{
-		return callbacks.ifError( "last_stable_mci >= last_known_mci" );
-	}
+	// if ( last_stable_mci >= last_known_mci && ( last_known_mci > 0 || last_stable_mci > 0 ) )
+	// {
+	// 	return callbacks.ifError( "last_stable_mci >= last_known_mci" );
+	// }
 
 	/**
 	 *	POW DEL
