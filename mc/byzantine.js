@@ -518,6 +518,7 @@ function handleByzantine(){
         }
         // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
         //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
+        console.log("byllllogg timeout setTimeout OnTimeoutPrevote:" + PrevoteBiggerThan2f1(h_p, p_p, 2) + ":" +step_p+ ":" +h_prevote_timeout+ ":" +p_prevote_timeout);
         if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
             if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
                 h_prevote_timeout = h_p;
