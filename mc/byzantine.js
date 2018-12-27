@@ -307,9 +307,10 @@ eventBus.on('mci_became_stable', function(mci){
 //         broadcast <PREVOTE,hp,roundp,nil>
 //         stepp ← prevote
 function OnTimeoutPropose(){
+    console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose1:" + h_p + ":" + p_p + ":" + h_propose_timeout + ":" + p_propose_timeout + ":" + step_p);
     if(h_propose_timeout === h_p && p_propose_timeout === p_p && step_p === constants.BYZANTINE_PROPOSE){
         pushByzantinePrevote(h_p, p_p, null, address_p, 0);
-        console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose:" + h_p + ":" + p_p + ":" + h_propose_timeout + ":" + p_propose_timeout + ": null");
+        console.log("byllllogg timeout broadcastPrevote OnTimeoutPropose2:" + h_p + ":" + p_p + ":" + h_propose_timeout + ":" + p_propose_timeout + ": null");
         broadcastPrevote(h_p, p_p, null);
         step_p = constants.BYZANTINE_PREVOTE;
     }
