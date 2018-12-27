@@ -158,6 +158,12 @@ function getCoordinators(conn, hp, phase, cb){
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
     phase = parseInt(phase);
+    h_propose_timeout   = -1;
+    p_propose_timeout   = -1; 
+    h_prevote_timeout   = -1;
+    p_prevote_timeout   = -1; 
+    h_precommit_timeout = -1;
+    p_precommit_timeout = -1; 
     if(!validationUtils.isValidAddress(address_p)){
         console.log("byllllogg startPhase address_p not known yet");
 		setTimeout(function(){
@@ -371,13 +377,9 @@ function OnTimeoutPrecommit(){
     if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
         console.log("byllllogg timeout startPhase OnTimeoutPrecommit 2:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
         startPhase(h_p, p_p+1);
-        h_precommit_timeout = -1;
-        p_precommit_timeout = -1; 
     }
-    h_prevote_timeout   = -1;
-    p_prevote_timeout   = -1;
-    h_propose_timeout = -1;
-    p_propose_timeout = -1;
+    h_precommit_timeout = -1;
+    p_precommit_timeout = -1; 
 }
 // public function end
 
