@@ -284,167 +284,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 console.log("handle gossip message err:" + err);
                 return;
             }
-            if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
-                 Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
-                // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
-                //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
-                //         broadcast <PREVOTE,hp,roundp,id(v)>
-                //     else
-                //         broadcast <PREVOTE,hp,roundp,nil>
-                //     stepp ← prevote
-                if(assocByzantinePhase[h_p].phase[p_p].proposal && assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
-                    if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-                        && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
-                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                        console.log("byllllogg broadcastPrevote 1:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                    }
-                    else {
-                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
-                        console.log("byllllogg broadcastPrevote 2:" + h_p + ":" + p_p + ": null");
-                        broadcastPrevote(h_p, p_p, null);
-                    }
-                    step_p = constants.BYZANTINE_PREVOTE;
-                }
-                // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
-                //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
-                //         broadcast <PREVOTE,hp,roundp,id(v)>
-                //     else
-                //         broadcast <PREVOTE,hp,roundp,nil>
-                //     stepp ← prevote  
-                if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
-                    && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
-                    && step_p === constants.BYZANTINE_PROPOSE ){
-                    if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-                        && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
-                        pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
-                        console.log("byllllogg broadcastPrevote 3:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                    }
-                    else {
-                        pushByzantinePrevote(h_p, p_p, null, address_p, 0);
-                        console.log("byllllogg broadcastPrevote 4:" + h_p + ":" + p_p + ": null");
-                        broadcastPrevote(h_p, p_p, null);
-                    }
-                    step_p = constants.BYZANTINE_PREVOTE;
-                }
-                // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
-                //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
-                if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
-                    if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
-                        h_prevote_timeout = h_p;
-                        p_prevote_timeout = p_p;
-                        var timeout = getTimeout(p_p);
-                        console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                        clearTimeout(h_timeout);
-                        h_timeout = setTimeout(OnTimeoutPrevote, timeout);
-                    }
-                }
-                // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
-                //     if stepp = prevote then
-                //         lockedValuep ← v
-                //         lockedRoundp ← roundp
-                //         broadcast <PRECOMMIT,hp,roundp,id(v)>
-                //         stepp ← precommit
-                //     validValuep ← v
-                //     validRoundp ← roundp
-                if(PrevoteBiggerThan2f1(h_p, p_p, 1)
-                    && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
-                    && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
-                    if(step_p === constants.BYZANTINE_PREVOTE){
-                        lockedValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
-                        lockedPhase_p = p_p;
-                        console.log("byllllogg broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
-                        broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
-                        step_p = constants.BYZANTINE_PRECOMMIT;
-                    }
-                    validValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
-                    validPhase_p = p_p;
-                }
-                // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
-                //     broadcast <PRECOMMIT,hp,roundp,nil>
-                //     step p ← precommit
-                if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
-                    console.log("byllllogg broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ": null");
-                    pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
-                    broadcastPrecommit(h_p, p_p, null, null);
-                    step_p = constants.BYZANTINE_PRECOMMIT;
-                }
-                // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
-                //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
-                if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
-                    if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
-                        h_precommit_timeout = h_p;
-                        p_precommit_timeout = p_p;
-                        var timeout = getTimeout(p_p);
-                        console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                        clearTimeout(h_timeout);
-                        h_timeout = setTimeout(OnTimeoutPrecommit, timeout);
-                    }
-                }
-            }
-            // upon <PROPOSAL,hp,r,v,∗> from proposer(hp,r) AND 2f+1 <PRECOMMIT,hp,r,id(v)> while decisionp[hp]=nil do
-            //     if valid(v) then
-            //         decisionp[hp]=v
-            //         hp ← hp+1
-            //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
-            //         StartRound(0)
-            function onDecisionError(phase){
-                console.log("byllllog startPhase onDecisionError:" + h_p + ":" + p_p);
-                startPhase(h_p, phase++);          
-            }
-            function onDecisionDone(){
-                // //reset params
-                // lockedValue_p = null;
-                // lockedPhase_p = -1;
-                // validValue_p  = null;
-                // validPhase_p  = -1;
-                // h_propose_timeout   = -1;
-                // p_propose_timeout   = -1; 
-                // h_prevote_timeout   = -1;
-                // p_prevote_timeout   = -1; 
-                // h_precommit_timeout = -1;
-                // p_precommit_timeout = -1; 
-                // // start new h_p
-                // startPhase(h_p+1, 0);
-                console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
-            }
-
-            console.log("byllllogl " + h_p + "-" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
-            + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
-
-            if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
-                Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-                    if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
-                        assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
-                        if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
-                            // compose new trustme unit
-                            return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
-                        }
-                    }
-                });
-            }
-
-            // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
-            //     StartRound(round)
-            var messagesCount = 0;
-            Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-                messagesCount = 0;
-                if(current_p > p_p){
-                    if(Object.keys(assocByzantinePhase[h_p].phase[current_p].proposal).length > 0)
-                        messagesCount = messagesCount + 1;
-                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
-                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
-                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
-                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
-                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].temp_gossip.length;
-                    if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
-                        console.log("byllllogg startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
-                        startPhase(h_p, current_p);
-                    }
-                }
-            });
+            handleByzantine();
+            
         });        
     });
 });
@@ -479,6 +320,8 @@ function OnTimeoutPropose(){
     h_propose_timeout = -1;
     p_propose_timeout = -1;
     
+    handleByzantine();
+    
     // if proposer down
     // if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
     //     typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
@@ -499,13 +342,15 @@ function OnTimeoutPropose(){
 //         stepp ← precommit
 function OnTimeoutPrevote(){
     if(h_prevote_timeout === h_p && p_prevote_timeout === p_p && step_p === constants.BYZANTINE_PREVOTE){
-        console.log("byllllogg timeout broadcastPrecommit OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_prevote_timeout + ":" + p_prevote_timeout + ": null");
+        console.log("byllllogg broadcastPrecommit timeout OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_prevote_timeout + ":" + p_prevote_timeout + ": null");
         pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
         broadcastPrecommit(h_p, p_p, null, null);
         step_p = constants.BYZANTINE_PRECOMMIT;
     }
     h_prevote_timeout   = -1;
     p_prevote_timeout   = -1;
+
+    handleByzantine();
 
     // if proposer down
     // if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
@@ -637,6 +482,171 @@ function handleTempGossipMessage(temp_h, temp_p){
                 console.log("byllllogg temp message error");
         }
     }); 
+}
+
+function handleByzantine(){
+    if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
+            Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
+        // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
+        //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
+        //         broadcast <PREVOTE,hp,roundp,id(v)>
+        //     else
+        //         broadcast <PREVOTE,hp,roundp,nil>
+        //     stepp ← prevote
+        if(assocByzantinePhase[h_p].phase[p_p].proposal && assocByzantinePhase[h_p].phase[p_p].proposal.vp === -1 && step_p === constants.BYZANTINE_PROPOSE){
+            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                && (lockedPhase_p === -1 || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                console.log("byllllogg broadcastPrevote 1:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+            }
+            else {
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 0);
+                console.log("byllllogg broadcastPrevote 2:" + h_p + ":" + p_p + ": null");
+                broadcastPrevote(h_p, p_p, null);
+            }
+            step_p = constants.BYZANTINE_PREVOTE;
+        }
+        // upon <PROPOSAL,hp,roundp,v,vr> from proposer(hp ,roundp) AND 2f + 1 <PREVOTE,hp ,vr, id(v)> while stepp = propose ∧ (vr ≥ 0 ∧ vr < roundp ) do
+        //     if valid(v) ∧ (lockedRoundp ≤ vr ∨ lockedValuep = v) then
+        //         broadcast <PREVOTE,hp,roundp,id(v)>
+        //     else
+        //         broadcast <PREVOTE,hp,roundp,nil>
+        //     stepp ← prevote  
+        if(assocByzantinePhase[h_p].phase[p_p].proposal.vp >= 0  && assocByzantinePhase[h_p].phase[p_p].proposal.vp < p_p
+            && PrevoteBiggerThan2f1(h_p, assocByzantinePhase[h_p].phase[p_p].proposal.vp, 1)
+            && step_p === constants.BYZANTINE_PROPOSE ){
+            if(assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+                && (lockedPhase_p <= assocByzantinePhase[h_p].phase[p_p].proposal.vp || compareIfValueEqual(lockedValue_p, assocByzantinePhase[h_p].phase[p_p].proposal))){
+                pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
+                console.log("byllllogg broadcastPrevote 3:" + h_p + ":" + p_p + ":" + assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+            }
+            else {
+                pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                console.log("byllllogg broadcastPrevote 4:" + h_p + ":" + p_p + ": null");
+                broadcastPrevote(h_p, p_p, null);
+            }
+            step_p = constants.BYZANTINE_PREVOTE;
+        }
+        // upon 2f + 1 <PREVOTE,hp,roundp,∗> while stepp = prevote for the first time do
+        //     schedule OnTimeoutPrevote(hp,roundp) to be executed after timeoutPrevote(roundp)
+        if(PrevoteBiggerThan2f1(h_p, p_p, 2) && step_p === constants.BYZANTINE_PREVOTE){
+            if(h_prevote_timeout === -1 && p_prevote_timeout === -1){
+                h_prevote_timeout = h_p;
+                p_prevote_timeout = p_p;
+                var timeout = getTimeout(p_p);
+                console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
+                clearTimeout(h_timeout);
+                h_timeout = setTimeout(OnTimeoutPrevote, timeout);
+            }
+        }
+        // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
+        //     if stepp = prevote then
+        //         lockedValuep ← v
+        //         lockedRoundp ← roundp
+        //         broadcast <PRECOMMIT,hp,roundp,id(v)>
+        //         stepp ← precommit
+        //     validValuep ← v
+        //     validRoundp ← roundp
+        if(PrevoteBiggerThan2f1(h_p, p_p, 1)
+            && assocByzantinePhase[h_p].phase[p_p].proposal.isValid === 1 
+            && (step_p === constants.BYZANTINE_PREVOTE || step_p === constants.BYZANTINE_PRECOMMIT)){
+            if(step_p === constants.BYZANTINE_PREVOTE){
+                lockedValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
+                lockedPhase_p = p_p;
+                console.log("byllllogg broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ":" +assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                pushByzantinePrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, 1);
+                broadcastPrecommit(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.sig, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
+                step_p = constants.BYZANTINE_PRECOMMIT;
+            }
+            validValue_p = _.cloneDeep(assocByzantinePhase[h_p].phase[p_p].proposal);
+            validPhase_p = p_p;
+        }
+        // upon 2f+1 <PREVOTE,hp,roundp,nil> while stepp=prevote do
+        //     broadcast <PRECOMMIT,hp,roundp,nil>
+        //     step p ← precommit
+        if(PrevoteBiggerThan2f1(h_p, p_p, 0) && step_p === constants.BYZANTINE_PREVOTE){
+            console.log("byllllogg broadcastPrecommit PrevoteBiggerThan2f1:" + h_p + ":" + p_p + ": null");
+            pushByzantinePrecommit(h_p, p_p, null, address_p, null, 0);
+            broadcastPrecommit(h_p, p_p, null, null);
+            step_p = constants.BYZANTINE_PRECOMMIT;
+        }
+        // upon 2f + 1 <PRECOMMIT,hp,roundp ,∗> for the first time do
+        //     schedule OnTimeoutPrecommit(hp,roundp) to be executed after timeoutPrecommit(roundp)
+        if(PrecommitBiggerThan2f1(h_p, p_p, 2)){
+            if(h_precommit_timeout === -1 && p_precommit_timeout === -1){
+                h_precommit_timeout = h_p;
+                p_precommit_timeout = p_p;
+                var timeout = getTimeout(p_p);
+                console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
+                clearTimeout(h_timeout);
+                h_timeout = setTimeout(OnTimeoutPrecommit, timeout);
+            }
+        }
+    }
+    // upon <PROPOSAL,hp,r,v,∗> from proposer(hp,r) AND 2f+1 <PRECOMMIT,hp,r,id(v)> while decisionp[hp]=nil do
+    //     if valid(v) then
+    //         decisionp[hp]=v
+    //         hp ← hp+1
+    //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
+    //         StartRound(0)
+    function onDecisionError(phase){
+        console.log("byllllog startPhase onDecisionError:" + h_p + ":" + p_p);
+        startPhase(h_p, phase++);          
+    }
+    function onDecisionDone(){
+        // //reset params
+        // lockedValue_p = null;
+        // lockedPhase_p = -1;
+        // validValue_p  = null;
+        // validPhase_p  = -1;
+        // h_propose_timeout   = -1;
+        // p_propose_timeout   = -1; 
+        // h_prevote_timeout   = -1;
+        // p_prevote_timeout   = -1; 
+        // h_precommit_timeout = -1;
+        // p_precommit_timeout = -1; 
+        // // start new h_p
+        // startPhase(h_p+1, 0);
+        console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
+    }
+
+    console.log("byllllogl " + h_p + "-" + p_p + "--- sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl + " --- step_p:" 
+    + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
+
+    if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
+        Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+            if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
+                assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
+                if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
+                    // compose new trustme unit
+                    return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                }
+            }
+        });
+    }
+
+    // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
+    //     StartRound(round)
+    var messagesCount = 0;
+    Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+        messagesCount = 0;
+        if(current_p > p_p){
+            if(Object.keys(assocByzantinePhase[h_p].phase[current_p].proposal).length > 0)
+                messagesCount = messagesCount + 1;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
+            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].temp_gossip.length;
+            console.log("byllllogg startPhase messagesCount:" + messagesCount);
+            if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
+                console.log("byllllogg startPhase messagesCount f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
+                startPhase(h_p, current_p);
+            }
+        }
+    });
 }
 
 function composeProposalMessage(hp, pp, proposal, vpp){
