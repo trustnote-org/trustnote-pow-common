@@ -372,8 +372,9 @@ function OnTimeoutPrevote(){
 //     if height=hp ∧ round=roundp then
 //         StartRound(roundp+1)
 function OnTimeoutPrecommit(){
+    console.log("byllllogg timeout startPhase OnTimeoutPrecommit 1:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
     if(h_precommit_timeout === h_p && p_precommit_timeout === p_p){
-        console.log("byllllogg timeout startPhase OnTimeoutPrecommit:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
+        console.log("byllllogg timeout startPhase OnTimeoutPrecommit 2:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
         startPhase(h_p, p_p+1);
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
