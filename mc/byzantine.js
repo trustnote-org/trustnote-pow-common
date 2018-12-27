@@ -478,18 +478,18 @@ function OnTimeoutPropose(){
     p_propose_timeout = -1;
     
     // if proposer down
-    if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
-        typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
-        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
-        !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
-        typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
-            console.log("byllllogg timeout startPhase OnTimeoutPropose:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
-        h_prevote_timeout   = -1;
-        p_prevote_timeout   = -1;
-        h_precommit_timeout = -1;
-        p_precommit_timeout = -1; 
-        startPhase(h_p, p_p+1);        
-    }
+    // if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
+    //     typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
+    //     Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
+    //     !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
+    //     typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
+    //         console.log("byllllogg timeout startPhase OnTimeoutPropose:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
+    //     h_prevote_timeout   = -1;
+    //     p_prevote_timeout   = -1;
+    //     h_precommit_timeout = -1;
+    //     p_precommit_timeout = -1; 
+    //     startPhase(h_p, p_p+1);        
+    // }
 }
 // Function OnTimeoutPrevote(height, round) :
 //     if height=hp ∧ round=roundp ∧ stepp=prevote then 
@@ -506,18 +506,18 @@ function OnTimeoutPrevote(){
     p_prevote_timeout   = -1;
 
     // if proposer down
-    if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
-        typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
-        Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
-        !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
-        typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
-        console.log("byllllogg timeout startPhase OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
-        h_propose_timeout = -1;
-        p_propose_timeout = -1; 
-        h_precommit_timeout = -1;
-        p_precommit_timeout = -1; 
-        startPhase(h_p, p_p+1);        
-    }
+    // if(!assocByzantinePhase[h_p].phase[p_p].proposal || 
+    //     typeof assocByzantinePhase[h_p].phase[p_p].proposal === 'undefined' || 
+    //     Object.keys(assocByzantinePhase[h_p].phase[p_p].proposal).length === 0 ||
+    //     !assocByzantinePhase[h_p].phase[p_p].proposal.idv ||
+    //     typeof assocByzantinePhase[h_p].phase[p_p].proposal.idv === 'undefined'){
+    //     console.log("byllllogg timeout startPhase OnTimeoutPrevote:" + h_p + ":" + p_p + ":" + h_precommit_timeout + ":" + p_precommit_timeout);
+    //     h_propose_timeout = -1;
+    //     p_propose_timeout = -1; 
+    //     h_precommit_timeout = -1;
+    //     p_precommit_timeout = -1; 
+    //     startPhase(h_p, p_p+1);        
+    // }
 }
 // Function OnTimeoutPrecommit(height, round) :
 //     if height=hp ∧ round=roundp then
@@ -577,8 +577,8 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             break;
         case constants.BYZANTINE_PREVOTE: 
             console.log("byllllogg BYZANTINE_PREVOTE:before0:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
-            if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
-                || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
+            if(gossipMessage.idv !==null && (!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
+                || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined')){
                 // The gossip message cannot be handled for the time being
                 console.log("byllllogg BYZANTINE_PREVOTE:before1:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+gossipMessage.address] = gossipMessage; 
@@ -592,8 +592,8 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             break;
         case constants.BYZANTINE_PRECOMMIT:
             console.log("byllllogg BYZANTINE_PRECOMMIT:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
-            if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
-                || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined'){
+            if(gossipMessage.idv !==null && (!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
+                || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined')){
                 // The gossip message cannot be handled for the time being
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].temp_gossip[sKey+gossipMessage.address] = gossipMessage;
             }                    
