@@ -158,12 +158,6 @@ function getCoordinators(conn, hp, phase, cb){
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
     phase = parseInt(phase);
-    h_propose_timeout   = -1;
-    p_propose_timeout   = -1; 
-    h_prevote_timeout   = -1;
-    p_prevote_timeout   = -1; 
-    h_precommit_timeout = -1;
-    p_precommit_timeout = -1; 
     if(!validationUtils.isValidAddress(address_p)){
         console.log("byllllogg startPhase address_p not known yet");
 		setTimeout(function(){
@@ -179,6 +173,12 @@ function startPhase(hp, phase){
     h_p = hp;
     p_p = phase;
     step_p = constants.BYZANTINE_PROPOSE;   // propose
+    h_propose_timeout   = -1;
+    p_propose_timeout   = -1; 
+    h_prevote_timeout   = -1;
+    p_prevote_timeout   = -1; 
+    h_precommit_timeout = -1;
+    p_precommit_timeout = -1; 
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(err){
             console.log("byllllogg get coordinators err:" + err);
@@ -297,12 +297,6 @@ eventBus.on('mci_became_stable', function(mci){
      lockedPhase_p = -1;
      validValue_p  = null;
      validPhase_p  = -1;
-     h_propose_timeout   = -1;
-     p_propose_timeout   = -1; 
-     h_prevote_timeout   = -1;
-     p_prevote_timeout   = -1; 
-     h_precommit_timeout = -1;
-     p_precommit_timeout = -1; 
      // start new h_p
      console.log("byllllogg startPhase mci_became_stable:" + h_p + ":" + p_p);
      startPhase(mci+1, 0);
@@ -587,19 +581,6 @@ function handleByzantine(){
         startPhase(h_p, phase++);          
     }
     function onDecisionDone(){
-        // //reset params
-        // lockedValue_p = null;
-        // lockedPhase_p = -1;
-        // validValue_p  = null;
-        // validPhase_p  = -1;
-        // h_propose_timeout   = -1;
-        // p_propose_timeout   = -1; 
-        // h_prevote_timeout   = -1;
-        // p_prevote_timeout   = -1; 
-        // h_precommit_timeout = -1;
-        // p_precommit_timeout = -1; 
-        // // start new h_p
-        // startPhase(h_p+1, 0);
         console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
     }
 
