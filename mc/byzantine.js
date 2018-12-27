@@ -203,6 +203,7 @@ function startPhase(hp, phase){
                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                     assocByzantinePhase[h_p].decision = {};
+                    handleByzantine();
                 });
             }
             else{
@@ -228,12 +229,13 @@ function startPhase(hp, phase){
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     assocByzantinePhase[h_p].decision = {};
+                                    handleByzantine();
                                 });
                             }
                         });                        
                     }
                 ); 
-            }
+            }            
         }
         else{
             //console.log("byllllogg initialize proposal :" + p_p + ":" + JSON.stringify(assocByzantinePhase[h_p].phase[p_p]));
@@ -245,6 +247,7 @@ function startPhase(hp, phase){
             console.log("byllllogg timeout setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
             clearTimeout(h_timeout);
             h_timeout = setTimeout(OnTimeoutPropose, timeout);
+            handleByzantine();
         }
     });
 }
@@ -285,7 +288,6 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 return;
             }
             handleByzantine();
-            
         });        
     });
 });
