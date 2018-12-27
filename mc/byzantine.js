@@ -627,8 +627,8 @@ function handleByzantine(){
             messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
             messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
             messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_temp_gossip.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_temp_gossip.length;
+            messagesCount = messagesCount + Object.keys(assocByzantinePhase[h_p].phase[current_p].prevote_temp_gossip).length;
+            messagesCount = messagesCount + Object.keys(assocByzantinePhase[h_p].phase[current_p].precommit_temp_gossip).length;
             console.log("byllllogg startPhase messagesCount:" + messagesCount);
             if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
                 console.log("byllllogg startPhase messagesCount f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
@@ -790,7 +790,7 @@ function PrevoteBiggerThan2f1(h, p, isApproved){
     else if(isApproved === 0)
         return assocByzantinePhase[h].phase[p].prevote_opposed.length >= constants.TOTAL_BYZANTINE*2 + 1;
     else if(isApproved === 2)
-        return (assocByzantinePhase[h].phase[p].prevote_approved.length + assocByzantinePhase[h].phase[p].prevote_opposed.length + assocByzantinePhase[h].phase[p].prevote_temp_gossip.length) >= constants.TOTAL_BYZANTINE*2 + 1;    
+        return (assocByzantinePhase[h].phase[p].prevote_approved.length + assocByzantinePhase[h].phase[p].prevote_opposed.length + Object.keys(assocByzantinePhase[h].phase[p].prevote_temp_gossip).length) >= constants.TOTAL_BYZANTINE*2 + 1;    
     else 
         return false;
 }
@@ -801,7 +801,7 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
     else if(isApproved === 0)
         return assocByzantinePhase[h].phase[p].precommit_opposed.length >= constants.TOTAL_BYZANTINE*2 + 1;
     else if(isApproved === 2)
-        return (assocByzantinePhase[h].phase[p].precommit_approved.length + assocByzantinePhase[h].phase[p].precommit_opposed.length + assocByzantinePhase[h].phase[p].precommit_temp_gossip.length) >= constants.TOTAL_BYZANTINE*2 + 1;    
+        return (assocByzantinePhase[h].phase[p].precommit_approved.length + assocByzantinePhase[h].phase[p].precommit_opposed.length + Object.keys(assocByzantinePhase[h].phase[p].precommit_temp_gossip).length) >= constants.TOTAL_BYZANTINE*2 + 1;    
     else 
         return false;
 }
