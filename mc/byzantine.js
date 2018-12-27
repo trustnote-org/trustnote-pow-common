@@ -430,6 +430,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
             //     StartRound(round)
             var messagesCount = 0;
             Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+                messagesCount = 0;
                 if(current_p > p_p){
                     if(Object.keys(assocByzantinePhase[h_p].phase[current_p].proposal).length > 0)
                         messagesCount = messagesCount + 1;
@@ -437,6 +438,7 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                     messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
                     messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
                     messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
+                    messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].temp_gossip.length;
                     if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
                         console.log("byllllogg startPhase f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
                         startPhase(h_p, current_p);
@@ -577,6 +579,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             break;
         case constants.BYZANTINE_PREVOTE: 
             console.log("byllllogg BYZANTINE_PREVOTE:before0:" +gossipMessage.h + gossipMessage.p +gossipMessage.idv + "-address:" + gossipMessage.address);
+            // if gossipMessage.idv is null, then don't need proposal
             if(gossipMessage.idv !==null && (!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined')){
                 // The gossip message cannot be handled for the time being
