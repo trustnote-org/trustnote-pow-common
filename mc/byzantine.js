@@ -18,6 +18,7 @@ var supernode = require('../wallet/supernode.js');
 var gossiper = require('../p2p/gossiper.js');
 
 var MAX_BYZANTINE_IN_CACHE = 10;
+var MAX_BYZANTINE_PHASE_IN_CACHE = 20;
 
 // Initialization:
 var h_p           = 0;   // mci
@@ -35,7 +36,9 @@ var h_prevote_timeout   = -1;
 var p_prevote_timeout   = -1; 
 var h_precommit_timeout = -1;
 var p_precommit_timeout = -1; 
-var h_timeout;
+var timeout_p;
+
+var last_gossip_message = {};
 
 var assocByzantinePhase = {};
 
@@ -245,8 +248,8 @@ function startPhase(hp, phase){
             p_propose_timeout = p_p;
             var timeout = getTimeout(p_p);
             console.log("byllllogg timeout setTimeout OnTimeoutPropose h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-            clearTimeout(h_timeout);
-            h_timeout = setTimeout(OnTimeoutPropose, timeout);
+            clearTimeout(timeout_p);
+            timeout_p = setTimeout(OnTimeoutPropose, timeout);
             handleByzantine();
         }
     });
@@ -522,8 +525,8 @@ function handleByzantine(){
                 p_prevote_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                clearTimeout(h_timeout);
-                h_timeout = setTimeout(OnTimeoutPrevote, timeout);
+                clearTimeout(timeout_p);
+                timeout_p = setTimeout(OnTimeoutPrevote, timeout);
             }
         }
         // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
@@ -565,8 +568,8 @@ function handleByzantine(){
                 p_precommit_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                clearTimeout(h_timeout);
-                h_timeout = setTimeout(OnTimeoutPrecommit, timeout);
+                clearTimeout(timeout_p);
+                timeout_p = setTimeout(OnTimeoutPrecommit, timeout);
             }
         }
     }
@@ -654,14 +657,16 @@ function broadcastProposal(h, p, value, vp){
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Prevote"+h+p, composePrevoteMessage(h, p, idv), function(err){
+    last_gossip_message = composePrevoteMessage(h, p, idv);
+    gossiper.gossiperBroadcast("Prevote"+h+p, last_gossip_message, function(err){
         if(err)
             console.log("byllllogg broadcastPrevote err:" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    gossiper.gossiperBroadcast("Precommit"+h+p, composePrecommitMessage(h, p, sig, idv), function(err){
+    last_gossip_message = composePrecommitMessage(h, p, sig, idv);
+    gossiper.gossiperBroadcast("Precommit"+h+p, last_gossip_message, function(err){
         if(err)
             console.log("byllllogg broadcastPrecommit err:" + err);
     });
@@ -811,6 +816,25 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
 }
 // private function end
 
+// Send the last message at fixed intervals
+function gossipLastMessageAtFixedInterval(){
+    if(bByzantineUnderWay && last_gossip_message &&
+        typeof last_gossip_message !== 'undefined' &&
+        Object.keys(last_gossip_message).length > 0){
+        if(last_gossip_message.type === constants.BYZANTINE_PREVOTE){
+            broadcastPrevote(last_gossip_message.h, last_gossip_message.p, last_gossip_message.idv);
+        }
+        if(last_gossip_message.type === constants.BYZANTINE_PRECOMMIT){
+            broadcastPrecommit(last_gossip_message.h, last_gossip_message.p, last_gossip_message.sig, last_gossip_message.idv);
+        }
+        
+    }
+}
+
+setInterval(gossipLastMessageAtFixedInterval, 3*1000);
+
+// Send the last message end
+
 // cache begin
 
 function shrinkByzantineCache(){
@@ -825,6 +849,16 @@ function shrinkByzantineCache(){
         console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp:" + offset1);
         delete assocByzantinePhase[offset1];
     }
+    minIndexByzantinePhases = Math.min.apply(Math, arrByzantinePhases);
+    for (var offset2 = minIndexByzantinePhases; offset2 <= h_p; offset2++){
+        var phaseCount = Object.keys(assocByzantinePhase[offset2].phase).length;
+        if(phaseCount > MAX_BYZANTINE_PHASE_IN_CACHE){
+            for (var offset3 = 0; offset3 < phaseCount - MAX_BYZANTINE_PHASE_IN_CACHE; offset3++){
+                console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp phase:" + offset1);
+                delete assocByzantinePhase[offset2].phase[offset3];
+            }
+        }
+    }
 }
 
 setInterval(shrinkByzantineCache, 100*1000);
@@ -836,136 +870,3 @@ setInterval(shrinkByzantineCache, 100*1000);
 
 exports.getCoordinators = getCoordinators;
 
-// test code begin
-
-var testValue = {
-    "version": "1.0",
-    "alt": "1",
-    "messages": [
-      {
-        "app": "data_feed",
-        "payload_location": "inline",
-        "payload_hash": "t0PkoqSbe0Tm6/3i8kv72K/hkWcruLHg+tY/DvzGR0g=",
-        "payload": {
-          "timestamp": 1542593986179
-        }
-      }
-    ],
-    "hp":100,
-    "round_index": 100,
-    "pow_type": 2,
-    "parent_units": [
-      "CzONNx8NbqIbjULi/Xt2rgRJws7Dg8TR7lCIIeJzSMQ="
-    ],
-    "last_ball": "XCcD+vZcbe025xn4VZRAwowtXBqU8JS/WIB43vYpzYA=",
-    "last_ball_unit": "AxH3SWNh/9dwRpuphZVPGAzbO/Md8AJpj7Q1C6JxBM4=",
-};
-var testJoint = {
-    "unit": testValue,
-    "proposer": [
-        {
-          "address": "JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET",
-          "authentifiers": {
-            "r": "Ji/pKTJjb+bgcn+UQ2mcY89eWf/KM3n0ZdmH5KCsldIYIb1IqYlsjB4rXeQwAVkGhsdqp5oPXf6TsXuP7SWq0A=="
-          }
-        }
-       ],
-    "phase": 10
-};
-var testIdv = objectHash.getProposalUnitHash(testValue);
-var testProposal = {
-    address: "JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET",
-    unit: testValue,
-    idv: testIdv,
-    validRoundP: 1,
-    isValid: 1
-};
-var testProvote1 = {
-    "D55F4JL2R3S4UHX4UXVFGOWTZPZR2YXO":{
-        idv:testIdv,
-        result:1
-    }
-};
-var testProvote2 = {
-    "ZW35QKXIKK47A7HW3YRIV6TU3DYDTIVR":{
-        idv:testIdv,
-        result:1
-    }
-};
-var testProvote3 = {
-    "YYPCNIE34QFXXCNTQ274TP3B5DVRHWSY":{
-        idv:testIdv,
-        result:1
-    }
-};
-var testProcommit1 = {
-    "D55F4JL2R3S4UHX4UXVFGOWTZPZR2YXO":{
-        idv:testIdv,
-        result:1
-    }
-};
-var testProcommit2 = {
-    "ZW35QKXIKK47A7HW3YRIV6TU3DYDTIVR":{
-        idv:testIdv,
-        result:1
-    }
-};
-var testProcommit3 = {
-    "YYPCNIE34QFXXCNTQ274TP3B5DVRHWSY":{
-        idv:testIdv,
-        result:1
-    }
-};
-
-// var assocByzantinePhase = {
-//     1000:{
-//         0:{
-//             proposal:testProposal,
-//             prevote:[testProvote1, testProvote2, testProvote3],
-//             precommit:[testProcommit1, testProcommit2],
-//         }
-//     }
-// };
-
-var hp_test=1000;
-// console.log(JSON.stringify(assocByzantinePhase));
-// console.log(JSON.stringify(assocByzantinePhase));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test]));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].proposal));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].prevote.length));
-// console.log(JSON.stringify(assocByzantinePhase[hp_test][0].precommit.length));
-
-// assocByzantinePhase[hp_test][1]={
-//     proposal:testProposal,
-//     prevote:[testProvote1, testProvote2],
-//     precommit:[testProcommit1, testProcommit2],
-// };
-//console.log(JSON.stringify(assocByzantinePhase[hp_test]));
-
-
-// var testObj = {
-//     10: 10
-// };
-// testObj[2] = 20;
-// testObj[30] = 3;
-// testObj[5] = 5;
-// testObj[12] = 12;
-// console.log(testObj);
-// console.log(JSON.stringify(testObj));
-
-// var arrtestObj = Object.keys(testObj);
-// console.log(arrtestObj);
-// console.log(JSON.stringify(arrtestObj));
-
-// h_p = 1;
-// function addassocByzantinePhase(){
-//     assocByzantinePhase[h_p] = h_p;
-//     console.log("add phase : " + JSON.stringify(assocByzantinePhase));
-//     h_p++;
-// }
-// setInterval(addassocByzantinePhase, 2*1000);
-
-
-// test code end
