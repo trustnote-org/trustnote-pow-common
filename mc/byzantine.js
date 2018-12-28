@@ -418,7 +418,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
             break;
         case constants.BYZANTINE_PREVOTE: 
             // if gossipMessage.idv is null, then don't need proposal
-            if(gossipMessage.idv !==null && (!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
+            if(gossipMessage.idv !== null && (!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv 
                 || typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal.idv === 'undefined')){
                 // The gossip message cannot be handled for the time being
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].prevote_temp_gossip[sKey+gossipMessage.address] = gossipMessage; 
