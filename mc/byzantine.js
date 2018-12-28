@@ -17,9 +17,6 @@ var round = require('../pow/round.js');
 var supernode = require('../wallet/supernode.js');
 var gossiper = require('../p2p/gossiper.js');
 
-var MAX_BYZANTINE_IN_CACHE = 10;
-var MAX_BYZANTINE_PHASE_IN_CACHE = 20;
-
 // Initialization:
 var h_p           = 0;   // mci
 var p_p           = 0;   // current phase number
@@ -36,9 +33,11 @@ var h_prevote_timeout   = -1;
 var p_prevote_timeout   = -1; 
 var h_precommit_timeout = -1;
 var p_precommit_timeout = -1; 
+var p_phase_timeout = -1; 
 var timeout_p;
 
-var last_gossip_message = {};
+var last_prevote_gossip = {};
+var last_precommit_gossip = {};
 
 var assocByzantinePhase = {};
 
@@ -182,6 +181,7 @@ function startPhase(hp, phase){
     p_prevote_timeout   = -1; 
     h_precommit_timeout = -1;
     p_precommit_timeout = -1; 
+    p_phase_timeout = Date.now();
     getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
         if(err){
             console.log("byllllogg get coordinators err:" + err);
@@ -208,6 +208,7 @@ function startPhase(hp, phase){
                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                     assocByzantinePhase[h_p].decision = {};
+                    handleTempGossipMessage(h_p, p_p);
                     handleByzantine();
                 });
             }
@@ -234,6 +235,7 @@ function startPhase(hp, phase){
                                     pushByzantinePrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv, address_p, 1);
                                     broadcastPrevote(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal.idv);
                                     assocByzantinePhase[h_p].decision = {};
+                                    handleTempGossipMessage(h_p, p_p);
                                     handleByzantine();
                                 });
                             }
@@ -657,16 +659,16 @@ function broadcastProposal(h, p, value, vp){
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    last_gossip_message = composePrevoteMessage(h, p, idv);
-    gossiper.gossiperBroadcast("Prevote"+h+p, last_gossip_message, function(err){
+    last_prevote_gossip = composePrevoteMessage(h, p, idv);
+    gossiper.gossiperBroadcast("Prevote"+h+p, last_prevote_gossip, function(err){
         if(err)
             console.log("byllllogg broadcastPrevote err:" + err);
     });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    last_gossip_message = composePrecommitMessage(h, p, sig, idv);
-    gossiper.gossiperBroadcast("Precommit"+h+p, last_gossip_message, function(err){
+    last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
+    gossiper.gossiperBroadcast("Precommit"+h+p, last_precommit_gossip, function(err){
         if(err)
             console.log("byllllogg broadcastPrecommit err:" + err);
     });
@@ -818,18 +820,23 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
 
 // Send the last message at fixed intervals
 function gossipLastMessageAtFixedInterval(){
-    if(bByzantineUnderWay && last_gossip_message &&
-        typeof last_gossip_message !== 'undefined' &&
-        Object.keys(last_gossip_message).length > 0){
-        if(last_gossip_message.type === constants.BYZANTINE_PREVOTE){
-            console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrevote" + JSON.stringify(last_gossip_message));
-            broadcastPrevote(last_gossip_message.h, last_gossip_message.p, last_gossip_message.idv);
+    if(p_phase_timeout >0 && Date.now() - p_phase_timeout > constants.BYZANTINE_PHASE_TIMEOUT){
+        if(bByzantineUnderWay && last_prevote_gossip &&
+            typeof last_prevote_gossip !== 'undefined' &&
+            Object.keys(last_prevote_gossip).length > 0){
+            if(last_prevote_gossip.type === constants.BYZANTINE_PREVOTE && h_p === last_prevote_gossip.h){
+                console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrevote" + JSON.stringify(last_prevote_gossip));
+                broadcastPrevote(last_prevote_gossip.h, last_prevote_gossip.p, last_prevote_gossip.idv);
+            }
         }
-        if(last_gossip_message.type === constants.BYZANTINE_PRECOMMIT){
-            console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrecommit" + JSON.stringify(last_gossip_message));
-            broadcastPrecommit(last_gossip_message.h, last_gossip_message.p, last_gossip_message.sig, last_gossip_message.idv);
+        if(bByzantineUnderWay && last_precommit_gossip &&
+            typeof last_precommit_gossip !== 'undefined' &&
+            Object.keys(last_precommit_gossip).length > 0){
+            if(last_precommit_gossip.type === constants.BYZANTINE_PRECOMMIT && h_p === last_precommit_gossip.h){
+                console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrecommit" + JSON.stringify(last_precommit_gossip));
+                broadcastPrecommit(last_precommit_gossip.h, last_precommit_gossip.p, last_precommit_gossip.sig, last_precommit_gossip.idv);
+            }        
         }
-        
     }
 }
 
@@ -842,12 +849,12 @@ setInterval(gossipLastMessageAtFixedInterval, 3*1000);
 function shrinkByzantineCache(){
     // shrink assocByzantinePhase
     var arrByzantinePhases = Object.keys(assocByzantinePhase);
-	if (arrByzantinePhases.length < MAX_BYZANTINE_IN_CACHE){
+	if (arrByzantinePhases.length < constants.MAX_BYZANTINE_IN_CACHE){
         console.log("ByzantinePhaseCacheLog:shrinkByzantineCache,will not delete, assocByzantinePhase.length:" + arrByzantinePhases.length);
         return console.log('byllllogg byzantine cache is small, will not shrink');
     }
     var minIndexByzantinePhases = Math.min.apply(Math, arrByzantinePhases);
-    for (var offset1 = minIndexByzantinePhases; offset1 < h_p - MAX_BYZANTINE_IN_CACHE; offset1++){
+    for (var offset1 = minIndexByzantinePhases; offset1 < h_p - constants.MAX_BYZANTINE_IN_CACHE; offset1++){
         console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp:" + offset1);
         delete assocByzantinePhase[offset1];
     }
@@ -857,8 +864,8 @@ function shrinkByzantineCache(){
             typeof assocByzantinePhase[offset2] !== 'undefined' &&
             Object.keys(assocByzantinePhase[offset2]).length > 0){
             var phaseCount = Object.keys(assocByzantinePhase[offset2].phase).length;
-            if(phaseCount > MAX_BYZANTINE_PHASE_IN_CACHE){
-                for (var offset3 = 0; offset3 < phaseCount - MAX_BYZANTINE_PHASE_IN_CACHE; offset3++){
+            if(phaseCount > constants.MAX_BYZANTINE_PHASE_IN_CACHE){
+                for (var offset3 = 0; offset3 < phaseCount - constants.MAX_BYZANTINE_PHASE_IN_CACHE; offset3++){
                     console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp phase:" + offset1);
                     delete assocByzantinePhase[offset2].phase[offset3];
                 }
