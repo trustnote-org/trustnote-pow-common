@@ -387,7 +387,8 @@ function handleGossipMessage(sKey, gossipMessage, callback){
     if(!assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] || 
         typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] === 'undefined' || 
         Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length === 0){
-        assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
+        assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] = {"proposal":{}, "received_addresses":[],
+            "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
             "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}};    
     }
     // push the gossip message into local db
@@ -606,22 +607,15 @@ function handleByzantine(){
 
     // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
     //     StartRound(round)
-    var messagesCount = 0;
     Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-        messagesCount = 0;
         if(current_p > p_p){
-            if(Object.keys(assocByzantinePhase[h_p].phase[current_p].proposal).length > 0)
-                messagesCount = messagesCount + 1;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_approved.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].prevote_opposed.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_approved.length;
-            messagesCount = messagesCount + assocByzantinePhase[h_p].phase[current_p].precommit_opposed.length;
-            messagesCount = messagesCount + Object.keys(assocByzantinePhase[h_p].phase[current_p].prevote_temp_gossip).length;
-            messagesCount = messagesCount + Object.keys(assocByzantinePhase[h_p].phase[current_p].precommit_temp_gossip).length;
-            console.log("byllllogg startPhase messagesCount:" + messagesCount);
-            if(messagesCount >= constants.TOTAL_BYZANTINE + 1){
-                console.log("byllllogg startPhase messagesCount f+1 <∗,hp,round,∗,∗>:" + h_p + ":" + p_p);
-                startPhase(h_p, current_p);
+            if(assocByzantinePhase[h_p].phase[current_p].received_addresses &&
+                assocByzantinePhase[h_p].phase[current_p].received_addresses.length > 0){
+                console.log("byllllogg startPhase received_addresses:" + JSON.stringify(assocByzantinePhase[h_p].phase[current_p].received_addresses));
+                if(assocByzantinePhase[h_p].phase[current_p].received_addresses.length >= constants.TOTAL_BYZANTINE + 1){
+                    console.log("byllllogg startPhase received_addresses" + h_p + ":" + p_p);
+                    startPhase(h_p, current_p);
+                }
             }
         }
     });
@@ -701,12 +695,15 @@ function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
             if(!assocByzantinePhase[h].phase[p] || 
                 typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
-                assocByzantinePhase[h].phase[p] = {"proposal":proposal, "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
-                    "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}};    
+                assocByzantinePhase[h].phase[p] = {"proposal":proposal, "received_addresses":[],
+                    "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
+                    "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}}; 
+                
             }      
             else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
                 assocByzantinePhase[h].phase[p].proposal = proposal;            
             }
+            pushReceivedAddresses(assocByzantinePhase[h].phase[p].received_addresses, proposal.address);
             // unlock();
             onDone();
         // });
@@ -720,7 +717,8 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
             if(!assocByzantinePhase[h].phase[p] || 
                 typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
                 Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
-                assocByzantinePhase[h].phase[p] =  {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
+                assocByzantinePhase[h].phase[p] =  {"proposal":{}, "received_addresses":[],
+                "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
                 "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}};     
             }
             if(assocByzantinePhase[h].phase[p].prevote_approved.indexOf(address) === -1 && assocByzantinePhase[h].phase[p].prevote_opposed.indexOf(address) === -1){
@@ -734,6 +732,7 @@ function pushByzantinePrevote(h, p, idv, address, isApproved) {
                     console.log("byllllogg BYZANTINE_PREVOTE:" +h + p + "-3-idv:"+idv + "-address:" + address+"-isApproved:"+isApproved);
                     assocByzantinePhase[h].phase[p].prevote_opposed.push(address);
                 }
+                pushReceivedAddresses(assocByzantinePhase[h].phase[p].received_addresses, address);
             }
         //     unlock();
         // });
@@ -746,8 +745,9 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
         if(!assocByzantinePhase[h].phase[p] || 
             typeof assocByzantinePhase[h].phase[p] === 'undefined' || 
             Object.keys(assocByzantinePhase[h].phase[p]).length === 0){
-            assocByzantinePhase[h].phase[p] = {"proposal":{}, "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
-            "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}};   
+            assocByzantinePhase[h].phase[p] = {"proposal":{}, "received_addresses":[],
+             "prevote_approved":[], "prevote_opposed":[], "prevote_temp_gossip":{},
+             "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}};   
         }
         else{
             for (var j=0; j<assocByzantinePhase[h].phase[p].precommit_approved.length; j++){
@@ -766,6 +766,7 @@ function pushByzantinePrecommit(h, p, idv, address, sig, isApproved) {
             else {  
                 assocByzantinePhase[h].phase[p].precommit_opposed.push(address);
             }
+            pushReceivedAddresses(assocByzantinePhase[h].phase[p].received_addresses, address);
         }    
         // unlock();
     // });
@@ -815,6 +816,10 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
     var objNakedProposal = _.cloneDeep(proposal);
     var objNakedApprovedCoordinators = _.cloneDeep(approvedCoordinators);
 	composer.composeCoordinatorTrustMe(address_p, objNakedProposal, phase, objNakedApprovedCoordinators, supernode.signer, callbacks);      
+}
+function pushReceivedAddresses(arrAddresses, address){
+    if (arrAddresses.indexOf(address) === -1)
+        arrAddresses.push(address);
 }
 // private function end
 
