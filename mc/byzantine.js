@@ -822,9 +822,11 @@ function gossipLastMessageAtFixedInterval(){
         typeof last_gossip_message !== 'undefined' &&
         Object.keys(last_gossip_message).length > 0){
         if(last_gossip_message.type === constants.BYZANTINE_PREVOTE){
+            console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrevote" + JSON.stringify(last_gossip_message));
             broadcastPrevote(last_gossip_message.h, last_gossip_message.p, last_gossip_message.idv);
         }
         if(last_gossip_message.type === constants.BYZANTINE_PRECOMMIT){
+            console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrecommit" + JSON.stringify(last_gossip_message));
             broadcastPrecommit(last_gossip_message.h, last_gossip_message.p, last_gossip_message.sig, last_gossip_message.idv);
         }
         
