@@ -262,8 +262,8 @@ function validateDataFeedMessage(conn, objMessage, objUnit, objValidationState, 
 	// compare to local time stamp 
 	var now = Date.now();
 	var diff =Math.abs(Math.round(now -proposal_time))
-	if (diff > constants.TRUSTME_TIMESTAMP_TOLERANT )
-		return callback("too big diffrence between proposal time and local time ");
+	// if (diff > constants.TRUSTME_TIMESTAMP_TOLERANT )
+	// 	return callback("too big diffrence between proposal time and local time ");
 	// OK condition 
 	callback();
 }
