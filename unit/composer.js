@@ -988,7 +988,7 @@ function composeProposalJointByProposal(proposal, proposer_address, phase, signe
 	var assocSigningPaths = {};
 	
 	var objUnit = proposal.unit;
-
+	objUnit.authors = [];
 	var objJoint = {unit: objUnit};
 	
 	var last_ball_mci = proposal.last_ball_mci;
