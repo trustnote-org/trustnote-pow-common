@@ -973,6 +973,139 @@ function composeProposalJoint(proposer_address, round_index, hp, phase, signer, 
 	});
 }
 
+
+function composeProposalJointByProposal(proposal, proposer_address, phase, signer, callback){
+	if (conf.bLight)
+		throw Error("can not be a proposer for light");
+	
+	var arrPayingAddresses =  [proposer_address];
+	
+	var arrFromAddresses = arrPayingAddresses.sort();
+	if(arrFromAddresses.length !== 1){
+		throw Error("proposalJoint must have 1 author");
+	}
+	
+	var assocSigningPaths = {};
+	
+	var objUnit = proposal.unit;
+
+	var objJoint = {unit: objUnit};
+	
+	var last_ball_mci = proposal.last_ball_mci;
+	var conn;
+	
+	async.series([
+		function(cb){ // start transaction
+			db.takeConnectionFromPool(function(new_conn){
+				conn = new_conn;
+				conn.query("BEGIN", function(){cb();});
+			});
+		},
+		function(cb){ // authors
+			async.eachSeries(arrFromAddresses, function(from_address, cb2){
+				
+				function setDefinition(){
+					signer.readDefinition(conn, from_address, function(err, arrDefinition){
+						if (err)
+							return cb2(err);
+						objAuthor.definition = arrDefinition;
+						cb2();
+					});
+				}
+				var objAuthor = {
+					address: from_address,
+					authentifiers: {}
+				};
+				signer.readSigningPaths(conn, from_address, function(assocLengthsBySigningPaths){
+					var arrSigningPaths = Object.keys(assocLengthsBySigningPaths);
+					assocSigningPaths[from_address] = arrSigningPaths;
+					for (var j=0; j<arrSigningPaths.length; j++)
+						objAuthor.authentifiers[arrSigningPaths[j]] = repeatString("-", assocLengthsBySigningPaths[arrSigningPaths[j]]);
+					objUnit.authors.push(objAuthor);
+					conn.query(
+						"SELECT 1 FROM unit_authors CROSS JOIN units USING(unit) \n\
+						WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
+						LIMIT 1", 
+						[from_address, last_ball_mci], 
+						function(rows){
+							if (rows.length === 0) // first message from this address
+								return setDefinition();
+							// try to find last stable change of definition, then check if the definition was already disclosed
+							conn.query(
+								"SELECT definition \n\
+								FROM address_definition_changes CROSS JOIN units USING(unit) LEFT JOIN definitions USING(definition_chash) \n\
+								WHERE address=? AND is_stable=1 AND sequence='good' AND main_chain_index<=? \n\
+								ORDER BY level DESC LIMIT 1", 
+								[from_address, last_ball_mci],
+								function(rows){
+									if (rows.length === 0) // no definition changes at all
+										return cb2();
+									var row = rows[0];
+									row.definition ? cb2() : setDefinition(); // if definition not found in the db, add it into the json
+								}
+							);
+						}
+					);
+				});
+			}, cb);
+		},
+	], function(err){
+		// we close the transaction and release the connection before signing as multisig signing may take very very long
+		// however we still keep c-ADDRESS lock to avoid creating accidental doublespends
+		conn.query(err ? "ROLLBACK" : "COMMIT", function(){
+			conn.release();
+			if (err)
+				return callback(err);
+
+			var text_to_sign = objectHash.getProposalHashToSign(objUnit);
+			async.each(
+				objUnit.authors,
+				function(author, cb2){
+					var address = author.address;
+					async.each( // different keys sign in parallel (if multisig)
+						assocSigningPaths[address],
+						function(path, cb3){
+							if (signer.sign){
+								signer.sign(objUnit, null, address, path, function(err, signature){
+									if (err)
+										return cb3(err);
+									// it can't be accidentally confused with real signature as there are no [ and ] in base64 alphabet
+									if (signature === '[refused]')
+										return cb3('one of the cosigners refused to sign');
+									author.authentifiers[path] = signature;
+									cb3();
+								});
+							}
+							else{
+								signer.readPrivateKey(address, path, function(err, privKey){
+									if (err)
+										return cb3(err);
+									author.authentifiers[path] = ecdsaSig.sign(text_to_sign, privKey);
+									cb3();
+								});
+							}
+						},
+						function(err){
+							cb2(err);
+						}
+					);
+				},
+				function(err){
+					if (err)
+						return callback(err);
+					objJoint.proposer = objJoint.unit.authors;
+					objJoint.phase = phase;
+					objJoint.unit.timestamp = Math.round(Date.now()/1000); // light clients need timestamp
+					delete objJoint.unit.authors;
+					objJoint.last_ball_mci = last_ball_mci;  // add last_ball_mci for only proposal joint, used for final trustme unit
+					console.log(require('util').inspect(objJoint, {depth:null}));
+					callback(null, objJoint);
+				}
+			);
+		});
+	});
+}
+
 function composeCoordinatorSig(coordinator_address, unit, signer, callback){
 	if (conf.bLight)
 		throw Error("can not be a coordinator for light");
@@ -1384,6 +1517,7 @@ exports.composeAssetAttestorsJoint = composeAssetAttestorsJoint;
 
 exports.composeJoint = composeJoint;
 exports.composeProposalJoint = composeProposalJoint;
+exports.composeProposalJointByProposal = composeProposalJointByProposal;
 exports.composeCoordinatorSig = composeCoordinatorSig;
 exports.composeCoordinatorTrustMe = composeCoordinatorTrustMe;
 
