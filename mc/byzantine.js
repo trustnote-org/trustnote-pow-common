@@ -863,20 +863,20 @@ function shrinkByzantineCache(){
         console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp:" + offset1);
         delete assocByzantinePhase[offset1];
     }
-    minIndexByzantinePhases = Math.min.apply(Math, arrByzantinePhases);
-    for (var offset2 = minIndexByzantinePhases; offset2 <= h_p; offset2++){
-        if(assocByzantinePhase[offset2] &&
-            typeof assocByzantinePhase[offset2] !== 'undefined' &&
-            Object.keys(assocByzantinePhase[offset2]).length > 0){
-            var phaseCount = Object.keys(assocByzantinePhase[offset2].phase).length;
-            if(phaseCount > constants.MAX_BYZANTINE_PHASE_IN_CACHE){
-                for (var offset3 = 0; offset3 < phaseCount - constants.MAX_BYZANTINE_PHASE_IN_CACHE; offset3++){
-                    console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp phase:" + offset1);
-                    delete assocByzantinePhase[offset2].phase[offset3];
-                }
-            }
-        }
-    }
+    // minIndexByzantinePhases = Math.min.apply(Math, arrByzantinePhases);
+    // for (var offset2 = minIndexByzantinePhases; offset2 <= h_p; offset2++){
+    //     if(assocByzantinePhase[offset2] &&
+    //         typeof assocByzantinePhase[offset2] !== 'undefined' &&
+    //         Object.keys(assocByzantinePhase[offset2]).length > 0){
+    //         var phaseCount = Object.keys(assocByzantinePhase[offset2].phase).length;
+    //         if(phaseCount > constants.MAX_BYZANTINE_PHASE_IN_CACHE){
+    //             for (var offset3 = 0; offset3 < phaseCount - constants.MAX_BYZANTINE_PHASE_IN_CACHE; offset3++){
+    //                 console.log("byllllogg ByzantinePhaseCacheLog:shrinkByzantineCache,delete hp phase:" + offset3);
+    //                 delete assocByzantinePhase[offset2].phase[offset3];
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 setInterval(shrinkByzantineCache, 100*1000);
