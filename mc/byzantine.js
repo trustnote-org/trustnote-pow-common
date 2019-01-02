@@ -431,6 +431,13 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                 },
                 ifOk: function(){
                     console.log("byllllogg BYZANTINE_PROPOSE gossip ifOk:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
+                    // if its a new proposal, reset params.
+                    if(gossipMessage.vp === -1){
+                        lockedValue_p = null;
+                        lockedPhase_p = -1;
+                        validValue_p  = null;
+                        validPhase_p  = -1;
+                    }
                     pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
                         console.log("byllllogg push new byzantine proposal from ok gossip:" + err);
                         handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
