@@ -430,6 +430,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                 // The gossip message cannot be handled for the time being
                 console.log("byllllogg BYZANTINE_PREVOTE gossip sKey 2:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].prevote_temp_gossip[sKey+gossipMessage.address] = gossipMessage; 
+                pushReceivedAddresses(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].received_addresses, gossipMessage.address);
             }                    
             else {
                 console.log("byllllogg BYZANTINE_PREVOTE gossip sKey 3:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
@@ -444,6 +445,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
                 // The gossip message cannot be handled for the time being
                 console.log("byllllogg BYZANTINE_PRECOMMIT gossip sKey 2:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
                 assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].precommit_temp_gossip[sKey+gossipMessage.address] = gossipMessage;
+                pushReceivedAddresses(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].received_addresses, gossipMessage.address);
             }                    
             else {
                 console.log("byllllogg BYZANTINE_PRECOMMIT gossip sKey 3:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
