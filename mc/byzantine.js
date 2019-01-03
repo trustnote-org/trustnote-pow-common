@@ -508,8 +508,10 @@ function handleTempGossipMessage(temp_h, temp_p){
 }
 
 function handleByzantine(){
-    if(assocByzantinePhase[h_p].phase[p_p] && typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
-            Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
+    if(assocByzantinePhase[h_p].phase && 
+        typeof assocByzantinePhase[h_p].phase !== 'undefined' &&
+        typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
+        Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
         // upon <PROPOSAL,hp,roundp,v,−1> from proposer(hp ,roundp) while stepp = propose do
         //     if valid(v) ∧ (lockedRoundp = −1 ∨ lockedValuep = v) then
         //         broadcast <PREVOTE,hp,roundp,id(v)>
