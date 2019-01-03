@@ -200,6 +200,13 @@ function startPhase(hp, phase){
         p_precommit_timeout = -1; 
         p_phase_timeout = Date.now();
         bByzantineUnderWay = true;
+        if(p_p === 0){
+            //reset params
+            lockedValue_p = null;
+            lockedPhase_p = -1;
+            validValue_p  = null;
+            validPhase_p  = -1;
+        }
 
         if(proposer === address_p){    // i am proposer
             if(validValue_p !== null){
@@ -210,10 +217,30 @@ function startPhase(hp, phase){
                         var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
                         validation.validateProposalJoint(proposal, {
                             ifInvalid: function(err){
-                                throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
+                                console.log("byllllogg BYZANTINE_PROPOSE startPhase ifInvalid:" + h_p + p_p + err );
+                                pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 0, function(err){
+                                    if(err)
+                                        throw Error("push valid byzantine proposal error:" + err);
+                                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                                    pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                                    broadcastPrevote(h_p, p_p, null);
+                                    assocByzantinePhase[h_p].decision = {};
+                                    handleTempGossipMessage(h_p, p_p);
+                                    handleByzantine();
+                                });
                             },
                             ifNeedWaiting: function(err){
-                                throw Error("??????startPhase my proposer need waiting?" + err);
+                                console.log("byllllogg BYZANTINE_PROPOSE startPhase ifInvalid:" + h_p + p_p + err );
+                                pushByzantineProposal(h_p, p_p, proposal, validPhase_p, -1, function(err){
+                                    if(err)
+                                        throw Error("push valid byzantine proposal error:" + err);
+                                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                                    pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                                    broadcastPrevote(h_p, p_p, null);
+                                    assocByzantinePhase[h_p].decision = {};
+                                    handleTempGossipMessage(h_p, p_p);
+                                    handleByzantine();
+                                });
                             },
                             ifOk: function(){
                                 console.log("byllllogg BYZANTINE_PROPOSE startPhase ifOk:" +h_p + p_p  );
@@ -240,10 +267,30 @@ function startPhase(hp, phase){
                         var proposal = convertJointToProposal(objJoint, validPhase_p, 1);
                         validation.validateProposalJoint(proposal, {
                             ifInvalid: function(err){
-                                throw Error("??????startPhase my proposer is Invalid:" + err +",objJoint:" + JSON.stringify(objJoint));
+                                console.log("byllllogg BYZANTINE_PROPOSE startPhase ifInvalid:" + h_p + p_p + err );
+                                pushByzantineProposal(h_p, p_p, proposal, validPhase_p, 0, function(err){
+                                    if(err)
+                                        throw Error("push valid byzantine proposal error:" + err);
+                                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                                    pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                                    broadcastPrevote(h_p, p_p, null);
+                                    assocByzantinePhase[h_p].decision = {};
+                                    handleTempGossipMessage(h_p, p_p);
+                                    handleByzantine();
+                                });
                             },
                             ifNeedWaiting: function(err){
-                                throw Error("??????startPhase my proposer need waiting?" + err);
+                                console.log("byllllogg BYZANTINE_PROPOSE startPhase ifInvalid:" + h_p + p_p + err );
+                                pushByzantineProposal(h_p, p_p, proposal, validPhase_p, -1, function(err){
+                                    if(err)
+                                        throw Error("push valid byzantine proposal error:" + err);
+                                    broadcastProposal(h_p, p_p, assocByzantinePhase[h_p].phase[p_p].proposal, validPhase_p);
+                                    pushByzantinePrevote(h_p, p_p, null, address_p, 0);
+                                    broadcastPrevote(h_p, p_p, null);
+                                    assocByzantinePhase[h_p].decision = {};
+                                    handleTempGossipMessage(h_p, p_p);
+                                    handleByzantine();
+                                });
                             },
                             ifOk: function(){
                                 console.log("byllllogg BYZANTINE_PROPOSE startPhase ifOk:" +h_p + p_p  );
