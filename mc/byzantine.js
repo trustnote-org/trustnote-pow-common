@@ -172,17 +172,8 @@ function startPhase(hp, phase){
         return;
     else if(h_p === hp && p_p >= phase)
         return;
-    h_p = hp;
-    p_p = phase;
-    step_p = constants.BYZANTINE_PROPOSE;   // propose
-    h_propose_timeout   = -1;
-    p_propose_timeout   = -1; 
-    h_prevote_timeout   = -1;
-    p_prevote_timeout   = -1; 
-    h_precommit_timeout = -1;
-    p_precommit_timeout = -1; 
-    p_phase_timeout = Date.now();
-    getCoordinators(null, h_p, p_p, function(err, proposer, roundIndex, witnesses){
+  
+    getCoordinators(null, hp, phase, function(err, proposer, roundIndex, witnesses){
         if(err){
             console.log("byllllogg get coordinators err:" + err);
             return;
@@ -197,6 +188,17 @@ function startPhase(hp, phase){
         }
         if(!validationUtils.isValidAddress(proposer))
             throw Error("startPhase proposer address is not a valid address");
+
+        h_p = hp;
+        p_p = phase;
+        step_p = constants.BYZANTINE_PROPOSE;   // propose
+        h_propose_timeout   = -1;
+        p_propose_timeout   = -1; 
+        h_prevote_timeout   = -1;
+        p_prevote_timeout   = -1; 
+        h_precommit_timeout = -1;
+        p_precommit_timeout = -1; 
+        p_phase_timeout = Date.now();
         bByzantineUnderWay = true;
 
         if(proposer === address_p){    // i am proposer
@@ -508,7 +510,7 @@ function handleTempGossipMessage(temp_h, temp_p){
 }
 
 function handleByzantine(){
-    if(assocByzantinePhase[h_p].phase && 
+    if(typeof assocByzantinePhase[h_p] !== 'undefined' && 
         typeof assocByzantinePhase[h_p].phase !== 'undefined' &&
         typeof assocByzantinePhase[h_p].phase[p_p] !== 'undefined' &&
         Object.keys(assocByzantinePhase[h_p].phase[p_p]).length > 0){
