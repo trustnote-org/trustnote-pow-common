@@ -64,6 +64,7 @@ function pickParentUnitsAndLastBall(conn, onDone){
 	pickTrustParentUnits(conn, function(err, arrParentUnits, last_trust_ball, last_trust_ball_unit, last_trust_ball_mci){
 		if (err)
 			return onDone(err);
+		arrParentUnits = arrParentUnits.sort();
 		onDone(null, arrParentUnits, last_trust_ball, last_trust_ball_unit, last_trust_ball_mci);	
 	});
 }
