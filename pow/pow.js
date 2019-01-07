@@ -568,7 +568,7 @@ function checkProofOfWork( oConn, objInput, sHash, nNonce, pfnCallback )
 	}
 	if ( ! objInput || 'object' !== typeof objInput )
 	{
-		throw new Error( 'call checkProofOfWork with invalid objInput' );
+		throw new Error( 'call checkProofOfWork with invalid objInput' + objInput);
 	}
 	if ( ! _isValidRoundIndex( objInput.roundIndex ) )
 	{
