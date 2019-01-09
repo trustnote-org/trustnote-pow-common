@@ -1733,7 +1733,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 									 // two outputs for coinbase unit: one is for author self ,the other is for foundation
 									if(payload.outputs.length !== 2 )
 										return cb("coinbase units must have two outputs");
-									var founddation_outputs= payload.filter(function(output) {return output.address == constants.FOUNDATION_ADDRESS });
+									var founddation_outputs= payload.outputs.filter(function(output) {return output.address == constants.FOUNDATION_ADDRESS });
 									if(founddation_outputs.length !== 1)
 										return cb("moe than one outputs to foundation address occured");
 									var coinbase_foundation_amount = Math.floor(input.amount * constants.FOUNDATION_RATIO);
