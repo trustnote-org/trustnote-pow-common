@@ -515,6 +515,7 @@ function startMiningWithInputs( oInput, pfnCallback )
 }
 function _startMiningWithInputs_debug( oInput, pfnCallback )
 {
+	console.log(`Mining is on going 8 :`);
 	let nTimeout = _generateRandomInteger( 120 * 1000, 180 * 1000 );
 	setTimeout( () =>
 	{

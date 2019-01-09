@@ -163,10 +163,8 @@ function getDepositAddressBySupernodeAddress(conn, supernodeAddress, cb){
     if(!validationUtils.isValidAddress(supernodeAddress))
         return cb("param supernodeAddress is not a valid address");
 
-    console.log("depositSupernoder : "+supernodeAddress);
     conn.query("SELECT deposit_address FROM supernode WHERE address = ?", [supernodeAddress], 
         function(rows) {
-            console.log("depositSupernoder : " + rows.length + ":" +JSON.stringify(rows));
             if (rows.length !== 1 )
                 return cb("deposit address is not found when getDepositAddressBySupernodeAddress " + supernodeAddress);
             cb(null, rows[0].deposit_address);
