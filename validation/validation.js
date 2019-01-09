@@ -244,7 +244,7 @@ function validate(objJoint, callbacks) {
 					profiler.start();
 					objUnit.content_hash ? cb() : validateMessages(conn, objUnit.messages, objUnit, objValidationState, cb);
 				},
-				function(cb){  // pow add: determine witenessed_level and best_parent  .
+				function(cb){  // pow add: determine witnessed_level and best_parent  .
 					profiler.stop('validation-messages');
 					profiler.start();
 					// move old writer method (updateBestParnt and updateWitnessedlevel) here ,so we can validate pow units' wl is betwwen min_wl and max_wl of each round before writer
@@ -940,7 +940,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 		return callback();
 	}
 	var unit_limci;
-	var unit_witenessed_level;
+	var unit_witnessed_level;
 	async.series(
 		[
 			//byzantine del
@@ -952,11 +952,11 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 			// 	});
 			// },
 			function(cb){
-				storage.determinewitnessedLevelAndLimci(conn,objUnit, function(err,witenessed_level,limci){
+				storage.determinewitnessedLevelAndLimci(conn,objUnit, function(err,witnessed_level,limci){
 					if(err)
 						return cb(err);
-					unit_witenessed_level = witenessed_level;
-					objValidationState.witenessed_level = witenessed_level;
+					unit_witnessed_level = witnessed_level;
+					objValidationState.witnessed_level = witnessed_level;
 					objValidationState.limci = limci;
 					cb();
 				});
@@ -983,7 +983,7 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 					if(min_wl === null){ // min_wl is null which means round switch just happen now ,there is no stable trust me unit yet in latest round index.
 						// in this condition, we check wl is bigger than last round 's max wl.
 						if (objUnit.round_index === 1){//first round
-							if(unit_witenessed_level < 0)
+							if(unit_witnessed_level < 0)
 								return cb("unit witness level is negative in first round")
 
 							return cb();
@@ -998,8 +998,8 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 						});
 					}
 					else {  //both min and max wl have value means this round is over,// check witnessed_level is betwwen min_wl and max_wl
-						if(unit_witenessed_level < min_wl){
-							return cb("unit witnessed level " + unit_witenessed_level + "is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
+						if(unit_witnessed_level < min_wl){
+							return cb("unit witnessed level " + unit_witnessed_level + "is less than min_wl, min_wl: " + min_wl + JSON.stringify(objUnit) );
 						}
 						return cb();
 					}
