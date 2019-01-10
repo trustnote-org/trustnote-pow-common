@@ -784,7 +784,7 @@ function pushByzantineProposal(h, p, tempProposal, vp, isValid, onDone) {
                     "precommit_approved":[], "precommit_opposed":[], "precommit_temp_gossip":{}}; 
                 
             }      
-            else if(Object.keys(assocByzantinePhase[h].phase[p].proposal).length === 0){
+            else {
                 assocByzantinePhase[h].phase[p].proposal = proposal;            
             }
             pushReceivedAddresses(assocByzantinePhase[h].phase[p].received_addresses, proposal.address);
