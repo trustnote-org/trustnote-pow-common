@@ -123,7 +123,7 @@ function validateParents(conn, objJoint, objValidationState, callback){
 			if (arrMissingParentUnits.length > 0){
 				conn.query("SELECT error FROM known_bad_joints WHERE unit IN(?)", [arrMissingParentUnits], function(rows){
 					(rows.length > 0)
-						? callback("some of the unit's parents are known bad: "+rows[0].error)
+						? callback("some of the unit's parents are known bad :"+rows[0].error)
 						: callback({error_code: "unresolved_dependency", errorMessage: "some of parents are missing ", arrMissingUnits: arrMissingParentUnits});
 				});
 				return;
