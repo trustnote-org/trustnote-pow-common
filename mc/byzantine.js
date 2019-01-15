@@ -122,6 +122,8 @@ eventBus.on('headless_wallet_ready', () =>
  *                      
  */
 function getCoordinators(conn, hp, phase, cb){
+    hp = parseInt(hp);
+    phase = parseInt(phase);
     var pIndex = Math.abs(hp-phase+999)%constants.TOTAL_COORDINATORS;
     if (assocByzantinePhase[hp] && assocByzantinePhase[hp].roundIndex && assocByzantinePhase[hp].witnesses){
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
@@ -159,6 +161,7 @@ function getCoordinators(conn, hp, phase, cb){
 //     else
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
+    hp = parseInt(hp);
     phase = parseInt(phase);
     if(!validationUtils.isValidAddress(address_p)){
         console.log("byllllogg startPhase address_p not known yet");
