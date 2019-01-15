@@ -127,9 +127,9 @@ function getCoordinators(conn, hp, phase, cb){
         return cb(null, assocByzantinePhase[hp].witnesses[pIndex], assocByzantinePhase[hp].roundIndex, assocByzantinePhase[hp].witnesses);
     }
     if(!validationUtils.isPositiveInteger(hp))
-        return cb("param hp is not a positive integer");
+        return cb("param hp is not a positive integer:" + hp);
     if(!validationUtils.isNonnegativeInteger(phase))
-        return cb("param phase is not a positive integer");
+        return cb("param phase is not a positive integer:" + phase);
     var conn = conn || db;
     round.getRoundIndexByNewMci(conn, hp, function(roundIndex){
         if(roundIndex === -1)
