@@ -256,7 +256,7 @@ function _gossiperStartWithOptions( oOptions )
 	//
 	_oGossiper.on( 'peer_update', ( sPeerUrl, sKey, vValue ) =>
 	{
-		console.log( `GOSSIPER ))) EVENT [peer_update] (${ GossiperUtils.isReservedKey( sKey ) ? "Reserved" : "Customized" }):: `, sPeerUrl, sKey, vValue );
+		// console.log( `GOSSIPER ))) EVENT [peer_update] (${ GossiperUtils.isReservedKey( sKey ) ? "Reserved" : "Customized" }):: `, sPeerUrl, sKey, vValue );
 
 		//
 		//	callback while we received a update from remote peers
@@ -268,7 +268,7 @@ function _gossiperStartWithOptions( oOptions )
 	});
 	_oGossiper.on( 'peer_alive', ( sPeerUrl ) =>
 	{
-		console.log( `GOSSIPER ))) EVENT [peer_alive] :: `, sPeerUrl );
+		// console.log( `GOSSIPER ))) EVENT [peer_alive] :: `, sPeerUrl );
 	});
 	_oGossiper.on( 'peer_failed', ( sPeerUrl ) =>
 	{
@@ -276,7 +276,7 @@ function _gossiperStartWithOptions( oOptions )
 	});
 	_oGossiper.on( 'new_peer', ( sPeerUrl ) =>
 	{
-		console.log( `GOSSIPER ))) EVENT [new_peer] :: `, sPeerUrl );
+		// console.log( `GOSSIPER ))) EVENT [new_peer] :: `, sPeerUrl );
 		if ( sPeerUrl !== _oGossiperOptions.url &&
 			! _oGossiper.m_oRouter.getSocket( sPeerUrl ) )
 		{
@@ -314,7 +314,7 @@ function _gossiperStartWithOptions( oOptions )
 	});
 	_oGossiper.on( 'log', ( sType, vData ) =>
 	{
-		console.log( `GOSSIPER ))) EVENT [log/${ sType }] :: `, vData );
+		// console.log( `GOSSIPER ))) EVENT [log/${ sType }] :: `, vData );
 	});
 
 
