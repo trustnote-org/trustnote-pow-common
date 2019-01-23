@@ -309,6 +309,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			{
 				if ( typeof currentMci !== "number" )
 				{
+					console.log("ccatchup prepareCatchupChain pfnNext:current mci is not number");
 					return pfnNext( `current mci is not number.` );
 				}
 				
@@ -316,18 +317,28 @@ function prepareCatchupChain( catchupRequest, callbacks )
 				{
 					if ( ! currentUnit )
 					{
+						console.log("ccatchup prepareCatchupChain pfnNext:failed to read stable mc unit");
 						return pfnNext( `failed to read stable mc unit.` );
 					}
 					_storage.readJointWithBall( _db, currentUnit, function( objJoint )
 					{
 						objCatchupChain.stable_last_ball_joints.push( objJoint );
 						if(objCatchupChain.stable_last_ball_joints.length > _conf.CATCHUP_MAX_CHAIN_BALLS)
+						{
+							console.log("ccatchup prepareCatchupChain pfnNext1:"+objCatchupChain.stable_last_ball_joints.length);
 							return pfnNext();
+						}
 						if(currentMci === sLastBallMci)
+						{
+							console.log("ccatchup prepareCatchupChain pfnNext2:"+currentMci);
 							return pfnNext();
+						}
 						var nextMci = currentMci + _conf.CATCHUP_MCI_INTERVAL;
 						if(nextMci > sLastBallMci)
+						{
+							console.log("ccatchup prepareCatchupChain pfnNext3:"+nextMci);
 							return pfnNext();
+						}
 						goDown(nextMci);
 					});
 				});	
