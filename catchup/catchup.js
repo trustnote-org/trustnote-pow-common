@@ -229,8 +229,9 @@ function prepareCatchupChain( catchupRequest, callbacks )
 		last_round_index			: null,	//	POW ADD @2018/10/9 4:30 PM  by Liu Qixing
 		stable_last_ball_joints			: [],
 	};
-	let sFirstBallUnit	= null;
+	
 	let sLastBallMci    = 0; 
+	
 	_async.series
 	([
 		function( pfnNext )
@@ -276,27 +277,13 @@ function prepareCatchupChain( catchupRequest, callbacks )
 		},
 		function( pfnNext )
 		{
-			_storage.readLastStableMcIndex( _db, function( last_stable_mci )
+			_storage.readLastStableMcIndex( _db, function( lastStableMci )
 			{
-				if ( ! last_stable_mci || last_stable_mci === 0 )
+				if ( ! lastStableMci || lastStableMci === 0 )
 				{
 					return pfnNext( `failed to read last stable mc unit.` );
 				}
-				sLastBallMci = last_stable_mci;
-				pfnNext();
-			});
-		},
-		function( pfnNext )
-		{
-			_storage.readUnitPropsBystableMci( _db, last_stable_mci, function( firstUnit )
-			{
-				if ( ! firstUnit )
-				{
-					return pfnNext( `failed to read first stable mc unit.` );
-				}
-
-				//	...
-				sFirstBallUnit = firstUnit;
+				sLastBallMci = lastStableMci;
 				pfnNext();
 			});
 		},
@@ -307,21 +294,22 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			//
 			if ( sLastBallMci === 0 || typeof sLastBallMci !== "number" )
 			{
-				return pfnNext();
+				return pfnNext( `current last stable mci is not number.` );
 			}
-			if ( ! sFirstBallUnit )
+			if(last_stable_mci > sLastBallMci)
 			{
-				return pfnNext();
+				return pfnNext('already_current');
 			}
-
+		
 			goDown( last_stable_mci );
 
 			function goDown( currentMci )
 			{
 				if ( typeof currentMci !== "number" )
 				{
-					return callbacks.ifError( "mci is not number" );
+					return pfnNext( `current mci is not number.` );
 				}
+				
 				_storage.readUnitPropsBystableMci( _db, currentMci, function( currentUnit )
 				{
 					if ( ! currentUnit )
