@@ -19,7 +19,9 @@ exports.debug		= false;
  */
 exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 50;
 
-
+// catchup
+exports.CATCHUP_MAX_CHAIN_BALLS = 1000;
+exports.CATCHUP_MCI_INTERVAL = 500;
 
 // port we are listening on.  Set to null to disable accepting connections
 // recommended port for livenet: 6655

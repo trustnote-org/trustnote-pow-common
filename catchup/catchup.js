@@ -14,6 +14,7 @@ const _mutex			= require( '../base/mutex.js' );
 const _validation		= require( '../validation/validation.js' );
 const _round			= require( '../pow/round.js' );
 const _event_bus		= require( '../base/event_bus.js' );
+const _conf             = require('../config/conf.js');
 //const _witness_pow_proof	= require( '../witness/witness_pow_proof.js' );		//	POW DEL	2018/9/6 11:15 AM
 
 
@@ -23,16 +24,193 @@ const _event_bus		= require( '../base/event_bus.js' );
 let _nLastRoundIndexFromPeers	= null;
 
 
+// /**
+//  * 	POW MOD
+//  *	@param	{object}	catchupRequest
+//  *	@param	{object}	callbacks
+//  *	@return {*}
+//  */
+// function prepareCatchupChainOld( catchupRequest, callbacks )
+// {
+// 	let last_stable_mci	= catchupRequest.last_stable_mci;
+// 	let last_known_mci	= catchupRequest.last_known_mci;
 
+// 	if ( typeof last_stable_mci !== "number" )
+// 	{
+// 		return callbacks.ifError( "no last_stable_mci" );
+// 	}
+// 	if ( typeof last_known_mci !== "number" )
+// 	{
+// 		return callbacks.ifError( "no last_known_mci" );
+// 	}
+// 	// if ( last_stable_mci >= last_known_mci && ( last_known_mci > 0 || last_stable_mci > 0 ) )
+// 	// {
+// 	// 	return callbacks.ifError( "last_stable_mci >= last_known_mci" );
+// 	// }
 
+// 	/**
+// 	 *	POW DEL
+// 	 *	@author	XING
+// 	 *	@datetime	2018/8/9 7:25 PM
+// 	 */
+// 	// if (!Array.isArray(arr_witnesses))
+// 	// 	return callbacks.ifError("no witnesses");
 
+// 	let objCatchupChain = {
+// 		last_round_index			: null,	//	POW ADD @2018/10/9 4:30 PM  by Liu Qixing
+// 		//unstable_mc_joints			: [],	//	POW DEL	@2018/9/6 11:24 AM  by Liu Qixing
+// 		stable_last_ball_joints			: [],
+// 		//witness_change_and_definition_joints	: []	//	POW DEL
+// 	};
+// 	let sLastBallUnit	= null;
 
-/**
- * 	POW MOD
- *	@param	{object}	catchupRequest
- *	@param	{object}	callbacks
- *	@return {*}
- */
+// 	//	...
+// 	_async.series
+// 	([
+// 		function( pfnNext )
+// 		{
+// 			//
+// 			//	get current round index
+// 			//
+// 			_round.getCurrentRoundIndex( null, function( nCurrentRoundIndex )
+// 			{
+// 				if ( 'number' === typeof nCurrentRoundIndex && nCurrentRoundIndex > 0 )
+// 				{
+// 					objCatchupChain.last_round_index = nCurrentRoundIndex;
+// 				}
+
+// 				//	...
+// 				pfnNext();
+// 			});
+// 		},
+// 		function( pfnNext )
+// 		{
+// 			//
+// 			//	check if the peer really needs hash trees
+// 			//
+// 			_db.query
+// 			(
+// 				"SELECT is_stable FROM units WHERE is_on_main_chain=1 AND main_chain_index=?",
+// 				[ last_known_mci ],
+// 				function( rows )
+// 				{
+// 					if ( rows.length === 0 )
+// 					{
+// 						return pfnNext( "already_current" );
+// 					}
+// 					if ( rows[ 0 ].is_stable === 0 )
+// 					{
+// 						return pfnNext( "already_current" );
+// 					}
+
+// 					//	...
+// 					pfnNext();
+// 				}
+// 			);
+// 		},
+// 		function( pfnNext )
+// 		{
+// 			//
+// 			//	POW ADD
+// 			//	2018/9/6 10:51 AM
+// 			//	read last stable mc unit
+// 			//
+// 			_storage.readLastStableMcUnitProps( _db, function( objLastStableMcUnitProps )
+// 			{
+// 				if ( ! objLastStableMcUnitProps )
+// 				{
+// 					return pfnNext( `failed to read last stable mc unit.` );
+// 				}
+
+// 				//	...
+// 				sLastBallUnit = objLastStableMcUnitProps.unit;
+// 				pfnNext();
+// 			});
+
+// 			//
+// 			//	POW DEL
+// 			//	2018/9/6 10:42 AM
+// 			//
+// 			//
+// 			// _witness_pow_proof.preparePowWitnessProof
+// 			// (
+// 			// 	last_stable_mci,
+// 			// 	function( err, arrUnstableMcJoints, _last_ball_unit, _last_ball_mci )
+// 			// 	{
+// 			// 		if ( err )
+// 			// 		{
+// 			// 			return cb( err );
+// 			// 		}
+// 			//
+// 			// 		//	...
+// 			// 		objCatchupChain.unstable_mc_joints = arrUnstableMcJoints;
+// 			//
+// 			// 		/**
+// 			// 		 *	POW DEL
+// 			// 		 */
+// 			// 		// if ( arrWitnessChangeAndDefinitionJoints.length > 0 )
+// 			// 		// {
+// 			// 		// 	objCatchupChain.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
+// 			// 		// }
+// 			//
+// 			// 		sLastBallUnit = _last_ball_unit;
+// 			// 		cb();
+// 			// 	}
+// 			// );
+// 		},
+// 		function( pfnNext )
+// 		{
+// 			//
+// 			//	jump by last_ball references until we land on or behind last_stable_mci
+// 			//
+// 			if ( ! sLastBallUnit )
+// 			{
+// 				return pfnNext();
+// 			}
+
+// 			goUp( sLastBallUnit );
+
+// 			//
+// 			//	goUp means going up along its last_ball_unit
+// 			//
+// 			//	current joint -> unit.last_ball_unit
+// 			//
+// 			function goUp( unit )
+// 			{
+// 				_storage.readJointWithBall( _db, unit, function( objJoint )
+// 				{
+// 					//
+// 					//	push
+// 					//	objJoint { unit, ball }
+// 					//
+// 					objCatchupChain.stable_last_ball_joints.push( objJoint );
+
+// 					//	...
+// 					_storage.readUnitProps( _db, unit, function( objUnitProps )
+// 					{
+// 						( objUnitProps.main_chain_index <= last_stable_mci )
+// 							? pfnNext()
+// 							: goUp( objJoint.unit.last_ball_unit );
+// 					});
+// 				});
+// 			}
+// 		}
+// 	], function( err )
+// 	{
+// 		if ( err === "already_current" )
+// 		{
+// 			return callbacks.ifOk( { status : "current" } );
+// 		}
+// 		if ( err )
+// 		{
+// 			return callbacks.ifError( err );
+// 		}
+
+// 		//	...
+// 		callbacks.ifOk( objCatchupChain );
+// 	});
+// }
+
 function prepareCatchupChain( catchupRequest, callbacks )
 {
 	let last_stable_mci	= catchupRequest.last_stable_mci;
@@ -46,28 +224,13 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	{
 		return callbacks.ifError( "no last_known_mci" );
 	}
-	// if ( last_stable_mci >= last_known_mci && ( last_known_mci > 0 || last_stable_mci > 0 ) )
-	// {
-	// 	return callbacks.ifError( "last_stable_mci >= last_known_mci" );
-	// }
-
-	/**
-	 *	POW DEL
-	 *	@author	XING
-	 *	@datetime	2018/8/9 7:25 PM
-	 */
-	// if (!Array.isArray(arr_witnesses))
-	// 	return callbacks.ifError("no witnesses");
 
 	let objCatchupChain = {
 		last_round_index			: null,	//	POW ADD @2018/10/9 4:30 PM  by Liu Qixing
-		//unstable_mc_joints			: [],	//	POW DEL	@2018/9/6 11:24 AM  by Liu Qixing
 		stable_last_ball_joints			: [],
-		//witness_change_and_definition_joints	: []	//	POW DEL
 	};
-	let sLastBallUnit	= null;
-
-	//	...
+	let sFirstBallUnit	= null;
+	let sLastBallMci    = 0; 
 	_async.series
 	([
 		function( pfnNext )
@@ -113,89 +276,71 @@ function prepareCatchupChain( catchupRequest, callbacks )
 		},
 		function( pfnNext )
 		{
-			//
-			//	POW ADD
-			//	2018/9/6 10:51 AM
-			//	read last stable mc unit
-			//
-			_storage.readLastStableMcUnitProps( _db, function( objLastStableMcUnitProps )
+			_storage.readLastStableMcIndex( _db, function( last_stable_mci )
 			{
-				if ( ! objLastStableMcUnitProps )
+				if ( ! last_stable_mci || last_stable_mci === 0 )
 				{
 					return pfnNext( `failed to read last stable mc unit.` );
 				}
-
-				//	...
-				sLastBallUnit = objLastStableMcUnitProps.unit;
+				sLastBallMci = last_stable_mci;
 				pfnNext();
 			});
+		},
+		function( pfnNext )
+		{
+			_storage.readUnitPropsBystableMci( _db, last_stable_mci, function( firstUnit )
+			{
+				if ( ! firstUnit )
+				{
+					return pfnNext( `failed to read first stable mc unit.` );
+				}
 
-			//
-			//	POW DEL
-			//	2018/9/6 10:42 AM
-			//
-			//
-			// _witness_pow_proof.preparePowWitnessProof
-			// (
-			// 	last_stable_mci,
-			// 	function( err, arrUnstableMcJoints, _last_ball_unit, _last_ball_mci )
-			// 	{
-			// 		if ( err )
-			// 		{
-			// 			return cb( err );
-			// 		}
-			//
-			// 		//	...
-			// 		objCatchupChain.unstable_mc_joints = arrUnstableMcJoints;
-			//
-			// 		/**
-			// 		 *	POW DEL
-			// 		 */
-			// 		// if ( arrWitnessChangeAndDefinitionJoints.length > 0 )
-			// 		// {
-			// 		// 	objCatchupChain.witness_change_and_definition_joints = arrWitnessChangeAndDefinitionJoints;
-			// 		// }
-			//
-			// 		sLastBallUnit = _last_ball_unit;
-			// 		cb();
-			// 	}
-			// );
+				//	...
+				sFirstBallUnit = firstUnit;
+				pfnNext();
+			});
 		},
 		function( pfnNext )
 		{
 			//
 			//	jump by last_ball references until we land on or behind last_stable_mci
 			//
-			if ( ! sLastBallUnit )
+			if ( sLastBallMci === 0 || typeof sLastBallMci !== "number" )
+			{
+				return pfnNext();
+			}
+			if ( ! sFirstBallUnit )
 			{
 				return pfnNext();
 			}
 
-			goUp( sLastBallUnit );
+			goDown( last_stable_mci );
 
-			//
-			//	goUp means going up along its last_ball_unit
-			//
-			//	current joint -> unit.last_ball_unit
-			//
-			function goUp( unit )
+			function goDown( currentMci )
 			{
-				_storage.readJointWithBall( _db, unit, function( objJoint )
+				if ( typeof currentMci !== "number" )
 				{
-					//
-					//	push
-					//	objJoint { unit, ball }
-					//
-					objCatchupChain.stable_last_ball_joints.push( objJoint );
-
-					//	...
-					_storage.readUnitProps( _db, unit, function( objUnitProps )
+					return callbacks.ifError( "mci is not number" );
+				}
+				_storage.readUnitPropsBystableMci( _db, currentMci, function( currentUnit )
+				{
+					if ( ! currentUnit )
 					{
-						( objUnitProps.main_chain_index <= last_stable_mci )
-							? pfnNext()
-							: goUp( objJoint.unit.last_ball_unit );
+						return pfnNext( `failed to read stable mc unit.` );
+					}
+					_storage.readJointWithBall( _db, currentUnit, function( objJoint )
+					{
+						objCatchupChain.stable_last_ball_joints.push( objJoint );
+						if(objCatchupChain.stable_last_ball_joints.length > _conf.CATCHUP_MAX_CHAIN_BALLS)
+							return pfnNext();
+						if(currentMci === sLastBallMci)
+							return pfnNext();
+						var nextMci = currentMci + _conf.CATCHUP_MCI_INTERVAL;
+						if(nextMci > sLastBallMci)
+							return pfnNext();
+						goDown(nextMci);
 					});
-				});
+				});	
 			}
 		}
 	], function( err )
@@ -214,15 +359,218 @@ function prepareCatchupChain( catchupRequest, callbacks )
 	});
 }
 
+// /**
+//  *	process received catchup chain in client side
+//  *
+//  *	@param	{object}	catchupChain
+//  *	@param	{string}	peer
+//  *	@param	{object}	callbacks
+//  *	@return {*}
+//  */
+// function processCatchupChainOld( catchupChain, peer, callbacks )
+// {
+// 	if ( catchupChain.status === "current" )
+// 	{
+// 		return callbacks.ifCurrent();
+// 	}
 
-/**
- *	process received catchup chain in client side
- *
- *	@param	{object}	catchupChain
- *	@param	{string}	peer
- *	@param	{object}	callbacks
- *	@return {*}
- */
+// 	//
+// 	//	POW DEL
+// 	//	2018/9/6 10:46 AM
+// 	//
+// 	// if ( ! Array.isArray( catchupChain.unstable_mc_joints ) )
+// 	// {
+// 	// 	return callbacks.ifError( "no unstable_mc_joints" );
+// 	// }
+
+// 	if ( ! Array.isArray( catchupChain.stable_last_ball_joints ) )
+// 	{
+// 		return callbacks.ifError( "no stable_last_ball_joints" );
+// 	}
+// 	if ( 0 === catchupChain.stable_last_ball_joints.length )
+// 	{
+// 		return callbacks.ifError( "stable_last_ball_joints is empty" );
+// 	}
+// 	if ( 'object' !== typeof catchupChain.stable_last_ball_joints[ 0 ] )
+// 	{
+// 		return callbacks.ifError( "stable_last_ball_joints is not a plain object." );
+// 	}
+
+
+// 	/**
+// 	 *	POW ADD
+// 	 *	update _nLastRoundIndexFromPeers
+// 	 */
+// 	updateLastRoundIndexFromPeers( catchupChain.last_round_index );
+
+
+// 	/**
+// 	 * 	POW MOD
+// 	 *	stable joints
+// 	 */
+// 	let sLastBallUnit	= catchupChain.stable_last_ball_joints[ 0 ].unit.unit;
+// 	let sLastBall		= catchupChain.stable_last_ball_joints[ 0 ].ball;
+// 	let arrChainBalls	= [];
+
+// 	for ( let i = 0; i < catchupChain.stable_last_ball_joints.length; i ++ )
+// 	{
+// 		let objJoint	= catchupChain.stable_last_ball_joints[ i ];
+// 		let objUnit	= objJoint.unit;
+
+// 		if ( ! objJoint.ball )
+// 		{
+// 			return callbacks.ifError( "stable but no ball" );
+// 		}
+// 		if ( ! _validation.hasValidHashes( objJoint ) )
+// 		{
+// 			return callbacks.ifError( "invalid hash" );
+// 		}
+// 		if ( objUnit.unit !== sLastBallUnit )
+// 		{
+// 			return callbacks.ifError( "not the last ball unit" );
+// 		}
+// 		if ( objJoint.ball !== sLastBall )
+// 		{
+// 			return callbacks.ifError("not the last ball");
+// 		}
+// 		if ( objUnit.last_ball_unit )
+// 		{
+// 			sLastBallUnit	= objUnit.last_ball_unit;
+// 			sLastBall	= objUnit.last_ball;
+// 		}
+
+// 		arrChainBalls.push( objJoint.ball );
+// 	}
+
+// 	//
+// 	//	* VERY IMPORTANT
+// 	//	objJoints in arrChainBalls will sort by main_chain_index ASC after arrChainBalls.reverse()
+// 	//
+// 	arrChainBalls.reverse();
+
+
+// 	//	...
+// 	let unlock = null;
+// 	_async.series
+// 	([
+// 		function( cb )
+// 		{
+// 			_mutex.lock
+// 			(
+// 				[ 'catchup_chain' ],
+// 				function( _unlock )
+// 				{
+// 					unlock = _unlock;
+// 					_db.query
+// 					(
+// 						"SELECT 1 FROM catchup_chain_balls LIMIT 1",
+// 						function( rows )
+// 						{
+// 							( rows.length > 0 ) ? cb( "duplicate" ) : cb();
+// 						}
+// 					);
+// 				}
+// 			);
+// 		},
+// 		function( cb )
+// 		{
+// 			//
+// 			//	ADJUST first chain ball if necessary
+// 			// 	and make sure it is the only stable unit in the entire chain
+// 			//
+// 			_db.query
+// 			(
+// 				"SELECT is_stable, is_on_main_chain, main_chain_index FROM balls JOIN units USING(unit) WHERE ball=?",
+// 				[ arrChainBalls[ 0 ] ],
+// 				function( rows )
+// 				{
+// 					if ( 0 === rows.length )
+// 					{
+// 						if ( _storage.isGenesisBall( arrChainBalls[ 0 ] ) )
+// 						{
+// 							return cb();
+// 						}
+
+// 						return cb( `first chain ball ${ arrChainBalls[ 0 ] } is not known` );
+// 					}
+
+// 					let objFirstChainBallProps	= rows[0];
+// 					if ( objFirstChainBallProps.is_stable !== 1 )
+// 					{
+// 						return cb( "first chain ball "+arrChainBalls[0]+" is not stable" );
+// 					}
+// 					if ( objFirstChainBallProps.is_on_main_chain !== 1 )
+// 					{
+// 						return cb( `first chain ball ${ arrChainBalls[0] } is not on mc` );
+// 					}
+
+// 					_storage.readLastStableMcUnitProps( _db, function( objLastStableMcUnitProps )
+// 					{
+// 						let last_stable_mci	= objLastStableMcUnitProps.main_chain_index;
+// 						if ( objFirstChainBallProps.main_chain_index > last_stable_mci )
+// 						{
+// 							//	duplicate check
+// 							return cb( `first chain ball ${ arrChainBalls[0] } mci is too large` );
+// 						}
+// 						if ( objFirstChainBallProps.main_chain_index === last_stable_mci )
+// 						{
+// 							//	exact match
+// 							return cb();
+// 						}
+
+// 						//	replace to avoid receiving duplicates
+// 						arrChainBalls[ 0 ]	= objLastStableMcUnitProps.ball;
+// 						if ( ! arrChainBalls[ 1 ] )
+// 						{
+// 							return cb();
+// 						}
+
+// 						_db.query
+// 						(
+// 							"SELECT is_stable FROM balls JOIN units USING(unit) WHERE ball=?",
+// 							[ arrChainBalls[ 1 ] ],
+// 							function( rows2 )
+// 							{
+// 								if ( 0 === rows2.length )
+// 								{
+// 									return cb();
+// 								}
+
+// 								let objSecondChainBallProps = rows2[0];
+// 								if ( 1 === objSecondChainBallProps.is_stable )
+// 								{
+// 									return cb( `second chain ball ${ arrChainBalls[1] } must not be stable` );
+// 								}
+
+// 								//	...
+// 								cb();
+// 							}
+// 						);
+// 					});
+// 				}
+// 			);
+// 		},
+// 		function( cb )
+// 		{
+// 			//
+// 			//	_validation complete, now write the chain for future downloading of hash trees
+// 			//
+// 			let arrValues = arrChainBalls.map( function( ball ){ return "(" + _db.escape( ball ) + ")"; } );
+// 			_db.query
+// 			(
+// 				"INSERT INTO catchup_chain_balls (ball) VALUES " + arrValues.join( ', ' ), function()
+// 				{
+// 					cb();
+// 				}
+// 			);
+// 		}
+// 	], function( err )
+// 	{
+// 		unlock();
+// 		err ? callbacks.ifError( err ) : callbacks.ifOk();
+// 	});
+// }
+
 function processCatchupChain( catchupChain, peer, callbacks )
 {
 	if ( catchupChain.status === "current" )
@@ -264,8 +612,8 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	 * 	POW MOD
 	 *	stable joints
 	 */
-	let sLastBallUnit	= catchupChain.stable_last_ball_joints[ 0 ].unit.unit;
-	let sLastBall		= catchupChain.stable_last_ball_joints[ 0 ].ball;
+	// let sLastBallUnit	= catchupChain.stable_last_ball_joints[ 0 ].unit.unit;
+	// let sLastBall		= catchupChain.stable_last_ball_joints[ 0 ].ball;
 	let arrChainBalls	= [];
 
 	for ( let i = 0; i < catchupChain.stable_last_ball_joints.length; i ++ )
@@ -281,19 +629,19 @@ function processCatchupChain( catchupChain, peer, callbacks )
 		{
 			return callbacks.ifError( "invalid hash" );
 		}
-		if ( objUnit.unit !== sLastBallUnit )
-		{
-			return callbacks.ifError( "not the last ball unit" );
-		}
-		if ( objJoint.ball !== sLastBall )
-		{
-			return callbacks.ifError("not the last ball");
-		}
-		if ( objUnit.last_ball_unit )
-		{
-			sLastBallUnit	= objUnit.last_ball_unit;
-			sLastBall	= objUnit.last_ball;
-		}
+		// if ( objUnit.unit !== sLastBallUnit )
+		// {
+		// 	return callbacks.ifError( "not the last ball unit" );
+		// }
+		// if ( objJoint.ball !== sLastBall )
+		// {
+		// 	return callbacks.ifError("not the last ball");
+		// }
+		// if ( objUnit.last_ball_unit )
+		// {
+		// 	sLastBallUnit	= objUnit.last_ball_unit;
+		// 	sLastBall	= objUnit.last_ball;
+		// }
 
 		arrChainBalls.push( objJoint.ball );
 	}
@@ -302,7 +650,7 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	//	* VERY IMPORTANT
 	//	objJoints in arrChainBalls will sort by main_chain_index ASC after arrChainBalls.reverse()
 	//
-	arrChainBalls.reverse();
+	// arrChainBalls.reverse();
 
 
 	//	...
@@ -426,7 +774,6 @@ function processCatchupChain( catchupChain, peer, callbacks )
 		err ? callbacks.ifError( err ) : callbacks.ifOk();
 	});
 }
-
 
 /**
  *	read hash tree
@@ -583,7 +930,7 @@ function processHashTree( arrBalls, callbacks )
 		{
 			conn.query( "BEGIN", function()
 			{
-				let max_mci = null;
+				// let max_mci = null;
 				_async.eachSeries
 				(
 					arrBalls,
@@ -685,15 +1032,15 @@ function processHashTree( arrBalls, callbacks )
 									{
 										return cb( `some parents not found, unit ${ objBall.unit }` );
 									}
-
-									for ( let i = 0; i < rows2.length; i++ )
-									{
-										let props = rows2[ i ];
-										if ( props.is_on_main_chain === 1 && ( props.main_chain_index > max_mci || max_mci === null ) )
-										{
-											max_mci = props.main_chain_index;
-										}
-									}
+									
+									// for ( let i = 0; i < rows2.length; i++ )
+									// {
+									// 	let props = rows2[ i ];
+									// 	if ( props.is_on_main_chain === 1 && ( props.main_chain_index > max_mci || max_mci === null ) )
+									// 	{
+									// 		max_mci = props.main_chain_index;
+									// 	}
+									// }
 
 									//	...
 									checkSkiplistBallsExist();

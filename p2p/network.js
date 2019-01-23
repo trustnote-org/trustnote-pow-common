@@ -2221,14 +2221,10 @@ function handleCatchupChain(ws, request, response) {
 function requestNextHashTree(ws) {
 	db.query("SELECT COUNT(1) AS count_left FROM catchup_chain_balls", function (rows) {
 		if (rows.length > 0) {
-
 			if (catchup_balls_at_start == -1) { // first time to get all catchup ball number
 				catchup_balls_at_start = rows[0].count_left;
 			}
-
 			catchup_balls_left = rows[0].count_left;
-			;
-			eventBus.emit('catchup_balls_left', rows[0].count_left);
 		}
 	});
 	db.query("SELECT ball FROM catchup_chain_balls ORDER BY member_index LIMIT 2", function (rows) {

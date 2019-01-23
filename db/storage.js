@@ -786,11 +786,6 @@ function readPropsOfUnits(conn, earlier_unit, arrLaterUnits, handleProps){
 	);
 }
 
-
-
-
-
-
 function readLastStableMcUnitProps(conn, handleLastStableMcUnitProps){
 	conn.query(
 		"SELECT units.*, ball FROM units LEFT JOIN balls USING(unit) WHERE is_on_main_chain=1 AND is_stable=1 ORDER BY main_chain_index DESC LIMIT 1", 
@@ -801,6 +796,18 @@ function readLastStableMcUnitProps(conn, handleLastStableMcUnitProps){
 			if (!rows[0].ball)
 				throw Error("no ball for last stable unit");
 			handleLastStableMcUnitProps(rows[0]);
+		}
+	);
+}
+
+function readUnitPropsBystableMci(conn, stableMci, handleUnit){
+	conn.query(
+		"SELECT unit FROM units WHERE is_on_main_chain=1 AND is_stable=1 AND main_chain_index=? LIMIT 1", 
+		[stableMci], 
+		function(rows){
+			if (rows.length !== 1)
+				return handleUnit(null);
+			handleUnit(rows[0].unit);
 		}
 	);
 }
@@ -1451,7 +1458,7 @@ exports.readLastMainChainIndex = readLastMainChainIndex;
 
 exports.readLastStableMcUnitProps = readLastStableMcUnitProps;
 exports.readLastStableMcIndex = readLastStableMcIndex;
-
+exports.readUnitPropsBystableMci = readUnitPropsBystableMci;
 
 exports.findLastBallMciOfMci = findLastBallMciOfMci;
 exports.getMinRetrievableMci = getMinRetrievableMci;
