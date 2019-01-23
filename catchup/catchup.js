@@ -300,6 +300,8 @@ function prepareCatchupChain( catchupRequest, callbacks )
 			{
 				return pfnNext('already_current');
 			}
+
+			console.log("ccatchup prepareCatchupChain mic:"+last_stable_mci+":"+sLastBallMci);
 		
 			goDown( last_stable_mci );
 

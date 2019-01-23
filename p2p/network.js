@@ -3203,7 +3203,7 @@ function handleRequest(ws, tag, command, params) {
 
 		case 'catchup':
 			let catchupRequest = params;
-
+			console.log("ccatchup prepareCatchupChain params:" + params);
 			/**
 			 *        POW ADD
 			 *        @author                XING
@@ -3224,6 +3224,7 @@ function handleRequest(ws, tag, command, params) {
 						catchupRequest,
 						{
 							ifError: function (error) {
+								console.log("ccatchup prepareCatchupChain err:" + error);
 								sendErrorResponse(ws, tag, error);
 								unlock();
 							},
