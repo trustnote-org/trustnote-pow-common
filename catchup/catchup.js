@@ -337,7 +337,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 						if(nextMci > sLastBallMci)
 						{
 							console.log("ccatchup prepareCatchupChain pfnNext3:"+nextMci);
-							return pfnNext();
+							goDown(sLastBallMci);
 						}
 						goDown(nextMci);
 					});
