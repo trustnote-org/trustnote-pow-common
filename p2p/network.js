@@ -3228,6 +3228,7 @@ function handleRequest(ws, tag, command, params) {
 								unlock();
 							},
 							ifOk: function (objCatchupChain) {
+								console.log("ccatchup prepareCatchupChain:" + JSON.stringify(objCatchupChain));
 								sendResponse(ws, tag, objCatchupChain);
 								unlock();
 							}
