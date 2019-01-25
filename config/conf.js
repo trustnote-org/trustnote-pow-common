@@ -23,6 +23,9 @@ exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 50;
 exports.CATCHUP_MAX_CHAIN_BALLS = 1000;
 exports.CATCHUP_MCI_INTERVAL = 500;
 
+// byzantine
+exports.IF_BYZANTINE = false;
+
 // port we are listening on.  Set to null to disable accepting connections
 // recommended port for livenet: 6655
 // recommended port for testnet: 16655

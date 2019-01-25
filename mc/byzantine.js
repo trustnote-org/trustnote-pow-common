@@ -2,7 +2,7 @@
 "use strict";
 
 var constants = require('../config/constants.js');
-//var conf = require('../config/conf.js');
+var conf = require('../config/conf.js');
 var db = require('../db/db.js');
 var _ = require('lodash');
 var mutex = require('../base/mutex.js');
@@ -51,6 +51,8 @@ var bTrustMeUnderWay = false;
  * init byzantine, executes at startup
  */
 function initByzantine(){
+    if(!conf.IF_BYZANTINE)
+        return;
     if(bByzantineUnderWay)
         return;
     db.query("SELECT address FROM my_addresses", [], 
@@ -105,6 +107,8 @@ function initByzantine(){
 
 eventBus.on('headless_wallet_ready', () =>
 {
+    if(!conf.IF_BYZANTINE)
+        return;
     initByzantine();
 });
 
@@ -161,6 +165,8 @@ function getCoordinators(conn, hp, phase, cb){
 //     else
 //         schedule OnTimeoutPropose(hp,roundp) to be executed after timeoutPropose(roundp)
 function startPhase(hp, phase){
+    if(!conf.IF_BYZANTINE)
+        return;
     hp = parseInt(hp);
     phase = parseInt(phase);
     if(!validationUtils.isValidAddress(address_p)){
@@ -331,6 +337,8 @@ function startPhase(hp, phase){
  *  byzantine gossip message event
  */
 eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
+    if(!conf.IF_BYZANTINE)
+        return;
     console.log("byllllogg " + h_p + "-" + p_p + " gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
         + " --- gossipMessage:" + JSON.stringify(gossipMessage));
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
@@ -367,6 +375,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
     });
 });
 eventBus.on('mci_became_stable', function(mci){
+    if(!conf.IF_BYZANTINE)
+        return;
      //reset params
      lockedValue_p = null;
      lockedPhase_p = -1;
