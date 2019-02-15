@@ -5,7 +5,7 @@ var constants = require('../config/constants.js');
 var conf = require('../config/conf.js');
 var db = require('../db/db.js');
 var _ = require('lodash');
-var mutex = require('../base/mutex.js');
+// var mutex = require('../base/mutex.js');
 //var async = require('async');
 var validationUtils = require('../validation/validation_utils.js');
 var validation = require('../validation/validation.js');
@@ -43,7 +43,7 @@ var assocByzantinePhase = {};
 
 var maxGossipHp = 1;
 var bByzantineUnderWay = false;
-var bTrustMeUnderWay = false;
+// var bTrustMeUnderWay = false;
 
 // init function begin
 
@@ -961,9 +961,9 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
 }
 function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
     // console.log("byllllogg decisionTrustMe:" + JSON.stringify(proposal));
-    bTrustMeUnderWay = true;
+    // bTrustMeUnderWay = true;
     function onError(){
-        bTrustMeUnderWay = false;
+        // bTrustMeUnderWay = false;
         onDecisionError(phase);
 	}
     const callbacks = composer.getSavingCallbacks({
@@ -971,7 +971,7 @@ function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError,
 		ifError: onError,
 		ifOk: function(objJoint){
             network.broadcastJoint(objJoint);
-            bTrustMeUnderWay = false;
+            // bTrustMeUnderWay = false;
             onDecisionDone();
 		}
 	});
