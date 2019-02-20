@@ -698,6 +698,10 @@ function handleByzantine(){
                     // compose new trustme unit
                     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
                 }
+                else{  // not proposer, wait
+                    clearTimeout(timeout_p);
+                    timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
+                }
             }
         });
     }
