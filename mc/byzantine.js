@@ -699,6 +699,8 @@ function handleByzantine(){
                     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
                 }
                 else{  // not proposer, wait
+                    h_prevote_timeout = h_p;
+                    p_prevote_timeout = p_p;
                     clearTimeout(timeout_p);
                     timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
                 }
