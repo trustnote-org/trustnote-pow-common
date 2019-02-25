@@ -692,6 +692,7 @@ function handleByzantine(){
 
     if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
         Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
+            console.log("byllllog decisionTrustMe before decision " + current_p + ":" + assocByzantinePhase[h_p].phase[current_p].proposal.phase);
             if(current_p === assocByzantinePhase[h_p].phase[current_p].proposal.phase &&
                 assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
                 assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
@@ -973,6 +974,7 @@ function pushReceivedAddresses(arrAddresses, address){
 }
 
 function decisionTrustMe(proposal, approvedCoordinators) {
+    console.log("byllllog decisionTrustMe " + hp + ":" + phase);
     eventBus.emit( 'byzantine_success', address_p, proposal, approvedCoordinators );    
 }
 
