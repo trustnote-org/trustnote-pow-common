@@ -642,6 +642,19 @@ function getMaxMci(conn, handleResult){
 	);
 }
 
+function getMaxTrustMeMci(conn, handleResult){
+	var conn = conn || db;
+	conn.query(
+		"SELECT MAX(main_chain_index) FROM units WHERE pow_type=? AND is_stable=1",
+		[constants.POW_TYPE_TRUSTME],
+		function(rows){
+			if(rows.length !== 1)
+				throw Error("getMaxTrustMeMci method can not got one mci  ")
+			handleResult(rows[0].main_chain_index);
+		}
+	);
+}
+
 function getUnitsInfoWithMci(conn, mci,handleResult){
 	var conn = conn || db;
 	conn.query(
@@ -1485,6 +1498,7 @@ exports.sliceAndExecuteQuery = sliceAndExecuteQuery;
 exports.determinewitnessedLevelAndLimci = determinewitnessedLevelAndLimci;
 exports.determineBestParent = determineBestParent;
 exports.getMaxMci = getMaxMci;
+exports.getMaxTrustMeMci = getMaxTrustMeMci;
 exports.getUnitsInfoWithMci = getUnitsInfoWithMci;
 
 

@@ -679,26 +679,27 @@ function handleByzantine(){
     //         hp ← hp+1
     //         reset lockedRoundp,lockedValuep,validRoundp and validValuep to initial values and empty message log
     //         StartRound(0)
-    function onDecisionError(phase){
-        console.log("byllllog startPhase onDecisionError:" + h_p + ":" + p_p);
-        startPhase(h_p, phase++);          
-    }
-    function onDecisionDone(){
-        console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
-    }
+    // function onDecisionError(phase){
+    //     console.log("byllllog startPhase onDecisionError:" + h_p + ":" + p_p);
+    //     startPhase(h_p, phase++);          
+    // }
+    // function onDecisionDone(){
+    //     console.log("byllllogg onDecisionDone" + " --- h_p:" + h_p + " --- p_p:" + p_p);
+    // }
 
     console.log("byllllogl " + h_p + "-" + p_p + " --- step_p:" 
     + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p);
 
     if(assocByzantinePhase[h_p].decision === null || Object.keys(assocByzantinePhase[h_p].decision).length === 0){
         Object.keys(assocByzantinePhase[h_p].phase).forEach(function(current_p){
-            if(assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
+            if(current_p === assocByzantinePhase[h_p].phase[current_p].proposal.phase &&
+                assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
                 assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                     // compose new trustme unit
-                    return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, current_p, assocByzantinePhase[h_p].phase[current_p].precommit_approved, onDecisionError, onDecisionDone);
+                    return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                 }
-                else{  // not proposer, wait
+                else{  // not proposer, wait long enough
                     h_prevote_timeout = h_p;
                     p_prevote_timeout = p_p;
                     clearTimeout(timeout_p);
@@ -965,30 +966,21 @@ function PrecommitBiggerThan2f1(h, p, isApproved){
     else 
         return false;
 }
-function decisionTrustMe(proposal, phase, approvedCoordinators, onDecisionError, onDecisionDone) {
-    // console.log("byllllogg decisionTrustMe:" + JSON.stringify(proposal));
-    // bTrustMeUnderWay = true;
-    function onError(){
-        // bTrustMeUnderWay = false;
-        onDecisionError(phase);
-	}
-    const callbacks = composer.getSavingCallbacks({
-		ifNotEnoughFunds: onError,
-		ifError: onError,
-		ifOk: function(objJoint){
-            network.broadcastJoint(objJoint);
-            // bTrustMeUnderWay = false;
-            onDecisionDone();
-		}
-	});
-    var objNakedProposal = _.cloneDeep(proposal);
-    var objNakedApprovedCoordinators = _.cloneDeep(approvedCoordinators);
-	composer.composeCoordinatorTrustMe(address_p, objNakedProposal, phase, objNakedApprovedCoordinators, supernode.signer, callbacks);      
-}
+
 function pushReceivedAddresses(arrAddresses, address){
     if (arrAddresses.indexOf(address) === -1)
         arrAddresses.push(address);
 }
+
+function decisionTrustMe(proposal, approvedCoordinators) {
+    eventBus.emit( 'byzantine_success', address_p, proposal, approvedCoordinators );    
+}
+
+function doStartPhase(hp, phase){
+    console.log("byllllog startPhase onDecisionError:" + hp + ":" + phase);
+    startPhase(hp, phase);          
+}
+
 // private function end
 
 // Send the last message at fixed intervals
@@ -1021,7 +1013,7 @@ function consoleLog(){
     + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
 }
 
-setInterval(consoleLog, 5*1000);
+setInterval(consoleLog, 10*1000);
 
 // Send the last message end
 
@@ -1063,4 +1055,4 @@ setInterval(shrinkByzantineCache, 100*1000);
 //	@exports
 
 exports.getCoordinators = getCoordinators;
-
+exports.doStartPhase = doStartPhase;

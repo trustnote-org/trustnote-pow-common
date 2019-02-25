@@ -65,7 +65,7 @@ let assocKnownPeers			= {};
 if ( process.browser )
 {
 	//	browser
-	console.log( "defining .on() on ws" );
+	// console.log( "defining .on() on ws" );
 	WebSocket.prototype.on = (event, callback) =>
 	{
 		let self = this;

@@ -22,6 +22,7 @@ const _conf             = require('../config/conf.js');
  *	last round index from all outbound peers
  */
 let _nLastRoundIndexFromPeers	= null;
+let _nLastMainChainIndexFromPeers	= null;
 
 
 // /**
@@ -227,6 +228,7 @@ function prepareCatchupChain( catchupRequest, callbacks )
 
 	let objCatchupChain = {
 		last_round_index			: null,	//	POW ADD @2018/10/9 4:30 PM  by Liu Qixing
+		last_main_chain_index       : null, //  ADD by ZhangT @2019/2/25
 		stable_last_ball_joints			: [],
 	};
 	
@@ -244,6 +246,22 @@ function prepareCatchupChain( catchupRequest, callbacks )
 				if ( 'number' === typeof nCurrentRoundIndex && nCurrentRoundIndex > 0 )
 				{
 					objCatchupChain.last_round_index = nCurrentRoundIndex;
+				}
+
+				//	...
+				pfnNext();
+			});
+		},
+		function( pfnNext )
+		{
+			//
+			//	get current main chain index
+			//
+			_storage.getMaxTrustMeMci( null, function( main_chain_index )
+			{
+				if ( 'number' === typeof main_chain_index && main_chain_index > 0 )
+				{
+					objCatchupChain.last_main_chain_index = main_chain_index;
 				}
 
 				//	...
@@ -599,7 +617,7 @@ function processCatchupChain( catchupChain, peer, callbacks )
 	 *	POW ADD
 	 *	update _nLastRoundIndexFromPeers
 	 */
-	updateLastRoundIndexFromPeers( catchupChain.last_round_index );
+	updateLastRoundIndexFromPeers( catchupChain.last_round_index, catchupChain.last_main_chain_index );
 
 
 	/**
@@ -1128,15 +1146,17 @@ function purgeHandledBallsFromHashTree( conn, onDone )
  * 	update last round index from all outbound peers
  *	@return	{void}
  */
-function updateLastRoundIndexFromPeers( nLastRoundIndex )
+function updateLastRoundIndexFromPeers( nLastRoundIndex, nLastMainChainIndex )
 {
-	if ( 'number' === typeof nLastRoundIndex && nLastRoundIndex > 0 )
+	if ( 'number' === typeof nLastRoundIndex && nLastRoundIndex > 0 &&
+		 'number' === typeof nLastMainChainIndex && nLastMainChainIndex > 0 )
 	{
-		if ( null === _nLastRoundIndexFromPeers ||
-			nLastRoundIndex > _nLastRoundIndexFromPeers )
+		if ( null === _nLastRoundIndexFromPeers || nLastRoundIndex > _nLastRoundIndexFromPeers ||
+			 null === _nLastMainChainIndexFromPeers || nLastMainChainIndex > _nLastMainChainIndexFromPeers )
 		{
 			_nLastRoundIndexFromPeers = nLastRoundIndex;
-			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers );
+			_nLastMainChainIndexFromPeers = nLastMainChainIndex;
+			_event_bus.emit( 'updated_last_round_index_from_peers', _nLastRoundIndexFromPeers, _nLastMainChainIndexFromPeers );
 		}
 	}
 }
