@@ -976,7 +976,7 @@ function pushReceivedAddresses(arrAddresses, address){
 }
 
 function decisionTrustMe(proposal, approvedCoordinators) {
-    console.log("byllllog decisionTrustMe " + hp + ":" + phase);
+    console.log("byllllog decisionTrustMe proposal approvedCoordinators");
     eventBus.emit( 'byzantine_success', address_p, proposal, approvedCoordinators );    
 }
 
