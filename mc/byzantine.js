@@ -219,7 +219,11 @@ function startPhase(hp, phase){
         }
 
         if(proposer === address_p){    // i am proposer
-            if(typeof assocByzantinePhase[hp].phase[phase].proposal !== 'undefined' &&
+            if(typeof assocByzantinePhase[hp] !== 'undefined' &&
+                Object.keys(assocByzantinePhase[hp]).length > 0 &&
+                typeof assocByzantinePhase[hp].phase[phase] !== 'undefined' &&
+                Object.keys(assocByzantinePhase[hp].phase[phase]).length > 0 &&
+                typeof assocByzantinePhase[hp].phase[phase].proposal !== 'undefined' &&
                 Object.keys(assocByzantinePhase[hp].phase[phase].proposal).length > 0 &&
                 assocByzantinePhase[hp].phase[phase].proposal.address === address_p){
                 var proposal = assocByzantinePhase[hp].phase[phase].proposal;
