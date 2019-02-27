@@ -529,40 +529,46 @@ function handleGossipMessage(sKey, gossipMessage, callback){
     // push the gossip message into local db
     switch(gossipMessage.type){
         case constants.BYZANTINE_PROPOSE: 
-            validation.validateProposalJoint(gossipMessage.v, {
-                ifInvalid: function(err){
-                    console.log("byllllogg BYZANTINE_PROPOSE gossip ifInvalid:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address + err);
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
-                        // console.log("byllllogg push new byzantine proposal from Invalid gossip:" + err);
-                        handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
-                        return callback();
-                    });
-                },
-                ifNeedWaiting: function(err){
-                    console.log("byllllogg BYZANTINE_PROPOSE gossip ifNeedWaiting:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address + err);
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
-                        // console.log("byllllogg push new byzantine proposal from NeedWaiting gossip:" + err);
-                        handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
-                        return callback();
-                    });
-                },
-                ifOk: function(){
-                    console.log("byllllogg BYZANTINE_PROPOSE gossip ifOk:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
-                    // if its a new proposal, reset params.
-                    if(gossipMessage.vp === -1){
-                        lockedValue_p = null;
-                        lockedPhase_p = -1;
-                        validValue_p  = null;
-                        validPhase_p  = -1;
+            if(typeof assocByzantinePhase[gossipMessage.h] !== 'undefined' &&
+                    Object.keys(assocByzantinePhase[gossipMessage.h]).length > 0 &&
+                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] !== 'undefined' &&
+                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length > 0 &&
+                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal !== 'undefined' &&
+                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal).length > 0 ){
+                validation.validateProposalJoint(gossipMessage.v, {
+                    ifInvalid: function(err){
+                        console.log("byllllogg BYZANTINE_PROPOSE gossip ifInvalid:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address + err);
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 0, function(err){
+                            // console.log("byllllogg push new byzantine proposal from Invalid gossip:" + err);
+                            handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
+                            return callback();
+                        });
+                    },
+                    ifNeedWaiting: function(err){
+                        console.log("byllllogg BYZANTINE_PROPOSE gossip ifNeedWaiting:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address + err);
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, -1, function(err){
+                            // console.log("byllllogg push new byzantine proposal from NeedWaiting gossip:" + err);
+                            handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
+                            return callback();
+                        });
+                    },
+                    ifOk: function(){
+                        console.log("byllllogg BYZANTINE_PROPOSE gossip ifOk:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
+                        // if its a new proposal, reset params.
+                        if(gossipMessage.vp === -1){
+                            lockedValue_p = null;
+                            lockedPhase_p = -1;
+                            validValue_p  = null;
+                            validPhase_p  = -1;
+                        }
+                        pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
+                            // console.log("byllllogg push new byzantine proposal from ok gossip:" + err);
+                            handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
+                            return callback();
+                        });                   
                     }
-                    pushByzantineProposal(gossipMessage.h, gossipMessage.p, gossipMessage.v, gossipMessage.vp, 1,  function(err){
-                        // console.log("byllllogg push new byzantine proposal from ok gossip:" + err);
-                        handleTempGossipMessage(gossipMessage.h, gossipMessage.p);
-                        return callback();
-                    });                   
-                }
-            }); 
-            
+                }); 
+            }
             break;
         case constants.BYZANTINE_PREVOTE: 
             console.log("byllllogg BYZANTINE_PREVOTE gossip sKey 1:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address);
