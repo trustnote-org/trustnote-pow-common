@@ -424,7 +424,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
                 console.log("handle gossip message err:" + err);
                 return;
             }
-            handleByzantine();
+            if(bByzantineUnderWay)
+                handleByzantine();
         });        
     });
 });
