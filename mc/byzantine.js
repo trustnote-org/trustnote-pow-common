@@ -56,6 +56,51 @@ function initByzantine(){
         return;
     if(bByzantineUnderWay)
         return;
+ 
+    db.query(
+        "SELECT main_chain_index FROM units \n\
+        WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? \n\
+        ORDER BY main_chain_index DESC LIMIT 1", 
+        [constants.POW_TYPE_TRUSTME], 
+        function(rows){
+            var hp = 1;     // just after genesis or catchup from fresh start
+            if (rows.length === 0){  
+                db.query(
+                    "SELECT main_chain_index FROM units \n\
+                    WHERE unit=?", 
+                    [constants.GENESIS_UNIT],
+                    function(rowGenesis){
+                        if(rowGenesis.length === 0){
+                            setTimeout(function(){
+                                initByzantine();
+                            }, 3000);
+                        }
+                        else{
+                            startPhase(hp, 0);
+                        }
+                    }
+                );
+            }
+            else if (rows.length === 1){  
+                hp = rows[0].main_chain_index + 1;
+                    
+                if(maxGossipHp === hp) {
+                    startPhase(hp, maxGossipPp);
+                }
+                else {
+                    setTimeout(function(){
+                        initByzantine();
+                    }, 3000);
+                }
+            }
+        }
+    );  
+}
+
+eventBus.on('headless_wallet_ready', () =>
+{
+    if(!conf.IF_BYZANTINE)
+        return;
     db.query("SELECT address FROM my_addresses", [], 
         function(rowsAddress){
             if (rowsAddress.length === 0)
@@ -63,54 +108,10 @@ function initByzantine(){
             if (rowsAddress.length > 1)
                 throw Error("more than 1 address");
             address_p = rowsAddress[0].address;
-        
-            db.query(
-                "SELECT main_chain_index FROM units \n\
-                WHERE is_on_main_chain=1 AND is_stable=1 AND +sequence='good' AND pow_type=? \n\
-                ORDER BY main_chain_index DESC LIMIT 1", 
-                [constants.POW_TYPE_TRUSTME], 
-                function(rows){
-                    var hp = 1;     // just after genesis or catchup from fresh start
-                    if (rows.length === 0){  
-                        db.query(
-                            "SELECT main_chain_index FROM units \n\
-                            WHERE unit=?", 
-                            [constants.GENESIS_UNIT],
-                            function(rowGenesis){
-                                if(rowGenesis.length === 0){
-                                    setTimeout(function(){
-                                        initByzantine();
-                                    }, 3000);
-                                }
-                                else{
-                                    startPhase(hp, 0);
-                                }
-                            }
-                        );
-                    }
-                    else if (rows.length === 1){  
-                        hp = rows[0].main_chain_index + 1;
-                            
-                        if(maxGossipHp === hp) {
-                            startPhase(hp, maxGossipPp);
-                        }
-                        else {
-                            setTimeout(function(){
-                                initByzantine();
-                            }, 3000);
-                        }
-                    }
-                }
-            );
+            
+            initByzantine();
         }
     );
-}
-
-eventBus.on('headless_wallet_ready', () =>
-{
-    if(!conf.IF_BYZANTINE)
-        return;
-    initByzantine();
 });
 
 // init function end
@@ -398,8 +399,8 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
         maxGossipHp = gossipMessage.h;
         maxGossipPp = gossipMessage.p;
     }
-    if(!bByzantineUnderWay || gossipMessage.h < h_p){
-        console.log("byllllogg !bByzantineUnderWay || gossipMessage.h < h_p:" + bByzantineUnderWay + h_p);
+    if(gossipMessage.h < h_p){
+        console.log("byllllogg gossipMessage.h < h_p:" + bByzantineUnderWay + h_p);
         return;
     }
     if(!validationUtils.isValidAddress(address_p)){
