@@ -529,12 +529,12 @@ function handleGossipMessage(sKey, gossipMessage, callback){
     // push the gossip message into local db
     switch(gossipMessage.type){
         case constants.BYZANTINE_PROPOSE: 
-            if(typeof assocByzantinePhase[gossipMessage.h] !== 'undefined' &&
-                    Object.keys(assocByzantinePhase[gossipMessage.h]).length > 0 &&
-                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] !== 'undefined' &&
-                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length > 0 &&
-                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal !== 'undefined' &&
-                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal).length > 0 ){
+            if(typeof assocByzantinePhase[gossipMessage.h] === 'undefined' ||
+                    Object.keys(assocByzantinePhase[gossipMessage.h]).length === 0 ||
+                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] === 'undefined' ||
+                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p]).length === 0 ||
+                    typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal === 'undefined' ||
+                    Object.keys(assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p].proposal).length === 0 ){
                 validation.validateProposalJoint(gossipMessage.v, {
                     ifInvalid: function(err){
                         console.log("byllllogg BYZANTINE_PROPOSE gossip ifInvalid:" +gossipMessage.h + gossipMessage.p  + "-address:" + gossipMessage.address + err);
