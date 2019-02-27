@@ -529,6 +529,7 @@ function handleGossipMessage(sKey, gossipMessage, callback){
     // push the gossip message into local db
     switch(gossipMessage.type){
         case constants.BYZANTINE_PROPOSE: 
+            // if I already  have a proposal for the current gossip, ignore it.
             if(typeof assocByzantinePhase[gossipMessage.h] === 'undefined' ||
                     Object.keys(assocByzantinePhase[gossipMessage.h]).length === 0 ||
                     typeof assocByzantinePhase[gossipMessage.h].phase[gossipMessage.p] === 'undefined' ||
