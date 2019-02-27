@@ -42,6 +42,7 @@ var last_precommit_gossip = {};
 var assocByzantinePhase = {};
 
 var maxGossipHp = 1;
+var maxGossipPp = 0;
 var bByzantineUnderWay = false;
 // var bTrustMeUnderWay = false;
 
@@ -91,7 +92,7 @@ function initByzantine(){
                         hp = rows[0].main_chain_index + 1;
                             
                         if(maxGossipHp === hp) {
-                            startPhase(hp, 0);
+                            startPhase(hp, maxGossipPp);
                         }
                         else {
                             setTimeout(function(){
@@ -218,7 +219,54 @@ function startPhase(hp, phase){
         }
 
         if(proposer === address_p){    // i am proposer
-            if(validValue_p !== null){
+            if(typeof assocByzantinePhase[hp].phase[phase].proposal !== 'undefined' &&
+                Object.keys(assocByzantinePhase[hp].phase[phase].proposal).length > 0 &&
+                assocByzantinePhase[hp].phase[phase].proposal.address === address_p){
+                var proposal = assocByzantinePhase[hp].phase[phase].proposal;
+                validation.validateProposalJoint(proposal, {
+                    ifInvalid: function(err){
+                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
+                        pushByzantineProposal(hp, phase, proposal, validPhase_p, 0, function(err){
+                            if(err)
+                                throw Error("push valid byzantine proposal error:" + err);
+                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+                            pushByzantinePrevote(hp, phase, null, address_p, 0);
+                            broadcastPrevote(hp, phase, null);
+                            assocByzantinePhase[hp].decision = {};
+                            handleTempGossipMessage(hp, phase);
+                            handleByzantine();
+                        });
+                    },
+                    ifNeedWaiting: function(err){
+                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
+                        pushByzantineProposal(hp, phase, proposal, validPhase_p, -1, function(err){
+                            if(err)
+                                throw Error("push valid byzantine proposal error:" + err);
+                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+                            pushByzantinePrevote(hp, phase, null, address_p, 0);
+                            broadcastPrevote(hp, phase, null);
+                            assocByzantinePhase[hp].decision = {};
+                            handleTempGossipMessage(hp, phase);
+                            handleByzantine();
+                        });
+                    },
+                    ifOk: function(){
+                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifOk:" +hp + phase  );
+                        pushByzantineProposal(hp, phase, proposal, validPhase_p, 1, function(err){
+                            if(err)
+                                throw Error("push valid byzantine proposal error:" + err);
+                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+                            pushByzantinePrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv, address_p, 1);
+                            broadcastPrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv);
+                            assocByzantinePhase[hp].decision = {};
+                            handleTempGossipMessage(hp, phase);
+                            handleByzantine();
+                        });
+                    }
+                }); 
+                
+            }
+            else if(validValue_p !== null){
                 composer.composeProposalJointByProposal(validValue_p, proposer, phase, supernode.signerProposal, 
                     function(err, objJoint){
                         if(err)
@@ -342,8 +390,9 @@ eventBus.on('byzantine_gossip', function(sPeerUrl, sKey, gossipMessage ) {
     console.log("byllllogg " + h_p + "-" + p_p + " gossip sKey:" + sKey + " --- sPeerUrl:" + sPeerUrl 
         + " --- gossipMessage:" + JSON.stringify(gossipMessage));
     if(maxGossipHp < gossipMessage.h) { // update max gossip h
-        console.log("byllllogg maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
+        // console.log("byllllogg maxGossipHp < gossipMessage.h:" + maxGossipHp + gossipMessage.h);
         maxGossipHp = gossipMessage.h;
+        maxGossipPp = gossipMessage.p;
     }
     if(!bByzantineUnderWay || gossipMessage.h < h_p){
         console.log("byllllogg !bByzantineUnderWay || gossipMessage.h < h_p:" + bByzantineUnderWay + h_p);
@@ -700,11 +749,11 @@ function handleByzantine(){
                     // compose new trustme unit
                     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                 }
-                else{  // not proposer, wait long enough
-                    h_prevote_timeout = h_p;
-                    p_prevote_timeout = p_p;
+                else{  // not proposer, wait forever
+                    // h_prevote_timeout = h_p;
+                    // p_prevote_timeout = p_p;
                     clearTimeout(timeout_p);
-                    timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
+                    // timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
                 }
             }
             // upon f+1 <∗,hp,round,∗,∗> with round>roundp do
@@ -986,6 +1035,7 @@ function doStartPhase(hp, phase){
 // Send the last message at fixed intervals
 function gossipLastMessageAtFixedInterval(){
     if(p_phase_timeout >0 && Date.now() - p_phase_timeout > constants.BYZANTINE_PHASE_TIMEOUT){
+
         if(bByzantineUnderWay && last_prevote_gossip &&
             typeof last_prevote_gossip !== 'undefined' &&
             Object.keys(last_prevote_gossip).length > 0){
@@ -998,6 +1048,11 @@ function gossipLastMessageAtFixedInterval(){
             typeof last_precommit_gossip !== 'undefined' &&
             Object.keys(last_precommit_gossip).length > 0){
             if(last_precommit_gossip.type === constants.BYZANTINE_PRECOMMIT && h_p === last_precommit_gossip.h){
+                if(last_precommit_gossip.idv !== null && assocByzantinePhase[last_precommit_gossip.h].phase[last_precommit_gossip.p].proposal
+                    && typeof assocByzantinePhase[last_precommit_gossip.h].phase[last_precommit_gossip.p].proposal !== 'undefined'){
+                    var lastProposal = assocByzantinePhase[last_precommit_gossip.h].phase[last_precommit_gossip.p].proposal;
+                    broadcastProposal(last_precommit_gossip.h, last_precommit_gossip.p, lastProposal, lastProposal.vp);
+                }
                 // console.log("byllllogg gossipLastMessageAtFixedInterval broadcastPrecommit" + JSON.stringify(last_precommit_gossip));
                 broadcastPrecommit(last_precommit_gossip.h, last_precommit_gossip.p, last_precommit_gossip.sig, last_precommit_gossip.idv);
             }        
