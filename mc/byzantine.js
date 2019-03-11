@@ -35,6 +35,7 @@ var h_precommit_timeout = -1;
 var p_precommit_timeout = -1; 
 var p_phase_timeout = -1; 
 var timeout_p;
+var waitingProposer = "";
 
 var last_prevote_gossip = {};
 var last_precommit_gossip = {};
@@ -184,6 +185,7 @@ function startPhase(hp, phase){
     else if(h_p === hp && p_p >= phase)
         return;
   
+    waitingProposer = "";
     getCoordinators(null, hp, phase, function(err, proposer, roundIndex, witnesses){
         if(err){
             console.log("byllllogg get coordinators err:" + err);
@@ -220,58 +222,59 @@ function startPhase(hp, phase){
         }
 
         if(proposer === address_p){    // i am proposer
-            if(typeof assocByzantinePhase[hp] !== 'undefined' &&
-                Object.keys(assocByzantinePhase[hp]).length > 0 &&
-                typeof assocByzantinePhase[hp].phase[phase] !== 'undefined' &&
-                Object.keys(assocByzantinePhase[hp].phase[phase]).length > 0 &&
-                typeof assocByzantinePhase[hp].phase[phase].proposal !== 'undefined' &&
-                Object.keys(assocByzantinePhase[hp].phase[phase].proposal).length > 0 &&
-                assocByzantinePhase[hp].phase[phase].proposal.address === address_p){
-                var proposal = assocByzantinePhase[hp].phase[phase].proposal;
-                validation.validateProposalJoint(proposal, {
-                    ifInvalid: function(err){
-                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
-                        pushByzantineProposal(hp, phase, proposal, validPhase_p, 0, function(err){
-                            if(err)
-                                throw Error("push valid byzantine proposal error:" + err);
-                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
-                            pushByzantinePrevote(hp, phase, null, address_p, 0);
-                            broadcastPrevote(hp, phase, null);
-                            assocByzantinePhase[hp].decision = {};
-                            handleTempGossipMessage(hp, phase);
-                            handleByzantine();
-                        });
-                    },
-                    ifNeedWaiting: function(err){
-                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
-                        pushByzantineProposal(hp, phase, proposal, validPhase_p, -1, function(err){
-                            if(err)
-                                throw Error("push valid byzantine proposal error:" + err);
-                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
-                            pushByzantinePrevote(hp, phase, null, address_p, 0);
-                            broadcastPrevote(hp, phase, null);
-                            assocByzantinePhase[hp].decision = {};
-                            handleTempGossipMessage(hp, phase);
-                            handleByzantine();
-                        });
-                    },
-                    ifOk: function(){
-                        console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifOk:" +hp + phase  );
-                        pushByzantineProposal(hp, phase, proposal, validPhase_p, 1, function(err){
-                            if(err)
-                                throw Error("push valid byzantine proposal error:" + err);
-                            broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
-                            pushByzantinePrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv, address_p, 1);
-                            broadcastPrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv);
-                            assocByzantinePhase[hp].decision = {};
-                            handleTempGossipMessage(hp, phase);
-                            handleByzantine();
-                        });
-                    }
-                }); 
+            // if(typeof assocByzantinePhase[hp] !== 'undefined' &&
+            //     Object.keys(assocByzantinePhase[hp]).length > 0 &&
+            //     typeof assocByzantinePhase[hp].phase[phase] !== 'undefined' &&
+            //     Object.keys(assocByzantinePhase[hp].phase[phase]).length > 0 &&
+            //     typeof assocByzantinePhase[hp].phase[phase].proposal !== 'undefined' &&
+            //     Object.keys(assocByzantinePhase[hp].phase[phase].proposal).length > 0 &&
+            //     assocByzantinePhase[hp].phase[phase].proposal.address === address_p){
+            //     var proposal = assocByzantinePhase[hp].phase[phase].proposal;
+            //     validation.validateProposalJoint(proposal, {
+            //         ifInvalid: function(err){
+            //             console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
+            //             pushByzantineProposal(hp, phase, proposal, validPhase_p, 0, function(err){
+            //                 if(err)
+            //                     throw Error("push valid byzantine proposal error:" + err);
+            //                 broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+            //                 pushByzantinePrevote(hp, phase, null, address_p, 0);
+            //                 broadcastPrevote(hp, phase, null);
+            //                 assocByzantinePhase[hp].decision = {};
+            //                 handleTempGossipMessage(hp, phase);
+            //                 handleByzantine();
+            //             });
+            //         },
+            //         ifNeedWaiting: function(err){
+            //             console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifInvalid:" + hp + phase + err );
+            //             pushByzantineProposal(hp, phase, proposal, validPhase_p, -1, function(err){
+            //                 if(err)
+            //                     throw Error("push valid byzantine proposal error:" + err);
+            //                 broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+            //                 pushByzantinePrevote(hp, phase, null, address_p, 0);
+            //                 broadcastPrevote(hp, phase, null);
+            //                 assocByzantinePhase[hp].decision = {};
+            //                 handleTempGossipMessage(hp, phase);
+            //                 handleByzantine();
+            //             });
+            //         },
+            //         ifOk: function(){
+            //             console.log("byllllogg BYZANTINE_PROPOSE startPhase11 ifOk:" +hp + phase  );
+            //             pushByzantineProposal(hp, phase, proposal, validPhase_p, 1, function(err){
+            //                 if(err)
+            //                     throw Error("push valid byzantine proposal error:" + err);
+            //                 broadcastProposal(hp, phase, assocByzantinePhase[hp].phase[phase].proposal, validPhase_p);
+            //                 pushByzantinePrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv, address_p, 1);
+            //                 broadcastPrevote(hp, phase, assocByzantinePhase[hp].phase[phase].proposal.idv);
+            //                 assocByzantinePhase[hp].decision = {};
+            //                 handleTempGossipMessage(hp, phase);
+            //                 handleByzantine();
+            //             });
+            //         }
+            //     }); 
                 
-            }
-            else if(validValue_p !== null){
+            // }
+            // else if(validValue_p !== null){
+            if(validValue_p !== null){
                 composer.composeProposalJointByProposal(validValue_p, proposer, phase, supernode.signerProposal, 
                     function(err, objJoint){
                         if(err)
@@ -437,6 +440,7 @@ eventBus.on('mci_became_stable', function(mci){
      lockedPhase_p = -1;
      validValue_p  = null;
      validPhase_p  = -1;
+     waitingProposer = "";
      // start new h_p
      console.log("byllllogg startPhase mci_became_stable:" + h_p + ":" + p_p);
      startPhase(mci+1, 0);
@@ -766,6 +770,7 @@ function handleByzantine(){
                     // h_prevote_timeout = h_p;
                     // p_prevote_timeout = p_p;
                     clearTimeout(timeout_p);
+                    waitingProposer = address_p;  // set waitingProposer
                     // timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
                 }
             }
@@ -779,12 +784,13 @@ function handleByzantine(){
                         console.log("byllllogg startPhase received_addresses" + h_p + ":" + p_p);
                         startPhase(h_p, current_p);
                     }
-                }
+                    else if (waitingProposer !== "" && assocByzantinePhase[h_p].phase[current_p].received_addresses.indexOf(waitingProposer) !== -1){
+                        startPhase(h_p, current_p);
+                    }
+                }                
             }
         });
-    }
-
-    
+    }    
 }
 
 function composeProposalMessage(hp, pp, proposal, vpp){
