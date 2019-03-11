@@ -786,12 +786,13 @@ function handleByzantine(){
             if(current_p > p_p){
                 if(assocByzantinePhase[h_p].phase[current_p].received_addresses &&
                     assocByzantinePhase[h_p].phase[current_p].received_addresses.length > 0){
-                    // console.log("byllllogg startPhase received_addresses:" + JSON.stringify(assocByzantinePhase[h_p].phase[current_p].received_addresses));
+                    console.log("byllllogg byzantine startPhase received_addresses:" + JSON.stringify(assocByzantinePhase[h_p].phase[current_p].received_addresses)+"---waitingProposer:"+waitingProposer);
                     if(assocByzantinePhase[h_p].phase[current_p].received_addresses.length >= constants.TOTAL_BYZANTINE + 1){
-                        console.log("byllllogg startPhase received_addresses" + h_p + ":" + p_p);
+                        console.log("byllllogg byzantine startPhase received_addresses" + h_p + ":" + p_p);
                         startPhase(h_p, current_p);
                     }
                     else if (waitingProposer !== "" && assocByzantinePhase[h_p].phase[current_p].received_addresses.indexOf(waitingProposer) !== -1){
+                        console.log("byllllogg byzantine startPhase waitingProposer" + h_p + ":" + p_p);
                         startPhase(h_p, current_p);
                     }
                 }                
@@ -1090,7 +1091,7 @@ function gossipLastMessageAtFixedInterval(){
 
 function consoleLog(){
     console.log("byllllogl-" + h_p + "-" + p_p + " --- step_p:" 
-    + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p 
+    + step_p + " --- lockedPhase_p:" + lockedPhase_p + " --- lockedValue_p:" + lockedValue_p  + " --- waitingProposer:" + waitingProposer
     + " --- assocByzantinePhase:"+ JSON.stringify(assocByzantinePhase));
 }
 
