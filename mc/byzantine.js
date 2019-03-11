@@ -1073,7 +1073,7 @@ function gossipLastMessageAtFixedInterval(){
     }
 }
 
-setInterval(gossipLastMessageAtFixedInterval, 3*1000);
+// setInterval(gossipLastMessageAtFixedInterval, 3*1000);
 
 function consoleLog(){
     console.log("byllllogl-" + h_p + "-" + p_p + " --- step_p:" 
