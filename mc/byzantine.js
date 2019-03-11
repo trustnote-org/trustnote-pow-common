@@ -812,7 +812,7 @@ function composePrecommitMessage(hp, pp, sig, idv){
 }
 function broadcastProposal(h, p, value, vp){
     //console.log("byllllogg bylllloggbyllllogg in broadcastProposal:" + h + ":" + p + ":" + JSON.stringify(value) + ":" + vp);
-    gossiper.gossiperBroadcast("Proposal"+h+p, composeProposalMessage(h, p, value, vp), function(err){
+    gossiper.gossiperBroadcast("proposal", composeProposalMessage(h, p, value, vp), function(err){
         if(err)
             return console.log("byllllogg broadcastProposal err:" + err);
     });
@@ -820,7 +820,7 @@ function broadcastProposal(h, p, value, vp){
 function broadcastPrevote(h, p, idv){
     //console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
     last_prevote_gossip = composePrevoteMessage(h, p, idv);
-    gossiper.gossiperBroadcast("Prevote"+h+p, last_prevote_gossip, function(err){
+    gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
         if(err)
             console.log("byllllogg broadcastPrevote err:" + err);
     });
@@ -828,7 +828,7 @@ function broadcastPrevote(h, p, idv){
 function broadcastPrecommit(h, p, sig, idv){
     //console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
     last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
-    gossiper.gossiperBroadcast("Precommit"+h+p, last_precommit_gossip, function(err){
+    gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
         if(err)
             console.log("byllllogg broadcastPrecommit err:" + err);
     });
