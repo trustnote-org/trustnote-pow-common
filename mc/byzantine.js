@@ -33,8 +33,10 @@ var h_prevote_timeout   = -1;
 var p_prevote_timeout   = -1; 
 var h_precommit_timeout = -1;
 var p_precommit_timeout = -1; 
-var p_phase_timeout = -1; 
-var timeout_p;
+// var p_phase_timeout = -1; 
+var timeout_propose;
+var timeout_prevote;
+var timeout_precommit;
 var waitingProposer = "";
 
 var last_prevote_gossip = {};
@@ -207,11 +209,14 @@ function startPhase(hp, phase){
         step_p = constants.BYZANTINE_PROPOSE;   // propose
         h_propose_timeout   = -1;
         p_propose_timeout   = -1; 
+        clearTimeout(timeout_propose);
         h_prevote_timeout   = -1;
         p_prevote_timeout   = -1; 
+        clearTimeout(timeout_prevote);
         h_precommit_timeout = -1;
         p_precommit_timeout = -1; 
-        p_phase_timeout = Date.now();
+        clearTimeout(timeout_precommit);
+        // p_phase_timeout = Date.now();
         bByzantineUnderWay = true;
         if(phase === 0){
             //reset params
@@ -382,8 +387,8 @@ function startPhase(hp, phase){
             p_propose_timeout = phase;
             var timeout = getTimeout(phase);
             console.log("byllllogg timeout setTimeout OnTimeoutPropose hp:" + hp + " --- phase:" + phase + " --- step_p:" + step_p + " --- timeout:" + timeout);
-            clearTimeout(timeout_p);
-            timeout_p = setTimeout(OnTimeoutPropose, timeout);
+            clearTimeout(timeout_propose);
+            timeout_propose = setTimeout(OnTimeoutPropose, timeout);
             handleByzantine();
         }
     });
@@ -691,8 +696,8 @@ function handleByzantine(){
                 p_prevote_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrevote h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                clearTimeout(timeout_p);
-                timeout_p = setTimeout(OnTimeoutPrevote, timeout);
+                clearTimeout(timeout_prevote);
+                timeout_prevote = setTimeout(OnTimeoutPrevote, timeout);
             }
         }
         // upon <PROPOSAL,hp,roundp,v,∗> from proposer(hp,roundp) AND 2f+1 <PREVOTE,hp,roundp,id(v)> while valid(v) ∧ stepp ≥ prevote for the first time do ？？？？？？？
@@ -734,8 +739,8 @@ function handleByzantine(){
                 p_precommit_timeout = p_p;
                 var timeout = getTimeout(p_p);
                 console.log("byllllogg timeout setTimeout OnTimeoutPrecommit h_p:" + h_p + " --- p_p:" + p_p + " --- step_p:" + step_p + " --- timeout:" + timeout);
-                clearTimeout(timeout_p);
-                timeout_p = setTimeout(OnTimeoutPrecommit, timeout);
+                clearTimeout(timeout_precommit);
+                timeout_precommit = setTimeout(OnTimeoutPrecommit, timeout);
             }
         }
     }
@@ -769,7 +774,9 @@ function handleByzantine(){
                 else{  // not proposer, wait forever
                     // h_prevote_timeout = h_p;
                     // p_prevote_timeout = p_p;
-                    clearTimeout(timeout_p);
+                    clearTimeout(timeout_propose);
+                    clearTimeout(timeout_prevote);
+                    clearTimeout(timeout_precommit);
                     waitingProposer = address_p;  // set waitingProposer
                     // timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
                 }
