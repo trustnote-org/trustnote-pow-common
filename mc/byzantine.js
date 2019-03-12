@@ -777,7 +777,7 @@ function handleByzantine(){
                     clearTimeout(timeout_propose);
                     clearTimeout(timeout_prevote);
                     clearTimeout(timeout_precommit);
-                    waitingProposer = address_p;  // set waitingProposer
+                    waitingProposer = assocByzantinePhase[h_p].phase[current_p].proposal.address;  // set waitingProposer
                     // timeout_p = setTimeout(OnTimeoutPrecommit, 300000);
                 }
             }
