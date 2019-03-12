@@ -793,6 +793,9 @@ function handleByzantine(){
                     }
                     else if (waitingProposer !== "" && assocByzantinePhase[h_p].phase[current_p].received_addresses.indexOf(waitingProposer) !== -1){
                         console.log("byllllogg byzantine startPhase waitingProposer" + h_p + ":" + p_p);
+                        // reset validValue_p and validPhase_p, the previous Byzantine was abolished
+                        validValue_p  = null;
+                        validPhase_p  = -1;
                         startPhase(h_p, current_p);
                     }
                 }                
