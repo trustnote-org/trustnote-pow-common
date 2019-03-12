@@ -766,8 +766,8 @@ function handleByzantine(){
             current_p = parseInt(current_p);
             if(current_p === p_p && current_p === assocByzantinePhase[h_p].phase[current_p].proposal.phase && 
                 assocByzantinePhase[h_p].phase[current_p].proposal.isValid === 1 && PrecommitBiggerThan2f1(h_p, current_p, 1)){
-                assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
+                    assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                     // compose new trustme unit
                     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                 }
