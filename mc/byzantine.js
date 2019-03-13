@@ -845,7 +845,7 @@ function broadcastPrevote(h, p, idv){
     //         console.log("byllllogg broadcastPrevote err:" + err);
     // });
     // test code
-    if(h === 25 && (p === 0 || p === 2 || p === 2)){
+    if(h === 25 && (p === 0 || p === 1 || p === 2)){
         last_prevote_gossip = composePrevoteMessage(h, p, null);
         gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
             if(err)
