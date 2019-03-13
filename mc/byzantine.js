@@ -769,15 +769,15 @@ function handleByzantine(){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                     // compose new trustme unit
-                    // return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
+                    return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                     // test code
-                    if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 15 && current_p === 3)
-                    {
-                        console.log("byllllogg must shutdown for test");
-                    }
-                    else{
-                        return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
-                    }
+                    // if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 15 && current_p === 3)
+                    // {
+                    //     console.log("byllllogg must shutdown for test");
+                    // }
+                    // else{
+                    //     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
+                    // }
                 }
                 else{  // not proposer, wait forever
                     // h_prevote_timeout = h_p;
@@ -852,26 +852,26 @@ function broadcastPrevote(h, p, idv){
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    // last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
-    // gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
-    //     if(err)
-    //         console.log("byllllogg broadcastPrecommit err:" + err);
-    // });
+    last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
+    gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+        if(err)
+            console.log("byllllogg broadcastPrecommit err:" + err);
+    });
     // test code
-    if(h === 15 && (p === 0 || p === 1 || p === 2)){
-        last_precommit_gossip = composePrecommitMessage(h, p, null, null);
-        gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
-            if(err)
-                console.log("byllllogg broadcastPrecommit err:" + err);
-        });
-    }
-    else{
-        last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
-        gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
-            if(err)
-                console.log("byllllogg broadcastPrecommit err:" + err);
-        });
-    }
+    // if(h === 15 && (p === 0 || p === 1 || p === 2)){
+    //     last_precommit_gossip = composePrecommitMessage(h, p, null, null);
+    //     gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+    //         if(err)
+    //             console.log("byllllogg broadcastPrecommit err:" + err);
+    //     });
+    // }
+    // else{
+    //     last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
+    //     gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+    //         if(err)
+    //             console.log("byllllogg broadcastPrecommit err:" + err);
+    //     });
+    // }
 }
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
