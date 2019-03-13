@@ -844,34 +844,34 @@ function broadcastProposal(h, p, value, vp){
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    // last_prevote_gossip = composePrevoteMessage(h, p, idv);
-    // gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
-    //     if(err)
-    //         console.log("byllllogg broadcastPrevote err:" + err);
-    // });
-    // test code
-    if(h === 15 && (p === 0 || p === 1 || p === 2)){
-        last_prevote_gossip = composePrevoteMessage(h, p, null);
-        gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
-            if(err)
-                console.log("byllllogg broadcastPrevote err:" + err);
-        });
-    }
-    else{
-        last_prevote_gossip = composePrevoteMessage(h, p, idv);
-        gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
-            if(err)
-                console.log("byllllogg broadcastPrevote err:" + err);
-        });
-    }
+    last_prevote_gossip = composePrevoteMessage(h, p, idv);
+    gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
+        if(err)
+            console.log("byllllogg broadcastPrevote err:" + err);
+    });
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
-    last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
-    gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
-        if(err)
-            console.log("byllllogg broadcastPrecommit err:" + err);
-    });
+    // last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
+    // gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+    //     if(err)
+    //         console.log("byllllogg broadcastPrecommit err:" + err);
+    // });
+    // test code
+    if(h === 15 && (p === 0 || p === 1 || p === 2)){
+        last_precommit_gossip = composePrecommitMessage(h, p, null, null);
+        gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+            if(err)
+                console.log("byllllogg broadcastPrecommit err:" + err);
+        });
+    }
+    else{
+        last_precommit_gossip = composePrecommitMessage(h, p, sig, idv);
+        gossiper.gossiperBroadcast("precommit", last_precommit_gossip, function(err){
+            if(err)
+                console.log("byllllogg broadcastPrecommit err:" + err);
+        });
+    }
 }
 function getTimeout(p){
     return constants.BYZANTINE_GST + constants.BYZANTINE_DELTA*p;
