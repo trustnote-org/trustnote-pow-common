@@ -4,9 +4,9 @@
 process.env.ENV_UNIT_TEST	= true;
 
 
-const _network		= require( '../../network.js' );
-const _catchup		= require( '../../catchup.js' );
-const _event_bus	= require( '../../event_bus.js' );
+const _network		= require( '../../p2p/network.js' );
+const _catchup		= require( '../../catchup/catchup.js' );
+const _event_bus	= require( '../../base/event_bus.js' );
 
 //const _peer		= 'ws://dev.mainchain.pow.trustnote.org:9191';
 const _peer		= 'ws://127.0.0.1:9191';

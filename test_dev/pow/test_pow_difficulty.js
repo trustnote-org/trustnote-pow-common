@@ -8,10 +8,10 @@ process.env.ENV_UNIT_TEST	= true;
  * 	...
  */
 const _fs	= require( 'fs' );
-const _db	= require( '../../db.js' );
-const _pow	= require( '../../pow.js' );
-const _round	= require( '../../round.js' );
-const constants	= require( '../../constants.js' );
+const _db	= require( '../../db/db.js' );
+const _pow	= require( '../../pow/pow.js' );
+const _round	= require( '../../pow/round.js' );
+const constants	= require( '../../config/constants.js' );
 const _async	= require( 'async' );
 
 
@@ -29,14 +29,14 @@ _db.takeConnectionFromPool( function( oNewConn )
 		(
 			pfnNext =>
 			{
-				_pow.calculateDifficultyValueByCycleIndex( oNewConn, i, function( err, nNewDifficultyValue )
+				_pow.calculateBitsValueByCycleIndex( oNewConn, i, function( err, nNewBitsValue )
 				{
 					if ( null === err )
 					{
-						console.log( `[${ i }]@@@ new difficulty: ${ nNewDifficultyValue }` );
+						console.log( `[${ i }]@@@ new bits: ${ nNewBitsValue }` );
 
 						//	...
-						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewDifficultyValue }\n`, { flag : 'a' } );
+						_fs.writeFileSync( `result.txt`, `cycle ${ i }, ${ nNewBitsValue }\n`, { flag : 'a' } );
 
 					}
 					else
@@ -95,7 +95,7 @@ function getDurationByCycleId(conn, cycleId, callback){
 		"SELECT min(int_value) AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
 		WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
 		    AND sequence='good' AND is_stable=1 AND round_index=?",
-		['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
+		['JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET', constants.POW_TYPE_TRUSTME, getMinRoundIndexByCycleId(cycleId)],
 		function(rowsMin){
 			if (rowsMin.length !== 1)
 				throw Error("Can not find min timestamp of cycle " + cycleId);
@@ -105,7 +105,7 @@ function getDurationByCycleId(conn, cycleId, callback){
 				"SELECT max(int_value) AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
 				WHERE address=? AND feed_name='timestamp' AND pow_type=? \n\
 				    AND sequence='good' AND is_stable=1 AND round_index=?",
-				['72FZXZMFPESCMUHUPWTZJ2F57YV32JCI', constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
+				['JNA6YWLKFQG7PFF6F32KTXBUAHRAFSET', constants.POW_TYPE_TRUSTME, getMaxRoundIndexByCycleId(cycleId)],
 				function(rowsMax){
 					if (rowsMax.length !== 1)
 						throw Error("Can not find max timestamp of cycle " + cycleId);

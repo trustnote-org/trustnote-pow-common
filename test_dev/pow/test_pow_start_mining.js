@@ -7,26 +7,26 @@ process.env.ENV_UNIT_TEST	= true;
 /**
  * 	...
  */
-const _pow			= require( '../../pow.js' );
-const _event_bus		= require( '../../event_bus.js' );
+const _pow			= require( '../../pow/pow.js' );
+const _event_bus		= require( '../../base/event_bus.js' );
 const _trustnote_pow_miner	= require( 'trustnote-pow-miner' );
 
 
 //
 // *	@param	{number}	oInput.roundIndex
 // *	@param	{string}	oInput.firstTrustMEBall
-// *	@param	{string}	oInput.difficulty
+// *	@param	{string}	oInput.bits
 // *	@param	{string}	oInput.publicSeed
 // *	@param	{string}	oInput.superNodeAuthor
 //
-let nDifficulty		= _trustnote_pow_miner.difficulty256HexToUInt32( "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
+let nDifficulty		= _trustnote_pow_miner.getBitsByTarget( "0fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" );
 let nMiningTimes	= 0;
 
 
 _event_bus.on
 (
 	'pow_mined_gift',
-	( objSolution ) =>
+	( err, objSolution ) =>
 	{
 		console.log( `### ${ Date.now() } ############################################################` );
 		console.log( objSolution );
@@ -46,7 +46,7 @@ function mining()
 		{
 			roundIndex		: nMiningTimes + 1,
 			firstTrustMEBall	: 'rjywtuZ8A70vgIsZ7L4lBR3gz62Nl3vZr2t7I4lzsMU=',
-			difficulty		: nDifficulty,
+			bits			: nDifficulty,
 			publicSeed		: 'public key',
 			superNodeAuthor		: 'xing.supernode.trustnote.org',
 		},

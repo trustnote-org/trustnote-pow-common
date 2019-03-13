@@ -7,19 +7,20 @@ process.env.ENV_UNIT_TEST	= true;
 /**
  * 	...
  */
-const _pow	= require( '../../pow.js' );
+const _pow	= require( '../../pow/pow.js' );
 
 let objInput	= {
-	roundIndex	: 1,
-	firstTrustMEBall	: "zd+E/jN0E7wyKASy7A/D0llRMiNQTtd3OaPhBbMF/uc=",
-	difficulty		: 528482303,
-	publicSeed		: "27859fd336472cdfd8054d9aaa2057d6953e9a87d300cfc8a81f43121aaa918e",
-	superNodeAuthor		: "2G6WV4QQVF75EPKSXTVRKRTZYSXNIWLU"
+	roundIndex		: 50,
+	firstTrustMEBall	: "EzirA5xb37NB7QJfszPiETj+y71JcTmeFZvG4UVLhnM=",
+	bits			: 523973461,
+	publicSeed		: "1e6b5809bee358d45b493d3ae1aa5e55481de3c874ab75166a91017ed06a1108",
+	superNodeAuthor		: "A4BRUVOW2LSLH6LVQ3TWFOCAM6JPFWOK"
 };
-let sHash	= '00198bb0606e5a8b5d47577bc96de488116af886815f4dccc5ad1ebd78d1b14e';
-let nNonce	= 65;
+let sHash	= '00082504848696bddcead41792d1695e7066af24434ab885f1ad40f06e42a7ef';
+let nNonce	= 54;
 
-_pow.checkProofOfWork( objInput, sHash, nNonce, function( err, objResult )
+
+_pow.checkProofOfWork( null, objInput, sHash, nNonce, function( err, objResult )
 {
 	console.log( err, objResult );
 });

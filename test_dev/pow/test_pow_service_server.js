@@ -1,4 +1,4 @@
-const _pow_client	= require( '../../pow_service.js' );
+const _pow_client	= require( '../../pow/pow_service.js' );
 
 
 /**
@@ -6,6 +6,20 @@ const _pow_client	= require( '../../pow_service.js' );
  */
 const _oOptions		= {
 	port		: 1302,
+	onStart		: ( err, oWsServer ) =>
+	{
+		if ( err )
+		{
+			return console.error( err );
+		}
+
+		console.log( `TEST >> socket server started:${ oWsServer }.` );
+		console.log(
+			oWsServer.options.host,
+			oWsServer.options.port,
+			oWsServer.options.handleProtocols,
+			oWsServer.options.path );
+	},
 	onConnection	: ( err, oWs ) =>
 	{
 		if ( err )
