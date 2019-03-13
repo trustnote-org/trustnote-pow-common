@@ -771,7 +771,7 @@ function handleByzantine(){
                     // compose new trustme unit
                     // return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                     // test code
-                    if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 25 && current_p === 3)
+                    if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 15 && current_p === 3)
                     {
                         console.log("byllllogg must shutdown for test");
                     }
@@ -850,7 +850,7 @@ function broadcastPrevote(h, p, idv){
     //         console.log("byllllogg broadcastPrevote err:" + err);
     // });
     // test code
-    if(h === 25 && (p === 0 || p === 1 || p === 2)){
+    if(h === 15 && (p === 0 || p === 1 || p === 2)){
         last_prevote_gossip = composePrevoteMessage(h, p, null);
         gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
             if(err)
