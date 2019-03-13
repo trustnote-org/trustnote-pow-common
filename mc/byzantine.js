@@ -769,13 +769,15 @@ function handleByzantine(){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                     // compose new trustme unit
+                    // return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                     // test code
                     if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 25 && current_p === 3)
                     {
                         console.log("byllllogg must shutdown for test");
-                        throw Error("I must shutdown for test");
                     }
-                    return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
+                    else{
+                        return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
+                    }
                 }
                 else{  // not proposer, wait forever
                     // h_prevote_timeout = h_p;
