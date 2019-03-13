@@ -769,6 +769,9 @@ function handleByzantine(){
                 if(assocByzantinePhase[h_p].phase[current_p].proposal.address === address_p){
                     assocByzantinePhase[h_p].decision = assocByzantinePhase[h_p].phase[current_p].proposal;
                     // compose new trustme unit
+                    // test code
+                    if(address_p === "4T7YVRUWMVAJIBSWCP35C7OGCX33SAYO" && h_p === 25 && current_p === 3)
+                        throw Error("I must shutdown for test");
                     return decisionTrustMe(assocByzantinePhase[h_p].phase[current_p].proposal, assocByzantinePhase[h_p].phase[current_p].precommit_approved);
                 }
                 else{  // not proposer, wait forever
@@ -836,11 +839,26 @@ function broadcastProposal(h, p, value, vp){
 }
 function broadcastPrevote(h, p, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrevote:" + h + ":" + p + ":" + JSON.stringify(idv));
-    last_prevote_gossip = composePrevoteMessage(h, p, idv);
-    gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
-        if(err)
-            console.log("byllllogg broadcastPrevote err:" + err);
-    });
+    // last_prevote_gossip = composePrevoteMessage(h, p, idv);
+    // gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
+    //     if(err)
+    //         console.log("byllllogg broadcastPrevote err:" + err);
+    // });
+    // test code
+    if(h === 25 && (p === 0 || p === 2 || p === 2)){
+        last_prevote_gossip = composePrevoteMessage(h, p, null);
+        gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
+            if(err)
+                console.log("byllllogg broadcastPrevote err:" + err);
+        });
+    }
+    else{
+        last_prevote_gossip = composePrevoteMessage(h, p, idv);
+        gossiper.gossiperBroadcast("prevote", last_prevote_gossip, function(err){
+            if(err)
+                console.log("byllllogg broadcastPrevote err:" + err);
+        });
+    }
 }
 function broadcastPrecommit(h, p, sig, idv){
     console.log("byllllogg bylllloggbyllllogg in broadcastPrecommit:" + h + ":" + p + ":" + JSON.stringify(idv));
