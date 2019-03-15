@@ -102,8 +102,8 @@ function pickRecoverParentUnits(conn, onDone){
 					WHERE round_index=? AND pow_type=? ", 
 					[rowsTrustMe[0].round_index, constants.POW_TYPE_POW_EQUHASH], 
 					function(powrows){
-						if(powrows.length < 10)
-							return onDone("the number of pow unit for the current round is too less");
+						//if(powrows.length < 10)
+						//	return onDone("the number of pow unit for the current round is too less");
 						parentUnits.push(rowsTrustMe[0].unit);
 						// pick all pow units as parents
 						conn.query(
