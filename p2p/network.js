@@ -3478,7 +3478,26 @@ function handleRequest(ws, tag, command, params) {
 					}
 				});
 			break;
+		
+		/**
+		 *        recover ADD
+		 */
+		case 'light/get_parents_and_last_ball_and_powcount':
+			if (conf.bLight)
+				return sendErrorResponse(ws, tag, "I'm light myself, can't serve you");
+			if (ws.bOutbound)
+				return sendErrorResponse(ws, tag, "light clients have to be inbound");
 
+			light.prepareParentsAndLastBallAndPowcount(
+				{
+					ifError: function (err) {
+						sendErrorResponse(ws, tag, err);
+					},
+					ifOk: function (objResponse) {
+						sendResponse(ws, tag, objResponse);
+					}
+				});
+			break;
 		// I'm a hub, the peer wants to enable push notifications
 		case 'hub/enable_notification':
 			if (ws.device_address)
