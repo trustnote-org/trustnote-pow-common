@@ -281,7 +281,7 @@ function validateProposalJoint(objJoint, callbacks){
 	
 	// UnitError is linked to objUnit.unit, so we need to ensure objUnit.unit is true before we throw any UnitErrors
 	if (objectHash.getProposalUnitHash(objUnit) !== objUnit.unit){
-		console.log("888888888888888888888888--Proposal joint : " + JSON.stringify(objJoint));
+		// console.log("888888888888888888888888--Proposal joint : " + JSON.stringify(objJoint));
 		return callbacks.ifInvalid("wrong proposal unit hash: "+objectHash.getProposalUnitHash(objUnit)+" != "+objUnit.unit);
 	}
 	

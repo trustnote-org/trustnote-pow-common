@@ -134,9 +134,6 @@ function validate(objJoint, callbacks) {
 			if ( objectLength.getHeadersSize(objUnit) !== objUnit.headers_commission)
 				return callbacks.ifJointError("wrong headers commission, expected "+objectLength.getHeadersSize(objUnit));
 			if (objectLength.getTotalPayloadSize(objUnit) !== objUnit.payload_commission){
-				console.log("66666"+objUnit.unit+"------"+JSON.stringify(objUnit.messages));
-				console.log("77777"+objUnit.unit+"------"+objectLength.getTotalPayloadSize(objUnit));
-				console.log("88888"+objUnit.unit+"------"+objUnit.payload_commission);
 				return callbacks.ifJointError("wrong payload commission, unit "+objUnit.unit+", calculated "+objectLength.getTotalPayloadSize(objUnit)+", expected "+objUnit.payload_commission);
 			}
 		}
@@ -163,8 +160,9 @@ function validate(objJoint, callbacks) {
 			return callbacks.ifUnitError("wrong length of last ball unit");
 	}
 
-	if((!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_TRUSTME) && objUnit.coordinators)
-		return callbacks.ifUnitError("non trust me unit with coordinators body");
+	// recover del
+	// if((!objUnit.pow_type || objUnit.pow_type !== constants.POW_TYPE_TRUSTME) && objUnit.coordinators)
+	// 	return callbacks.ifUnitError("non trust me unit with coordinators body");
 		
 	var arrAuthorAddresses = objUnit.authors ? objUnit.authors.map(function(author) { return author.address; } ) : [];
 	
@@ -389,202 +387,202 @@ function validateSkiplist(conn, arrSkiplistUnits, callback){
 	);
 }
 
-function validateParents(conn, objJoint, objValidationState, callback){
+// function validateParents(conn, objJoint, objValidationState, callback){
 	
-	// avoid merging the obvious nonserials
-	function checkNoSameAddressInDifferentParents(){
-		if (objUnit.parent_units.length === 1)
-			return checkLastBallDidNotRetreat();
-		conn.query("SELECT address, COUNT(*) AS c FROM unit_authors WHERE unit IN(?) GROUP BY address HAVING c>1", [objUnit.parent_units], function(rows){
-			if (rows.length > 0)
-				return callback("some addresses found more than once in parents, e.g. "+rows[0].address);
-			return checkLastBallDidNotRetreat();
-		});
-	}
+// 	// avoid merging the obvious nonserials
+// 	function checkNoSameAddressInDifferentParents(){
+// 		if (objUnit.parent_units.length === 1)
+// 			return checkLastBallDidNotRetreat();
+// 		conn.query("SELECT address, COUNT(*) AS c FROM unit_authors WHERE unit IN(?) GROUP BY address HAVING c>1", [objUnit.parent_units], function(rows){
+// 			if (rows.length > 0)
+// 				return callback("some addresses found more than once in parents, e.g. "+rows[0].address);
+// 			return checkLastBallDidNotRetreat();
+// 		});
+// 	}
 	
-	function checkLastBallDidNotRetreat(){
-		conn.query(
-			"SELECT MAX(lb_units.main_chain_index) AS max_parent_last_ball_mci \n\
-			FROM units JOIN units AS lb_units ON units.last_ball_unit=lb_units.unit \n\
-			WHERE units.unit IN(?)",
-			[objUnit.parent_units],
-			function(rows){
-				var max_parent_last_ball_mci = rows[0].max_parent_last_ball_mci;
-				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
-					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
-					//checkRoundIndexDidNotRetreat();
-				callback();
-			}
-		);
-	}
+// 	function checkLastBallDidNotRetreat(){
+// 		conn.query(
+// 			"SELECT MAX(lb_units.main_chain_index) AS max_parent_last_ball_mci \n\
+// 			FROM units JOIN units AS lb_units ON units.last_ball_unit=lb_units.unit \n\
+// 			WHERE units.unit IN(?)",
+// 			[objUnit.parent_units],
+// 			function(rows){
+// 				var max_parent_last_ball_mci = rows[0].max_parent_last_ball_mci;
+// 				if (max_parent_last_ball_mci > objValidationState.last_ball_mci)
+// 					return callback("last ball mci must not retreat, parents: "+objUnit.parent_units.join(', '));
+// 					//checkRoundIndexDidNotRetreat();
+// 				callback();
+// 			}
+// 		);
+// 	}
 
-	function checkPOWTypeUnitsInRightRound(){
-		if (!objUnit.pow_type)
-			return callback();
+// 	function checkPOWTypeUnitsInRightRound(){
+// 		if (!objUnit.pow_type)
+// 			return callback();
 
-		conn.query(
-			"SELECT distinct(address), unit, is_on_main_chain, main_chain_index \n\
-			FROM units JOIN unit_authors using (unit)\n\
-			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
-			LIMIT ?",
-			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
-			function(rowsPow){
-				if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
-					var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1];
-					var lastStableOnMainUnit = lastPowstableUnit.unit;
-					if (!lastPowstableUnit.is_on_main_chain){
-						// get main chain unit with same mci
-						conn.query(
-							"SELECT unit, is_on_main_chain\n\
-							FROM units \n\
-							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ",
-							[lastPowstableUnit.main_chain_index],
-							function(stableMCRows){
-								if(stableMCRows.length!==1 || stableMCRows[0].is_on_main_chain !==1)
-									throw Error("the unit is not on main chain");
-								lastStableOnMainUnit = stableMCRows[0].unit;
-								main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
-									if (bStable)
-										return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
+// 		conn.query(
+// 			"SELECT distinct(address), unit, is_on_main_chain, main_chain_index \n\
+// 			FROM units JOIN unit_authors using (unit)\n\
+// 			WHERE is_stable=1 AND sequence='good' AND pow_type=? AND round_index=? ORDER BY main_chain_index,unit  \n\
+// 			LIMIT ?",
+// 			[constants.POW_TYPE_POW_EQUHASH, objUnit.round_index, constants.COUNT_POW_WITNESSES],
+// 			function(rowsPow){
+// 				if (rowsPow.length >= constants.COUNT_POW_WITNESSES){
+// 					var lastPowstableUnit = rowsPow[constants.COUNT_POW_WITNESSES - 1];
+// 					var lastStableOnMainUnit = lastPowstableUnit.unit;
+// 					if (!lastPowstableUnit.is_on_main_chain){
+// 						// get main chain unit with same mci
+// 						conn.query(
+// 							"SELECT unit, is_on_main_chain\n\
+// 							FROM units \n\
+// 							WHERE is_stable=1 AND is_on_main_chain=1 AND  main_chain_index=? ",
+// 							[lastPowstableUnit.main_chain_index],
+// 							function(stableMCRows){
+// 								if(stableMCRows.length!==1 || stableMCRows[0].is_on_main_chain !==1)
+// 									throw Error("the unit is not on main chain");
+// 								lastStableOnMainUnit = stableMCRows[0].unit;
+// 								main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
+// 									if (bStable)
+// 										return callback("round index is incorrect because the 8th pow unit already stable in its parent view");
 
-									callback();
-								});
-							});
-					}else{
-						main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
-							if (bStable)
-								return callback("on mainchain unit round index is incorrect because the 8th pow unit already stable in its parent view");
+// 									callback();
+// 								});
+// 							});
+// 					}else{
+// 						main_chain.determineIfStableInLaterUnits(conn, lastStableOnMainUnit, objUnit.parent_units, function(bStable){
+// 							if (bStable)
+// 								return callback("on mainchain unit round index is incorrect because the 8th pow unit already stable in its parent view");
 
-							callback();
-						});
-					}
+// 							callback();
+// 						});
+// 					}
 
-				}else{
-					callback();
-				}
-		});
-	}
+// 				}else{
+// 					callback();
+// 				}
+// 		});
+// 	}
 
-	var objUnit = objJoint.unit;
-	if (objUnit.parent_units.length > constants.MAX_PARENTS_PER_UNIT) // anti-spam
-		return callback("too many parents: "+objUnit.parent_units.length);
-	// obsolete: when handling a ball, we can't trust parent list before we verify ball hash
-	// obsolete: when handling a fresh unit, we can begin trusting parent list earlier, after we verify parents_hash
-	var createError = objJoint.ball ? createJointError : function(err){ return err; };
-	// after this point, we can trust parent list as it either agrees with parents_hash or agrees with hash tree
-	// hence, there are no more joint errors, except unordered parents or skiplist units
-	var last_ball = objUnit.last_ball;
-	var last_ball_unit = objUnit.last_ball_unit;
-	var prev = "";
-	var arrMissingParentUnits = [];
-	var arrPrevParentUnitProps = [];
-	objValidationState.max_parent_limci = 0;
-	var join = objJoint.ball ? 'LEFT JOIN balls USING(unit) LEFT JOIN hash_tree_balls ON units.unit=hash_tree_balls.unit' : '';
-	var field = objJoint.ball ? ', IFNULL(balls.ball, hash_tree_balls.ball) AS ball' : '';
-	async.eachSeries(
-		objUnit.parent_units, 
-		function(parent_unit, cb){
-			if (parent_unit <= prev)
-				return cb(createError("parent units not ordered"));
-			prev = parent_unit;
-			conn.query("SELECT units.*"+field+" FROM units "+join+" WHERE units.unit=?", [parent_unit], function(rows){
-				if (rows.length === 0){
-					arrMissingParentUnits.push(parent_unit);
-					return cb();
-				}
-				var objParentUnitProps = rows[0];
-				// already checked in validateHashTree that the parent ball is known, that's why we throw
-				if (objJoint.ball && objParentUnitProps.ball === null)
-					throw Error("no ball corresponding to parent unit "+parent_unit);
-				if (objParentUnitProps.latest_included_mc_index > objValidationState.max_parent_limci)
-					objValidationState.max_parent_limci = objParentUnitProps.latest_included_mc_index;
-				async.eachSeries(
-					arrPrevParentUnitProps, 
-					function(objPrevParentUnitProps, cb2){
-						graph.compareUnitsByProps(conn, objPrevParentUnitProps, objParentUnitProps, function(result){
-							(result === null) ? cb2() : cb2("parent unit "+parent_unit+" is related to one of the other parent units");
-						});
-					},
-					function(err){
-						if (err)
-							return cb(err);
-						arrPrevParentUnitProps.push(objParentUnitProps);
-						cb();
-					}
-				);
-			});
-		}, 
-		function(err){
-			if (err)
-				return callback(err);
-			if (arrMissingParentUnits.length > 0){
-				conn.query("SELECT error FROM known_bad_joints WHERE unit IN(?)", [arrMissingParentUnits], function(rows){
-					(rows.length > 0)
-						? callback("some of the unit's parents are known bad: "+rows[0].error)
-						: callback({error_code: "unresolved_dependency", arrMissingUnits: arrMissingParentUnits});
-				});
-				return;
-			}
-			// this is redundant check, already checked in validateHashTree()
-			if (objJoint.ball){
-				var arrParentBalls = arrPrevParentUnitProps.map(function(objParentUnitProps){ return objParentUnitProps.ball; }).sort();
-				//if (arrParentBalls.indexOf(null) === -1){
-					var hash = objectHash.getBallHash(objUnit.unit, arrParentBalls, objValidationState.arrSkiplistBalls, !!objUnit.content_hash);
-					if (hash !== objJoint.ball)
-						throw Error("ball hash is wrong"); // shouldn't happen, already validated in validateHashTree()
-				//}
-			}
-			conn.query(
-				"SELECT is_stable, is_on_main_chain, main_chain_index, ball, (SELECT MAX(main_chain_index) FROM units) AS max_known_mci \n\
-				FROM units LEFT JOIN balls USING(unit) WHERE unit=?", 
-				[last_ball_unit], 
-				function(rows){
-					if (rows.length !== 1) // at the same time, direct parents already received
-						return callback("last ball unit "+last_ball_unit+" not found");
-					var objLastBallUnitProps = rows[0];
-					// it can be unstable and have a received (not self-derived) ball
-					//if (objLastBallUnitProps.ball !== null && objLastBallUnitProps.is_stable === 0)
-					//    throw "last ball "+last_ball+" is unstable";
-					if (objLastBallUnitProps.ball === null && objLastBallUnitProps.is_stable === 1)
-						throw Error("last ball unit "+last_ball_unit+" is stable but has no ball");
-					if (objLastBallUnitProps.is_on_main_chain !== 1)
-						return callback("last ball "+last_ball+" is not on MC");
-					if (objLastBallUnitProps.ball && objLastBallUnitProps.ball !== last_ball)
-						return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
-					objValidationState.last_ball_mci = objLastBallUnitProps.main_chain_index;
-					objValidationState.max_known_mci = objLastBallUnitProps.max_known_mci;
-					if (objValidationState.max_parent_limci < objValidationState.last_ball_mci)
-						return callback("last ball unit "+last_ball_unit+" is not included in parents, unit "+objUnit.unit);
-					if (objLastBallUnitProps.is_stable === 1){
-						// if it were not stable, we wouldn't have had the ball at all
-						if (objLastBallUnitProps.ball !== last_ball)
-							return callback("stable: last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
-						if (objValidationState.last_ball_mci <= 800000)
-							return checkNoSameAddressInDifferentParents();
-					}
-					// Last ball is not stable yet in our view. Check if it is stable in view of the parents
-					main_chain.determineIfStableInLaterUnitsAndUpdateStableMcFlag(conn, last_ball_unit, objUnit.parent_units, objLastBallUnitProps.is_stable, function(bStable){
-						if (!bStable && objLastBallUnitProps.is_stable === 1){
-							var eventBus = require('../base/event_bus.js');
-							eventBus.emit('nonfatal_error', "last ball is stable, but not stable in parents, unit "+objUnit.unit, new Error());
-							return checkNoSameAddressInDifferentParents();
-						}
-						else if (!bStable)
-							return callback(objUnit.unit+": last ball unit "+last_ball_unit+" is not stable in view of your parents "+objUnit.parent_units);
-						conn.query("SELECT ball FROM balls WHERE unit=?", [last_ball_unit], function(ball_rows){
-							if (ball_rows.length === 0)
-								throw Error("last ball unit "+last_ball_unit+" just became stable but ball not found");
-							if (ball_rows[0].ball !== last_ball)
-								return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit
-												+" do not match after advancing stability point");
-							checkNoSameAddressInDifferentParents();
-						});
-					});
-				}
-			);
-		}
-	);
-}
+// 	var objUnit = objJoint.unit;
+// 	if (objUnit.parent_units.length > constants.MAX_PARENTS_PER_UNIT) // anti-spam
+// 		return callback("too many parents: "+objUnit.parent_units.length);
+// 	// obsolete: when handling a ball, we can't trust parent list before we verify ball hash
+// 	// obsolete: when handling a fresh unit, we can begin trusting parent list earlier, after we verify parents_hash
+// 	var createError = objJoint.ball ? createJointError : function(err){ return err; };
+// 	// after this point, we can trust parent list as it either agrees with parents_hash or agrees with hash tree
+// 	// hence, there are no more joint errors, except unordered parents or skiplist units
+// 	var last_ball = objUnit.last_ball;
+// 	var last_ball_unit = objUnit.last_ball_unit;
+// 	var prev = "";
+// 	var arrMissingParentUnits = [];
+// 	var arrPrevParentUnitProps = [];
+// 	objValidationState.max_parent_limci = 0;
+// 	var join = objJoint.ball ? 'LEFT JOIN balls USING(unit) LEFT JOIN hash_tree_balls ON units.unit=hash_tree_balls.unit' : '';
+// 	var field = objJoint.ball ? ', IFNULL(balls.ball, hash_tree_balls.ball) AS ball' : '';
+// 	async.eachSeries(
+// 		objUnit.parent_units, 
+// 		function(parent_unit, cb){
+// 			if (parent_unit <= prev)
+// 				return cb(createError("parent units not ordered"));
+// 			prev = parent_unit;
+// 			conn.query("SELECT units.*"+field+" FROM units "+join+" WHERE units.unit=?", [parent_unit], function(rows){
+// 				if (rows.length === 0){
+// 					arrMissingParentUnits.push(parent_unit);
+// 					return cb();
+// 				}
+// 				var objParentUnitProps = rows[0];
+// 				// already checked in validateHashTree that the parent ball is known, that's why we throw
+// 				if (objJoint.ball && objParentUnitProps.ball === null)
+// 					throw Error("no ball corresponding to parent unit "+parent_unit);
+// 				if (objParentUnitProps.latest_included_mc_index > objValidationState.max_parent_limci)
+// 					objValidationState.max_parent_limci = objParentUnitProps.latest_included_mc_index;
+// 				async.eachSeries(
+// 					arrPrevParentUnitProps, 
+// 					function(objPrevParentUnitProps, cb2){
+// 						graph.compareUnitsByProps(conn, objPrevParentUnitProps, objParentUnitProps, function(result){
+// 							(result === null) ? cb2() : cb2("parent unit "+parent_unit+" is related to one of the other parent units");
+// 						});
+// 					},
+// 					function(err){
+// 						if (err)
+// 							return cb(err);
+// 						arrPrevParentUnitProps.push(objParentUnitProps);
+// 						cb();
+// 					}
+// 				);
+// 			});
+// 		}, 
+// 		function(err){
+// 			if (err)
+// 				return callback(err);
+// 			if (arrMissingParentUnits.length > 0){
+// 				conn.query("SELECT error FROM known_bad_joints WHERE unit IN(?)", [arrMissingParentUnits], function(rows){
+// 					(rows.length > 0)
+// 						? callback("some of the unit's parents are known bad: "+rows[0].error)
+// 						: callback({error_code: "unresolved_dependency", arrMissingUnits: arrMissingParentUnits});
+// 				});
+// 				return;
+// 			}
+// 			// this is redundant check, already checked in validateHashTree()
+// 			if (objJoint.ball){
+// 				var arrParentBalls = arrPrevParentUnitProps.map(function(objParentUnitProps){ return objParentUnitProps.ball; }).sort();
+// 				//if (arrParentBalls.indexOf(null) === -1){
+// 					var hash = objectHash.getBallHash(objUnit.unit, arrParentBalls, objValidationState.arrSkiplistBalls, !!objUnit.content_hash);
+// 					if (hash !== objJoint.ball)
+// 						throw Error("ball hash is wrong"); // shouldn't happen, already validated in validateHashTree()
+// 				//}
+// 			}
+// 			conn.query(
+// 				"SELECT is_stable, is_on_main_chain, main_chain_index, ball, (SELECT MAX(main_chain_index) FROM units) AS max_known_mci \n\
+// 				FROM units LEFT JOIN balls USING(unit) WHERE unit=?", 
+// 				[last_ball_unit], 
+// 				function(rows){
+// 					if (rows.length !== 1) // at the same time, direct parents already received
+// 						return callback("last ball unit "+last_ball_unit+" not found");
+// 					var objLastBallUnitProps = rows[0];
+// 					// it can be unstable and have a received (not self-derived) ball
+// 					//if (objLastBallUnitProps.ball !== null && objLastBallUnitProps.is_stable === 0)
+// 					//    throw "last ball "+last_ball+" is unstable";
+// 					if (objLastBallUnitProps.ball === null && objLastBallUnitProps.is_stable === 1)
+// 						throw Error("last ball unit "+last_ball_unit+" is stable but has no ball");
+// 					if (objLastBallUnitProps.is_on_main_chain !== 1)
+// 						return callback("last ball "+last_ball+" is not on MC");
+// 					if (objLastBallUnitProps.ball && objLastBallUnitProps.ball !== last_ball)
+// 						return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
+// 					objValidationState.last_ball_mci = objLastBallUnitProps.main_chain_index;
+// 					objValidationState.max_known_mci = objLastBallUnitProps.max_known_mci;
+// 					if (objValidationState.max_parent_limci < objValidationState.last_ball_mci)
+// 						return callback("last ball unit "+last_ball_unit+" is not included in parents, unit "+objUnit.unit);
+// 					if (objLastBallUnitProps.is_stable === 1){
+// 						// if it were not stable, we wouldn't have had the ball at all
+// 						if (objLastBallUnitProps.ball !== last_ball)
+// 							return callback("stable: last_ball "+last_ball+" and last_ball_unit "+last_ball_unit+" do not match");
+// 						if (objValidationState.last_ball_mci <= 800000)
+// 							return checkNoSameAddressInDifferentParents();
+// 					}
+// 					// Last ball is not stable yet in our view. Check if it is stable in view of the parents
+// 					main_chain.determineIfStableInLaterUnitsAndUpdateStableMcFlag(conn, last_ball_unit, objUnit.parent_units, objLastBallUnitProps.is_stable, function(bStable){
+// 						if (!bStable && objLastBallUnitProps.is_stable === 1){
+// 							var eventBus = require('../base/event_bus.js');
+// 							eventBus.emit('nonfatal_error', "last ball is stable, but not stable in parents, unit "+objUnit.unit, new Error());
+// 							return checkNoSameAddressInDifferentParents();
+// 						}
+// 						else if (!bStable)
+// 							return callback(objUnit.unit+": last ball unit "+last_ball_unit+" is not stable in view of your parents "+objUnit.parent_units);
+// 						conn.query("SELECT ball FROM balls WHERE unit=?", [last_ball_unit], function(ball_rows){
+// 							if (ball_rows.length === 0)
+// 								throw Error("last ball unit "+last_ball_unit+" just became stable but ball not found");
+// 							if (ball_rows[0].ball !== last_ball)
+// 								return callback("last_ball "+last_ball+" and last_ball_unit "+last_ball_unit
+// 												+" do not match after advancing stability point");
+// 							checkNoSameAddressInDifferentParents();
+// 						});
+// 					});
+// 				}
+// 			);
+// 		}
+// 	);
+// }
 
 
 function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback) {
@@ -604,20 +602,40 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 		//pow add: check trust me author must come from pow unit authors of last round
 	if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
 		// validate proposer ID
-		if(objUnit.authors.length !== 1)
+		// recover add 
+		if(objUnit.authors.length === 1){
+			byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
+				if(err)
+					return callback("error occured when getCoordinators err info:" + err);
+				if(proposer !== objUnit.authors[0].address)
+					return callback("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
+				if(round_index !== objUnit.round_index)
+					return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
+				async.eachSeries(arrAuthors, function(objAuthor, cb){
+					validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+				}, callback);
+			});
+		}
+		else if(objUnit.authors.length === 11){  // recover trustme unit
+			byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
+				if(err)
+					return callback("error occured when getCoordinators err info:" + err);
+				if(round_index !== objUnit.round_index)
+					return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
+				conn.query("SELECT address FROM unit_authors WHERE unit=? ORDER BY address", [constants.GENESIS_UNIT], function(rows){
+					var ii = 0;
+					async.eachSeries(arrAuthors, function(objAuthor, cb){
+						if(objAuthor.address !== rows[ii].address)
+							return callback("author incorrect :" + objAuthor.address);
+						ii++;
+						validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+					}, callback);
+				});
+			});
+		}
+		else{
 			return callback("trust me unit consist of more than one author")
-		// getProposer method can ensure prop[oser is among top 10 pow unit address.]
-		byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
-			if(err)
-				return callback("error occured when getCoordinators err info:" + err);
-			if(proposer !== objUnit.authors[0].address)
-				return callback("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
-			if(round_index !== objUnit.round_index)
-				return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
-			async.eachSeries(arrAuthors, function(objAuthor, cb){
-				validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
-			}, callback);
-		});
+		}
 	}else{
 		async.eachSeries(arrAuthors, function(objAuthor, cb){
 			validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
@@ -841,7 +859,7 @@ function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
 }
 
 function validateMessages(conn, arrMessages, objUnit, objValidationState, callback){
-	console.log("validateMessages "+objUnit.unit);
+	// console.log("validateMessages "+objUnit.unit);
 	async.forEachOfSeries(
 		arrMessages, 
 		function(objMessage, message_index, cb){
@@ -1017,12 +1035,16 @@ function ValidateWitnessLevel(conn, objUnit, objValidationState, callback) {
 // byzantine add :
 // validate coordinators and trustme unit fork condition
 function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, objValidationState, callback) {
-	console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
-	console.log("validating objUnit: " + JSON.stringify(objUnit));
+	// console.log("validating ValidateCoordinatorsAndTrustmeWithoutFork");
+	// console.log("validating objUnit: " + JSON.stringify(objUnit));
+	if(objUnit.authors.length === 11){   // recover trustme unit
+		return callback();
+	}
 	//check only single main chain without fork ,there is no two trust me units with same mci
 	storage.getUnitsInfoWithMci(conn,objUnit.hp, function(units){
 		if(units.length > 0)
-			return callback("duplicated trust me units with same MCI !")
+			return callback("duplicated trust me units with same MCI !");
+		
 		if(coordinators.length <  ( 2 * constants.TOTAL_BYZANTINE + 1) )
 			return callback("not enough coordinators, not reach to 2f + 1 threshold ");
 		if(coordinators.length > constants.TOTAL_COORDINATORS )
@@ -1037,7 +1059,7 @@ function ValidateCoordinatorsAndTrustmeWithoutFork(conn, coordinators, objUnit, 
 			prev_address = objCoodinator.address;
 		}
 
-		console.log("validating coordinators: " + JSON.stringify(coordinators));
+		// console.log("validating coordinators: " + JSON.stringify(coordinators));
 		async.eachSeries(coordinators, function(coordinator, cb){
 			// Make sure all coordinators are correct witness of round
 			round.getWitnessesByRoundIndex(conn, objUnit.round_index, function(witnesses){
@@ -1097,7 +1119,7 @@ function checkForDoublespends(conn, type, sql, arrSqlArgs, objUnit, objValidatio
 						return cb(err);
 					// byzantine add
 					// here mean double spend units found and units are non serial
-					console.log("Double spend unit found: " + objUnit.unit);
+					// console.log("Double spend unit found: " + objUnit.unit);
 					var arrUnstableConflictingUnitProps = rows.filter(function(objConflictingUnitProps){
 						return (objConflictingUnitProps.is_stable === 0);
 					});
@@ -1580,7 +1602,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 					doubleSpendQuery, doubleSpendVars, 
 					objUnit, objValidationState, 
 					function acceptDoublespends(cb3){
-						console.log("--- accepting doublespend on unit "+objUnit.unit);
+						// console.log("--- accepting doublespend on unit "+objUnit.unit);
 						var sql = "UPDATE inputs SET is_unique=NULL WHERE "+doubleSpendWhere+
 							" AND (SELECT is_stable FROM units WHERE units.unit=inputs.unit)=0";
 						if (!(objAsset && objAsset.is_private)){
@@ -1589,12 +1611,12 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 							return cb3();
 						}
 						mutex.lock(["private_write"], function(unlock){
-							console.log("--- will ununique the conflicts of unit "+objUnit.unit);
+							// console.log("--- will ununique the conflicts of unit "+objUnit.unit);
 							conn.query(
 								sql, 
 								doubleSpendVars, 
 								function(){
-									console.log("--- ununique done unit "+objUnit.unit);
+									// console.log("--- ununique done unit "+objUnit.unit);
 									objValidationState.arrDoubleSpendInputs.push({message_index: message_index, input_index: input_index});
 									unlock();
 									cb3();
@@ -1788,7 +1810,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 						if (arrInputAddresses.indexOf(owner_address) === -1)
 							arrInputAddresses.push(owner_address);
 						total_input += src_coin.amount;
-						console.log("-- val state "+JSON.stringify(objValidationState));
+						// console.log("-- val state "+JSON.stringify(objValidationState));
 					//	if (objAsset)
 					//		profiler2.stop('validate transfer');
 						return checkInputDoubleSpend(cb);
@@ -1849,17 +1871,17 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 								if (objUnit.authors.length !== 2)
 									return cb();	
 									
-								console.log("===================Start to check spend deposit balance");
+								// console.log("===================Start to check spend deposit balance");
 								var supernodes = objUnit.authors.filter( function (author) { return author.address != owner_address });
 								var coAuthorAddr = supernodes[0].address ;
 								// Check owner address is kind of deposit address  
-								console.log("===================coAuthorAddr: "+ coAuthorAddr +" | owner_address: " +owner_address);
+								// console.log("===================coAuthorAddr: "+ coAuthorAddr +" | owner_address: " +owner_address);
 								deposit.getSupernodeByDepositAddress(conn, owner_address, function(err, supernodeinfo){
 									if(err){
 										// no correspont supernode which indicates owner_address is not deposit address
 										return cb();
 									}
-									console.log("===================Deposit address: " + owner_address + "  supernode address: "+ supernodeinfo[0].address);
+									// console.log("===================Deposit address: " + owner_address + "  supernode address: "+ supernodeinfo[0].address);
 									// owner_address is deposit address
 									deposit.hasInvalidUnitsFromHistory(conn, supernodeinfo[0].address, function (err, isInvalid){
 										if(err) //normal tranaction
@@ -1868,7 +1890,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 										round.getLastCoinbaseUnitRoundIndex(conn, supernodeinfo[0].address, function(err, lastCoinBaseRound){
 											if(err)
 												return cb(err);
-											console.log("===================got last coin base round is : "+ lastCoinBaseRound);
+											// console.log("===================got last coin base round is : "+ lastCoinBaseRound);
 											round.getCurrentRoundIndex(conn, function(latestRoundIndex){
 												if (constants.FOUNDATION_SAFE_ADDRESS === coAuthorAddr){ // foundation spend deposit condition
 													if(!isInvalid) // supernode is good condition
@@ -1876,7 +1898,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 													if(lastCoinBaseRound === 0 ) // never participate in minning and no coinbase  record
 														return cb("supernode [" + supernodeinfo[0].address + "] don not submit coinbase unit,  Foundation can not spend its deposit balance ");
 													
-													console.log("===================got current  round is : "+ latestRoundIndex);
+													// console.log("===================got current  round is : "+ latestRoundIndex);
 													// check if delay n round to spend 
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_FOUNDATION_SPEND_DEPOSIT){
 														return cb("Foundation safe address can not spend deposit contract balance before ")
@@ -1889,12 +1911,12 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 													if(isInvalid)
 														return cb("supernode [" + supernodeinfo[0].address + "] submit bad joints, can not spend its deposit balance ");
 													
-													console.log("===================got current  round is : "+ latestRoundIndex);
+													// console.log("===================got current  round is : "+ latestRoundIndex);
 													if((latestRoundIndex - lastCoinBaseRound) < constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT){
 														return cb("supernode can not spend deposit contract balance before round " + (lastCoinBaseRound + constants.COUNT_ROUNDS_FOR_SUPERNODE_SPEND_DEPOSIT));
 													}
 
-													console.log("===================OK to spend deposit balance");
+													// console.log("===================OK to spend deposit balance");
 													return cb();  // OK condition
 												}
 												return cb("unknown user:" + coAuthorAddr +" try to spend deposit :" + owner_address );
@@ -1911,7 +1933,7 @@ function validatePaymentInputsAndOutputs(conn, payload, objAsset, message_index,
 			}
 		},
 		function(err){ // async.forEachOfSeries callback
-			console.log("inputs done "+payload.asset, arrInputAddresses, arrOutputAddresses);
+			// console.log("inputs done "+payload.asset, arrInputAddresses, arrOutputAddresses);
 			if (err)
 				return callback(err);
 			if (objAsset){
