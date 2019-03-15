@@ -519,6 +519,26 @@ function prepareParentsAndLastBall(callbacks){
 	);
 }
 
+// recover add
+function prepareParentsAndLastBallAndPowcount(callbacks){
+	parentComposer.pickParentsAndLastBallAndPowcount(
+		db, 
+		function(err, arrParentUnits, last_stable_mc_ball, last_stable_mc_ball_unit, last_stable_mc_ball_mci, round_index){
+			if (err)
+				return callbacks.ifError("unable to find parents: "+err);
+			var objResponse = {
+				parent_units: arrParentUnits,
+				last_stable_mc_ball: last_stable_mc_ball,
+				last_stable_mc_ball_unit: last_stable_mc_ball_unit,
+				last_stable_mc_ball_mci: last_stable_mc_ball_mci,
+				round_index: round_index
+			};
+	
+			callbacks.ifOk(objResponse);
+		}
+	);
+}
+
 // arrUnits sorted in reverse chronological order
 function prepareLinkProofs(arrUnits, callbacks){
 	if (!ValidationUtils.isNonemptyArray(arrUnits))
@@ -712,5 +732,6 @@ exports.processLinkProofs = processLinkProofs;
 exports.determineIfHaveUnstableJoints = determineIfHaveUnstableJoints;
 // exports.prepareParentsAndLastBallAndWitnessListUnit = prepareParentsAndLastBallAndWitnessListUnit;
 exports.prepareParentsAndLastBall = prepareParentsAndLastBall;
+exports.prepareParentsAndLastBallAndPowcount = prepareParentsAndLastBallAndPowcount;
 
 
