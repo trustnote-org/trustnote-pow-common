@@ -841,6 +841,23 @@ function readLastMainChainIndex(handleLastMcIndex){
 	});
 }
 
+function readTimestampOfLastMci(conn, handleTimestamp){
+	conn.query("SELECT int_value AS timestamp FROM data_feeds JOIN units USING(unit) \n\
+		WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+		AND sequence='good' AND is_stable=1 ORDER BY main_chain_index DESC LIMIT 1", 
+		[constants.POW_TYPE_TRUSTME, main_chain_index],
+		function(rows){
+			if(rows.length === 0)   // first trustme unit
+				return handleTimestamp(0);
+			if(rows.length !== 1)
+				return handleTimestamp(null);
+			var timestamp = rows[0].timestamp;
+			if (!timestamp || timestamp === null) // error
+				return handleTimestamp(null);
+			handleTimestamp(rows[0].timestamp);
+		}
+	);
+}
 
 function findLastBallMciOfMci(conn, mci, handleLastBallMci){
 	if (mci === 0)
@@ -1489,6 +1506,7 @@ exports.determineBestParent = determineBestParent;
 
 exports.readStaticUnitProps = readStaticUnitProps;
 exports.readUnitAuthors = readUnitAuthors;
+exports.readTimestampOfLastMci = readTimestampOfLastMci;
 
 exports.isKnownUnit = isKnownUnit;
 exports.setUnitIsKnown = setUnitIsKnown;

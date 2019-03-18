@@ -599,49 +599,68 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 	}
 
 	objValidationState.unit_hash_to_sign = objectHash.getUnitHashToSign(objUnit);
-		//pow add: check trust me author must come from pow unit authors of last round
+	//pow add: check trust me author must come from pow unit authors of last round
 	if(objUnit.pow_type === constants.POW_TYPE_TRUSTME){
-		// validate proposer ID
-		// recover add 
-		if(objUnit.authors.length === 1){
-			byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
-				if(err)
-					return callback("error occured when getCoordinators err info:" + err);
-				if(proposer !== objUnit.authors[0].address)
-					return callback("proposer incorrect ,Expected: "+ proposer +" Actual :" + objUnit.authors[0].address);
-				if(round_index !== objUnit.round_index)
-					return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
-				async.eachSeries(arrAuthors, function(objAuthor, cb){
-					validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
-				}, callback);
-			});
-		}
-		else if(objUnit.authors.length === 11){  // recover trustme unit
-			byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
-				if(err)
-					return callback("error occured when getCoordinators err info:" + err);
-				if(round_index !== objUnit.round_index)
-					return callback("proposer round_index incorrect ,Expected: "+ round_index +" Actual :" + objUnit.round_index);
-				conn.query("SELECT address FROM unit_authors WHERE unit=? ORDER BY address", [constants.GENESIS_UNIT], function(rows){
-					var ii = 0;
-					async.eachSeries(arrAuthors, function(objAuthor, cb){
-						if(objAuthor.address !== rows[ii].address)
-							return callback("author incorrect :" + objAuthor.address);
-						ii++;
-						validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
-					}, callback);
-				});
-			});
-		}
-		else{
-			return callback("trust me unit consist of more than one author")
-		}
+		storage.readTimestampOfLastMci(conn, function(lastTimestamp){
+				if(lastTimestamp === null)
+					return callback("error occured when get Timestamp of last mci");
+				lastTimestamp = parseInt(lastTimestamp);
+				// validate proposer ID
+				// recover add 
+				if(objUnit.authors.length === 1){
+					if(lastTimestamp > 0){  // validation the time difference between the two trustme units
+						var currentTimestamp = objUnit.arrMessages[0].payload.timestamp;
+						currentTimestamp = parseInt(currentTimestamp);
+						var diff = Math.abs(Math.round(currentTimestamp - lastTimestamp))
+						if (diff > constants.TRUSTME_TIMESTAMP_TOLERANT)
+							return callback("the time interval is too long between two trustme unit");
+					}
+					byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
+						if(err)
+							return callback("error occured when getCoordinators err info:" + err);
+						if(proposer !== objUnit.authors[0].address)
+							return callback("proposer incorrect, Expected: "+ proposer +" Actual:" + objUnit.authors[0].address);
+						if(round_index !== objUnit.round_index)
+							return callback("proposer round_index incorrect, Expected: "+ round_index +" Actual:" + objUnit.round_index);
+						async.eachSeries(arrAuthors, function(objAuthor, cb){
+							validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+						}, callback);
+					});
+				}
+				else if(objUnit.authors.length === 11){  // recover trustme unit
+					if(lastTimestamp > 0){  // validation the time difference between the two trustme units
+						var currentTimestamp = objUnit.arrMessages[0].payload.timestamp;
+						currentTimestamp = parseInt(currentTimestamp);
+						var diff = Math.abs(Math.round(currentTimestamp - lastTimestamp))
+						if (diff < constants.TRUSTME_TIMESTAMP_TOLERANT)
+							return callback("the time interval is too short between recover unit and trustme unit");
+					}
+					byzantine.getCoordinators(conn, objUnit.hp, objUnit.phase, function(err, proposer, round_index,witnesses){
+						if(err)
+							return callback("error occured when getCoordinators err info:" + err);
+						if(round_index !== objUnit.round_index)
+							return callback("proposer round_index incorrect, Expected: "+ round_index +" Actual:" + objUnit.round_index);
+						conn.query("SELECT address FROM unit_authors WHERE unit=? ORDER BY address", [constants.GENESIS_UNIT], function(rows){
+							var ii = 0;
+							async.eachSeries(arrAuthors, function(objAuthor, cb){
+								if(objAuthor.address !== rows[ii].address)
+									return callback("author incorrect :" + objAuthor.address);
+								ii++;
+								validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
+							}, callback);
+						});
+					});
+				}
+				else{
+					return callback("trust me unit consist of more than one author")
+				}
+			}
+		);
 	}else{
 		async.eachSeries(arrAuthors, function(objAuthor, cb){
 			validateAuthor(conn, objAuthor, objUnit, objValidationState, cb);
 		}, callback);
 	}
-	
 }
 
 function validateAuthor(conn, objAuthor, objUnit, objValidationState, callback){
