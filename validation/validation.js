@@ -609,7 +609,7 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 				// recover add 
 				if(objUnit.authors.length === 1){
 					if(lastTimestamp > 0){  // validation the time difference between the two trustme units
-						var currentTimestamp = objUnit.arrMessages[0].payload.timestamp;
+						var currentTimestamp = objUnit.messages[0].payload.timestamp;
 						currentTimestamp = parseInt(currentTimestamp);
 						var diff = Math.abs(Math.round(currentTimestamp - lastTimestamp))
 						if (diff > constants.TRUSTME_TIMESTAMP_TOLERANT)
@@ -629,7 +629,7 @@ function validateAuthors(conn, arrAuthors, objUnit, objValidationState, callback
 				}
 				else if(objUnit.authors.length === 11){  // recover trustme unit
 					if(lastTimestamp > 0){  // validation the time difference between the two trustme units
-						var currentTimestamp = objUnit.arrMessages[0].payload.timestamp;
+						var currentTimestamp = objUnit.messages[0].payload.timestamp;
 						currentTimestamp = parseInt(currentTimestamp);
 						var diff = Math.abs(Math.round(currentTimestamp - lastTimestamp))
 						if (diff < constants.TRUSTME_TIMESTAMP_TOLERANT)
