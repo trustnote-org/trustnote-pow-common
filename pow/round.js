@@ -337,14 +337,14 @@ function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
 
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     if(roundIndex <= 0) 
-        throw Error("The first round have no commission ");
+        throw Error("The first round have no coinbase ");
     if (assocCachedCoinbaseRatio[roundIndex]){
         console.log("RoundCacheLog:use:getAllCoinbaseRatioByRoundIndex->assocCachedCoinbaseRatio,roundIndex:" + roundIndex);
         return callback(assocCachedCoinbaseRatio[roundIndex]);
     }
     getMinWlByRoundIndex(conn, roundIndex+1, function(minWl){
         if(minWl === null)
-            throw Error("Can't get commission before the round switch.");
+            throw Error("Can't get coinbase before the round switch.");
         getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
             conn.query(
                 "SELECT unit, address \n\
