@@ -86,12 +86,12 @@ function getBalanceOfDepositContract(conn, depositAddress, roundIndex, cb){
         var sumBanlance = 0;
         conn.query("SELECT src_unit, src_message_index, src_output_index AS count \n\
             FROM inputs JOIN units USING(unit) \n\
-            WHERE asset IS NULL AND main_chain_index>? AND address=?", 
+            WHERE asset IS NULL AND sequence='good' AND is_stable=1 AND main_chain_index>? AND address=?", 
         [lastRoundMaxMci, depositAddress], 
         function(rowsInputs) {
             conn.query("SELECT unit, is_spent, amount, message_index, output_index \n\
                 FROM outputs JOIN units USING(unit) \n\
-                WHERE asset IS NULL AND main_chain_index<=? AND address=?", 
+                WHERE asset IS NULL AND sequence='good' AND is_stable=1 AND main_chain_index<=? AND address=?", 
             [lastRoundMaxMci, depositAddress], 
             function(rowsOutputs) {
                 if (rowsOutputs.length === 0)
@@ -111,6 +111,42 @@ function getBalanceOfDepositContract(conn, depositAddress, roundIndex, cb){
                     }
                 }
                 cb(null, sumBanlance);
+            });
+        });
+    });
+}
+
+
+/**
+ * Get all deposit address stable balance, Before the roundIndex
+ * 
+ * @param	{obj}	    conn      if conn is null, use db query, otherwise use conn.
+ * @param   {String}    roundIndex
+ * @param   {function}	cb( err, balance ) callback function
+ *
+ * @return {"base":{"stable":{Integer},"pending":{Integer}}} balance
+ */
+function getBalanceOfAllDepositContract(conn, roundIndex, cb){
+    var conn = conn || db;
+    if(!validationUtils.isPositiveInteger(roundIndex))
+        return cb("param roundIndex is not a positive integer");
+    if(roundIndex === 1)
+        return cb(null, 0);
+    round.getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+        conn.query("SELECT deposit_address FROM supernode", 
+        function(rowsDepositAddress) {
+            var arrDepositAddress = rowsDepositAddress.map(function(row){ return row.deposit_address; });
+            var strDepositAddress = arrDepositAddress.map(db.escape).join(', ');
+            conn.query("SELECT sum(amount) AS sumBanlance  \n\
+                FROM outputs JOIN units USING(unit) \n\
+                WHERE asset IS NULL AND sequence='good' AND is_stable=1 AND main_chain_index<=? \n\
+                AND address IN("+strDepositAddress+")", 
+            [lastRoundMaxMci], 
+            function(rowsOutputs) {
+                if (rowsOutputs.length === 0)
+                    return cb(null, 0);
+               
+                cb(null, parseInt(rowsOutputs[0].sumBanlance));
             });
         });
     });
@@ -223,6 +259,8 @@ function createDepositAddress(my_address, callback) {
 exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
 exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
+exports.getBalanceOfAllDepositContract = getBalanceOfAllDepositContract;
+
 exports.getDepositAddressBySupernodeAddress = getDepositAddressBySupernodeAddress;
 exports.getDepositAddressBySafeAddress = getDepositAddressBySafeAddress;
 exports.getSupernodeByDepositAddress = getSupernodeByDepositAddress;
