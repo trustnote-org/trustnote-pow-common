@@ -130,9 +130,7 @@ function getBalanceOfAllDepositContract(conn, roundIndex, cb){
     var conn = conn || db;
     if(!validationUtils.isPositiveInteger(roundIndex))
         return cb("param roundIndex is not a positive integer");
-    if(roundIndex === 1)
-        return cb(null, 0);
-    round.getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+    round.getMaxMciByRoundIndex(conn, roundIndex, function(lastRoundMaxMci){
         conn.query("SELECT deposit_address FROM supernode", 
         function(rowsDepositAddress) {
             var arrDepositAddress = rowsDepositAddress.map(function(row){ return row.deposit_address; });
@@ -260,6 +258,8 @@ exports.isDepositDefinition = isDepositDefinition;
 exports.hasInvalidUnitsFromHistory = hasInvalidUnitsFromHistory;
 exports.getBalanceOfDepositContract = getBalanceOfDepositContract;
 exports.getBalanceOfAllDepositContract = getBalanceOfAllDepositContract;
+
+
 
 exports.getDepositAddressBySupernodeAddress = getDepositAddressBySupernodeAddress;
 exports.getDepositAddressBySafeAddress = getDepositAddressBySafeAddress;

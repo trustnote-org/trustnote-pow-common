@@ -7,6 +7,21 @@ var constants = require('../config/constants.js');
 var db = require('../db/db.js');
 var conf = require('../config/conf.js');
 var validationUtils = require('../validation/validation_utils.js');
+var deposit = require('../sc/deposit.js');
+
+var arrInflationRatio = [
+                        0.07, 
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07,
+                        0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07
+                    ];
 
 var async = require('async');
 var MAX_ROUND_IN_CACHE = 10;
@@ -178,19 +193,7 @@ function getMinWlByRoundIndex(conn, roundIndex, callback){
 	);
 }
 
-function getCoinbaseByRoundIndex(roundIndex){
-    if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
-        return 0;
-	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
-}
 
-function getSumCoinbaseByEndRoundIndex(endRoundIndex){
-    var sum = 0;
-    for (var beginRound = 1; beginRound <= endRoundIndex; beginRound++){
-       sum = sum + getCoinbaseByRoundIndex(beginRound);
-    }
-    return sum;
-}
 
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
@@ -284,6 +287,56 @@ function checkIfTrustMeAuthorByRoundIndex(conn, roundIndex, address, callback){
 
 // coinbase begin
 
+// old function
+function getCoinbaseByRoundIndex(roundIndex){
+    if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
+        return 0;
+	return constants.ROUND_COINBASE[Math.ceil(roundIndex/constants.ROUND_TOTAL_YEAR)-1];
+}
+
+function getTotalCoinByRoundIndex(conn, roundIndex, cb){
+    if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
+        return 0;
+    conn.query(
+        "SELECT total_mine, total_commission, total_burn FROM round \n\
+        WHERE round_index=?",
+        [roundIndex],
+        function(rowsTotal){
+            if (rowsTotal.length !== 1)
+                throw Error("get total mine error, result count is 1");
+            var totalMine = parseInt(rowsTotal[0].total_mine);
+            var totalCommission = parseInt(rowsTotal[0].total_commission);
+            var totalBurn = parseInt(rowsTotal[0].total_burn);
+            if(!validationUtils.isNonnegativeInteger(totalMine) || 
+                !validationUtils.isNonnegativeInteger(totalCommission) ||
+                !validationUtils.isNonnegativeInteger(depositBurnBalance))
+                throw Error("mine or commission or burn deposit is not a positive integer");
+            
+            var totalPublishCoin = contants.TOTAL_WHITEBYTES + totalMine - totalCommission - totalBurn;
+            deposit.getBalanceOfAllDepositContract(conn, roundIndex, function(err, depositBalance){
+                if(err)
+                    throw Error("Can not get deposit balance, so can not get total coin by round index");
+                if(!validationUtils.isNonnegativeInteger(depositBalance))
+                    throw Error("all deposit balance is not a positive integer");
+                var depositRatio = Math.round((depositBalance*100)/totalPublishCoin);
+                console.log("depositRatio:" + depositRatio + ", round_index:" + roundIndex);
+                var inflationRatio = arrInflationRatio[depositRatio];
+                cb(Math.floor((inflationRatio*totalPublishCoin)/constants.ROUND_TOTAL_YEAR));
+            });  
+        }
+    );
+}
+
+//used by explorer 
+function getSumCoinbaseByEndRoundIndex(endRoundIndex){
+    var sum = 0;
+    for (var beginRound = 1; beginRound <= endRoundIndex; beginRound++){
+       sum = sum + getCoinbaseByRoundIndex(beginRound);
+    }
+    return sum;
+}
+
+
 function getMaxMciByRoundIndex(conn, roundIndex, callback){
     if(roundIndex === 0)
         return callback(0);
@@ -305,35 +358,97 @@ function getMaxMciByRoundIndex(conn, roundIndex, callback){
     );
 }
 
-function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
+function getTotalMineAndCommissionByRoundIndex(conn, roundIndex, callback){
     if(roundIndex <= 0) 
         throw Error("The first round have no commission ");
-    if (assocCachedTotalCommission[roundIndex]){
-        console.log("RoundCacheLog:use:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
-        return callback(assocCachedTotalCommission[roundIndex]);
-    }
-    getMinWlByRoundIndex(conn, roundIndex+1, function(minWl){
-        if(minWl === null)
-            throw Error("Can't get commission before the round switch.");
-        getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
-            getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
-                conn.query(
-                    "select sum(headers_commission+payload_commission) AS total_commission from units \n\
-                    where is_stable=1 \n\
-                    AND main_chain_index>? AND main_chain_index<=?", 
-                    [lastRoundMaxMci, currentRoundMaxMci],
-                    function(rows){
-                        if (rows.length !== 1)
-                            throw Error("Can not calculate the total commision of round index " + roundIndex);
-                        console.log("RoundCacheLog:push:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
-                        assocCachedTotalCommission[roundIndex] = rows[0].total_commission;
-                        callback(rows[0].total_commission);
-                    }
-                );
-            });
+
+    getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+        getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
+            // get total mine of last round
+            conn.query(
+                "SELECT sum(amount) AS total_mine FROM inputs JOIN units using(unit) \n\
+                WHERE is_stable=1 AND sequence='good' AND pow_type=? \n\
+                AND main_chain_index>? AND main_chain_index<=?", 
+                [constants.POW_TYPE_COIN_BASE, lastRoundMaxMci, currentRoundMaxMci],
+                function(rowsMine){
+                    if (rowsMine.length !== 1)
+                        throw Error("Can not calculate the total mine of round index " + roundIndex);
+                    var lastTotalMine = parseInt(rowsMine[0].total_mine);
+                    // get total commission of last round
+                    conn.query(
+                        "SELECT sum(headers_commission+payload_commission) AS total_commission FROM units \n\
+                        WHERE is_stable=1 AND sequence='good' \n\
+                        AND main_chain_index>? AND main_chain_index<=?", 
+                        [lastRoundMaxMci, currentRoundMaxMci],
+                        function(rowsCommission){
+                            if (rowsCommission.length !== 1)
+                                throw Error("Can not calculate the total commision of round index " + roundIndex);
+                            var lastTotalCommission = parseInt(rowsCommission[0].total_commission);
+                            conn.query("SELECT sum(amount) AS total_burn  \n\
+                                FROM outputs JOIN units USING(unit) \n\
+                                WHERE asset IS NULL AND address=? AND sequence='good' AND is_stable=1 \n\
+                                AND main_chain_index>? AND main_chain_index<=?", 
+                                [constants.DEPOSIT_BURN_ADDRESS, lastRoundMaxMci, currentRoundMaxMci], 
+                                function(rowsBurn){
+                                    if (rowsBurn.length !== 1)
+                                        throw Error("Can not calculate the total brun of round index " + roundIndex);
+                                    var lastTotalBurn = parseInt(rowsBurn[0].total_burn);
+                                    // get total mine and total commission before last round
+                                    conn.query(
+                                        "SELECT total_mine, total_commission, total_burn FROM round \n\
+                                        WHERE round_index = ?", 
+                                        [roundIndex-1],
+                                        function(rowsAccumulate){
+                                            var accuMine = 0;
+                                            var accuCommission = 0;
+                                            var accuBurn = 0;
+                                            if (rowsAccumulate.length === 1){
+                                                accuMine = parseInt(rowsAccumulate[0].total_mine);
+                                                accuCommission = parseInt(rowsAccumulate[0].total_commission);
+                                                accuBurn = parseInt(rowsAccumulate[0].total_burn);
+                                            }                                        
+                                            return callback(accuMine+lastTotalMine, accuCommission+lastTotalCommission, accuBurn+lastTotalBurn);
+                                        }
+                                    );   
+                                }
+                            );           
+                        }
+                    );            
+                }
+            );
         });
     });
 }
+
+// function getTotalCommissionByRoundIndex(conn, roundIndex, callback){
+//     if(roundIndex <= 0) 
+//         throw Error("The first round have no commission ");
+//     if (assocCachedTotalCommission[roundIndex]){
+//         console.log("RoundCacheLog:use:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
+//         return callback(assocCachedTotalCommission[roundIndex]);
+//     }
+//     getMinWlByRoundIndex(conn, roundIndex+1, function(minWl){
+//         if(minWl === null)
+//             throw Error("Can't get commission before the round switch.");
+//         getMaxMciByRoundIndex(conn, roundIndex-1, function(lastRoundMaxMci){
+//             getMaxMciByRoundIndex(conn, roundIndex, function(currentRoundMaxMci){
+//                 conn.query(
+//                     "select sum(headers_commission+payload_commission) AS total_commission from units \n\
+//                     where is_stable=1 AND sequence='good'\n\
+//                     AND main_chain_index>? AND main_chain_index<=?", 
+//                     [lastRoundMaxMci, currentRoundMaxMci],
+//                     function(rows){
+//                         if (rows.length !== 1)
+//                             throw Error("Can not calculate the total commision of round index " + roundIndex);
+//                         console.log("RoundCacheLog:push:getTotalCommissionByRoundIndex->assocCachedTotalCommission,roundIndex:" + roundIndex);
+//                         assocCachedTotalCommission[roundIndex] = rows[0].total_commission;
+//                         callback(rows[0].total_commission);
+//                     }
+//                 );
+//             });
+//         });
+//     });
+// }
 
 function getAllCoinbaseRatioByRoundIndex(conn, roundIndex, callback){
     if(roundIndex <= 0) 
@@ -401,25 +516,26 @@ function getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress
 }
 
 function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, callback){
-    var coinbase = getCoinbaseByRoundIndex(roundIndex);
-    if(!validationUtils.isInteger(coinbase))
-        throw Error("coinbase is not number ");
-    
     getWitnessesByRoundIndex(conn, roundIndex, function(witnesses){
         if(witnesses.indexOf(witnessAddress) === -1)
             throw Error("the witness " + witnessAddress + " is not the right witness of round " + roundIndex);
-        getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
-            if(!validationUtils.isInteger(totalCommission))
-                throw Error("totalCommission is not number ");
-            var totalCoinbase = coinbase + totalCommission;
-            
+        getTotalCoinByRoundIndex(conn, roundIndex, function(totalCoinbase){
+            if(!validationUtils.isInteger(totalCoinbase))
+                throw Error("coinbase is not number");
+       
+            // getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
+            //     if(!validationUtils.isInteger(totalCommission))
+            //         throw Error("totalCommission is not number ");
+            //     var totalCoinbase = coinbase + totalCommission;
+                
             getCoinbaseRatioByRoundIndexAndAddress(conn, roundIndex, witnessAddress, function(witnessRatioOfTrustMe){
                 if(witnessRatioOfTrustMe === null || typeof witnessRatioOfTrustMe ===  'undefined' || isNaN(witnessRatioOfTrustMe))
                     throw Error("witnessRatioOfTrustMe is null or NaN" + JSON.stringify(witnessRatioOfTrustMe));
                 return callback(Math.floor(totalCoinbase*witnessRatioOfTrustMe));
             });            
+            // });
         });
-    });
+    });    
 }
 
 function queryCoinBaseListByRoundIndex(conn, roundIndex, callback) {
@@ -604,6 +720,8 @@ exports.checkIfTrustMeAuthorByRoundIndex = checkIfTrustMeAuthorByRoundIndex;
 exports.queryCoinBaseListByRoundIndex = queryCoinBaseListByRoundIndex;
 exports.queryFirstTrustMEBallOnMainChainByRoundIndex	= queryFirstTrustMEBallOnMainChainByRoundIndex;
 exports.getSumCoinbaseByEndRoundIndex	= getSumCoinbaseByEndRoundIndex;
+
+exports.getTotalMineAndCommissionByRoundIndex	= getTotalMineAndCommissionByRoundIndex;
 
 exports.getLastCoinbaseUnitRoundIndex	= getLastCoinbaseUnitRoundIndex;
 

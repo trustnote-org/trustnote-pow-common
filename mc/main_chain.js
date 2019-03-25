@@ -95,7 +95,8 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate new seed error !");
 										conn.query(
-											"INSERT INTO round (round_index, min_wl, seed) VALUES (?, null, ?)", 
+											"INSERT INTO round (round_index, min_wl, seed, total_mine, total_commission)  \n\
+											VALUES (?, null, ?, 0, 0)", 
 											[round_index+1, newSeed], 
 											function(){
 												cb1();
@@ -106,7 +107,7 @@ function markMcIndexStable(conn, mci, onDone){
 								function(cb1){    // calculate difficulty
 									if(round.getCycleIdByRoundIndex(round_index+1) === round.getCycleIdByRoundIndex(round_index))
 										return cb1();
-									pow. calculateBitsValueByRoundIndexWithDeposit( conn, round_index+1, 0, function(err, nBits){
+									pow.calculateBitsValueByRoundIndexWithDeposit( conn, round_index+1, 0, function(err, nBits){
 										if(err)
 											throw Error(" calculate bits error " + err);
 										conn.query(
@@ -118,7 +119,19 @@ function markMcIndexStable(conn, mci, onDone){
 											}
 										);
 									});
-								}
+								},
+								function(cb1){    // calculate total mine and commission and burn
+									round.getTotalMineAndCommissionByRoundIndex(conn, round_index, function(totalMine, totalCommission, totalBurn){
+										conn.query(
+											"UPDATE round set total_mine=?, total_commission=?, total_burn=?  \n\
+											where round_index=?", 
+											[totalMine, totalCommission, totalBurn, round_index], 
+											function(){
+												cb1();
+											}
+										);
+									});
+								},
 							], 
 							function(err){
 								round.forwardRound(round_index+1);
