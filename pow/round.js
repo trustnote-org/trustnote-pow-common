@@ -373,7 +373,9 @@ function getTotalMineAndCommissionByRoundIndex(conn, roundIndex, callback){
                 function(rowsMine){
                     if (rowsMine.length !== 1)
                         throw Error("Can not calculate the total mine of round index " + roundIndex);
-                    var lastTotalMine = parseInt(rowsMine[0].total_mine);
+                    var lastTotalMine = 0;
+                    if(rowsMine[0].total_mine)
+                        lastTotalMine = parseInt(rowsMine[0].total_mine);
                     // get total commission of last round
                     conn.query(
                         "SELECT sum(headers_commission+payload_commission) AS total_commission FROM units \n\
@@ -383,7 +385,9 @@ function getTotalMineAndCommissionByRoundIndex(conn, roundIndex, callback){
                         function(rowsCommission){
                             if (rowsCommission.length !== 1)
                                 throw Error("Can not calculate the total commision of round index " + roundIndex);
-                            var lastTotalCommission = parseInt(rowsCommission[0].total_commission);
+                            var lastTotalCommission = 0;
+                            if(rowsCommission[0].total_commission)
+                                lastTotalCommission = parseInt(rowsCommission[0].total_commission);
                             conn.query("SELECT sum(amount) AS total_burn  \n\
                                 FROM outputs JOIN units USING(unit) \n\
                                 WHERE asset IS NULL AND address=? AND sequence='good' AND is_stable=1 \n\
@@ -392,7 +396,9 @@ function getTotalMineAndCommissionByRoundIndex(conn, roundIndex, callback){
                                 function(rowsBurn){
                                     if (rowsBurn.length !== 1)
                                         throw Error("Can not calculate the total brun of round index " + roundIndex);
-                                    var lastTotalBurn = parseInt(rowsBurn[0].total_burn);
+                                    var lastTotalBurn = 0;
+                                    if(rowsBurn[0].total_burn)                                        
+                                        lastTotalBurn = parseInt(rowsBurn[0].total_burn);
                                     // get total mine and total commission before last round
                                     conn.query(
                                         "SELECT total_mine, total_commission, total_burn FROM round \n\
