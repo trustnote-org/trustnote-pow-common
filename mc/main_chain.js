@@ -95,8 +95,8 @@ function markMcIndexStable(conn, mci, onDone){
 										if(err)
 											throw Error(" calculate new seed error !");
 										conn.query(
-											"INSERT INTO round (round_index, min_wl, seed, total_mine, total_commission)  \n\
-											VALUES (?, null, ?, 0, 0)", 
+											"INSERT INTO round (round_index, min_wl, seed, total_mine, total_commission, total_burn)  \n\
+											VALUES (?, null, ?, 0, 0, 0)", 
 											[round_index+1, newSeed], 
 											function(){
 												cb1();
