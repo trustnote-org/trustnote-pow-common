@@ -309,7 +309,7 @@ function getTotalCoinByRoundIndex(conn, roundIndex, cb){
             var totalBurn = parseInt(rowsTotal[0].total_burn);
             if(!validationUtils.isNonnegativeInteger(totalMine) || 
                 !validationUtils.isNonnegativeInteger(totalCommission) ||
-                !validationUtils.isNonnegativeInteger(depositBurnBalance))
+                !validationUtils.isNonnegativeInteger(totalBurn))
                 throw Error("mine or commission or burn deposit is not a positive integer");
             
             var totalPublishCoin = contants.TOTAL_WHITEBYTES + totalMine - totalCommission - totalBurn;
