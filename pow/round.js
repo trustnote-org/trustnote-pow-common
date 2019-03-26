@@ -312,7 +312,7 @@ function getTotalCoinByRoundIndex(conn, roundIndex, cb){
                 !validationUtils.isNonnegativeInteger(totalBurn))
                 throw Error("mine or commission or burn deposit is not a positive integer");
             
-            var totalPublishCoin = contants.TOTAL_WHITEBYTES + totalMine - totalCommission - totalBurn;
+            var totalPublishCoin = constants.TOTAL_WHITEBYTES + totalMine - totalCommission - totalBurn;
             deposit.getBalanceOfAllDepositContract(conn, roundIndex, function(err, depositBalance){
                 if(err)
                     throw Error("Can not get deposit balance, so can not get total coin by round index");
