@@ -361,11 +361,13 @@ function getTotalCoinByRoundIndex(conn, roundIndex, cb){
                 if(!validationUtils.isNonnegativeInteger(depositBalance))
                     throw Error("all deposit balance is not a positive integer");
                 var depositRatio = Math.round((depositBalance*100)/totalPublishCoin);
+                
+                var inflationRatio = arrInflationRatio[depositRatio];
                 console.log("coinbasecalcute round_index:" + roundIndex +
                             ", totalMine:" + totalMine + ", totalCommission:" + totalCommission + ", totalBurn:" + totalBurn + 
-                            ", totalPublishCoin:" + totalBurn +  ", depositBalance:" + depositBalance +
-                            ", depositRatio:" + depositRatio + ", inflationRatio:" + inflationRatio);
-                var inflationRatio = arrInflationRatio[depositRatio];
+                            ", totalPublishCoin:" + totalPublishCoin +  ", depositBalance:" + depositBalance +
+                            ", depositRatio:" + depositRatio + ", inflationRatio:" + inflationRatio +
+                            ", totalcoin:" + Math.floor((inflationRatio*totalPublishCoin)/constants.ROUND_TOTAL_YEAR));
                 cb(Math.floor((inflationRatio*totalPublishCoin)/constants.ROUND_TOTAL_YEAR));
             });  
         }
@@ -413,8 +415,8 @@ function getTotalMineAndCommissionByRoundIndex(conn, roundIndex, callback){
             conn.query(
                 "SELECT sum(amount) AS total_mine FROM inputs JOIN units using(unit) \n\
                 WHERE is_stable=1 AND sequence='good' AND pow_type=? \n\
-                AND main_chain_index>? AND main_chain_index<=?", 
-                [constants.POW_TYPE_COIN_BASE, lastRoundMaxMci, currentRoundMaxMci],
+                AND round_index=?", 
+                [constants.POW_TYPE_COIN_BASE, roundIndex],
                 function(rowsMine){
                     if (rowsMine.length !== 1)
                         throw Error("Can not calculate the total mine of round index " + roundIndex);
