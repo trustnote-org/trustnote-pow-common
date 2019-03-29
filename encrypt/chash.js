@@ -2,6 +2,7 @@
 "use strict";
 var crypto = require('crypto');
 var base32 = require('thirty-two');
+const constants				= require('../config/constants.js');
 
 var PI = "14159265358979323846264338327950288419716939937510";
 var zeroString = "00000000";
@@ -161,7 +162,12 @@ function isChashValid(encoded){
 	var checksum = bin2buffer(separated.checksum);
 	//console.log(checksum);
 	//console.log(getChecksum(clean_data));
-	return checksum.equals(getChecksum(clean_data));
+	if(checksum.equals(getChecksum(clean_data))){
+		return true;
+	}
+	else{
+		return (encoded === constants.DEPOSIT_BURN_ADDRESS);
+	}
 }
 
 
