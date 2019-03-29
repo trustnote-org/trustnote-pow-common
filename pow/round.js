@@ -338,7 +338,7 @@ function getCoinbaseByRoundIndex(roundIndex){
 
 function getTotalCoinByRoundIndex(conn, roundIndex, cb){
     if(roundIndex < 1 || roundIndex > constants.ROUND_TOTAL_ALL)
-        return 0;
+        return cb(0);
     conn.query(
         "SELECT total_mine, total_commission, total_burn FROM round \n\
         WHERE round_index=?",
@@ -355,6 +355,8 @@ function getTotalCoinByRoundIndex(conn, roundIndex, cb){
                 throw Error("mine or commission or burn deposit is not a positive integer");
             
             var totalPublishCoin = constants.TOTAL_WHITEBYTES + totalMine - totalCommission - totalBurn;
+            if(totalPublishCoin > constants.TOTAL_WHITEBYTES_AND_MINE)
+                return cb(0);
             deposit.getBalanceOfAllDepositContract(conn, roundIndex, function(err, depositBalance){
                 if(err)
                     throw Error("Can not get deposit balance, so can not get total coin by round index");
@@ -575,7 +577,8 @@ function getCoinbaseByRoundIndexAndAddress(conn, roundIndex, witnessAddress, cal
         getTotalCoinByRoundIndex(conn, roundIndex, function(totalCoinbase){
             if(!validationUtils.isInteger(totalCoinbase))
                 throw Error("coinbase is not number");
-       
+            if(0 === totalCoinbase)
+                return callback(0);
             // getTotalCommissionByRoundIndex(conn, roundIndex, function(totalCommission){
             //     if(!validationUtils.isInteger(totalCommission))
             //         throw Error("totalCommission is not number ");
