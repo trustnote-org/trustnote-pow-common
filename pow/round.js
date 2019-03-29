@@ -361,7 +361,10 @@ function getTotalCoinByRoundIndex(conn, roundIndex, cb){
                 if(!validationUtils.isNonnegativeInteger(depositBalance))
                     throw Error("all deposit balance is not a positive integer");
                 var depositRatio = Math.round((depositBalance*100)/totalPublishCoin);
-                console.log("depositRatio:" + depositRatio + ", round_index:" + roundIndex);
+                console.log("coinbasecalcute round_index:" + roundIndex +
+                            ", totalMine:" + totalMine + ", totalCommission:" + totalCommission + ", totalBurn:" + totalBurn + 
+                            ", totalPublishCoin:" + totalBurn +  ", depositBalance:" + depositBalance +
+                            ", depositRatio:" + depositRatio + ", inflationRatio:" + inflationRatio);
                 var inflationRatio = arrInflationRatio[depositRatio];
                 cb(Math.floor((inflationRatio*totalPublishCoin)/constants.ROUND_TOTAL_YEAR));
             });  
