@@ -1353,7 +1353,7 @@ function validatePowEquhash(conn, payload, message_index, objUnit, objValidation
 					if(err)
 						return cb(err);
 					if(invalid)
-						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + object.pow_type);
+						return cb("supernode [" + objUnit.authors[0].address + "] submited bad joints, can not send unit of type " + objUnit.pow_type);
 					return cb();
 				});
 			},

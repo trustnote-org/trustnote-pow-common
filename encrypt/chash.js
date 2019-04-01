@@ -162,12 +162,7 @@ function isChashValid(encoded){
 	var checksum = bin2buffer(separated.checksum);
 	//console.log(checksum);
 	//console.log(getChecksum(clean_data));
-	if(checksum.equals(getChecksum(clean_data))){
-		return true;
-	}
-	else{
-		return (encoded === constants.DEPOSIT_BURN_ADDRESS);
-	}
+	return checksum.equals(getChecksum(clean_data));
 }
 
 
