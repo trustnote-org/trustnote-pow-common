@@ -17,7 +17,7 @@ exports.debug		= false;
 /**
  *	for pow
  */
-exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 10000;
+exports.POW_BOMB_EXPLODING_ROUND_INDEX	= 20000;
 
 // catchup
 exports.CATCHUP_MAX_CHAIN_BALLS = 1000;
