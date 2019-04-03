@@ -28,7 +28,7 @@ exports.MAX_BYZANTINE_PHASE_IN_CACHE = 20;
 exports.version = '1.0';
 exports.alt = '1';
 
-exports.GENESIS_UNIT = 'UgMsIZvZCfEb/1dxF+0uTHDfDL/GMh3nIoJjruk0+Zg=';
+exports.GENESIS_UNIT = 'JTNCRYvYrAAGWRktuaZOBrnx7jpNd8wm1QMI14eMKKw=';
 
 exports.BLACKBYTES_ASSET = '9qQId3BlWRQHvVy+STWyLKFb3lUd0xfQhX6mPVEHC2c=';
 // Pow add
