@@ -83,7 +83,7 @@ exports.ROUND_COINBASE = [217590000,
 						0];
 
 //exports.MIN_INTERVAL_WL_OF_TRUSTME = 5;
-exports.FOUNDATION_RATIO = 0.2;
+exports.FOUNDATION_RATIO = 0.4;
 /**
  *	pow_type
  */
