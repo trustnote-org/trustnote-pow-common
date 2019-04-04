@@ -59,7 +59,7 @@ let last_hearbeat_wake_ts		= Date.now();
 let peer_events_buffer			= [];
 let assocKnownPeers			= {};
 
-
+let if_my_url_claimed = false;
 
 
 if ( process.browser )
@@ -2910,6 +2910,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 			//	Client side
 			//	I am a challenger
 			//
+			if_my_url_claimed = true;
 			let sEchoStringFromSerer = vBody;
 			if ( oWs.bOutbound || ! sEchoStringFromSerer )
 			{
@@ -3845,6 +3846,9 @@ function logCatchupStatus() {
 
 setInterval(logCatchupStatus, 1000 * 60);
 
+function getIfMyurlClaimed(){
+	return if_my_url_claimed;
+}
 
 /**
  *        @exports
@@ -3885,6 +3889,8 @@ exports.isConnected = isConnected;
  * 	exports for gossiper
  */
 exports.gossiperBroadcast 		= _gossiper.gossiperBroadcast;
+
+exports.getIfMyurlClaimed 		= getIfMyurlClaimed;
 
 
 
