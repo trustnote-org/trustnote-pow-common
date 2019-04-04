@@ -674,7 +674,7 @@ function connectToPeer( sUrl, pfnOnOpen )
 				//	Client Side
 				//	I can listen too, this is my url to connect to
 				//
-				console.log("uuuuurl:client send myurl to server-"+conf.myUrl);
+				console.log("uuuuurl:client send myurl to server-" + oWsClient.peer	+ ":" + conf.myUrl);
 				sendJustsaying( oWsClient, 'my_url', conf.myUrl );
 			}
 			if ( ! conf.bLight )
@@ -2896,7 +2896,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 								//	send message 'want_echo' to challenger at client,
 								// 	and make the challenger send message 'your_echo' to reply me
 								//
-								console.log("uuuuurl:server set want_echo to client-"+oWs.sent_echo_string);
+								console.log("uuuuurl:server set want_echo to client-"+oWsByMyUrl+":"+oWs.sent_echo_string);
 								sendJustsaying( oWsByMyUrl, 'want_echo', oWs.sent_echo_string );
 							}
 						}
@@ -2938,7 +2938,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 				//	no reverse outbound connection
 				break;
 			}
-			console.log("uuuuurl:client  receive want_echo and sent your_echo to server-"+oWs.claimed_url);
+			console.log("uuuuurl:client  receive want_echo and sent your_echo to server-"+oReverseWs.peer+":"+oWs.claimed_url);
 			sendJustsaying( oReverseWs, 'your_echo', sEchoStringFromSerer );
 			break;
 
