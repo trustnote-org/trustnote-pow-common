@@ -1110,7 +1110,13 @@ function printConnectionStatus()
 
 function getConnections()
 {
-	return "incoming connections:" + JSON.stringify(wss.clients) + ", outgoing connections:" + JSON.stringify(arrOutboundPeers);
+	let arrIncomePeerUrls = wss.clients.map(function (ws) {
+		return ws.peer;
+	});
+	let arrOutboundPeerUrls = arrOutboundPeers.map(function (ws) {
+		return ws.peer;
+	});
+	return "incoming connections:" + JSON.stringify(arrIncomePeerUrls) + ", outgoing connections:" + JSON.stringify(arrOutboundPeerUrls);
 }
 
 function printDatabaseConnectionStatus()
