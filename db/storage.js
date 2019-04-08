@@ -633,11 +633,11 @@ function readJointWithBall(conn, unit, handleJoint) {
 function getMaxMci(conn, handleResult){
 	var conn = conn || db;
 	conn.query(
-		"SELECT MAX(main_chain_index) FROM units",
+		"SELECT MAX(main_chain_index) AS maxmci FROM units",
 		function(rows){
 			if(rows.length !== 1)
 				throw Error("getMaxMci method can not got one mci  ")
-			handleResult(rows[0].main_chain_index);
+			handleResult(rows[0].maxmci);
 		}
 	);
 }
@@ -645,12 +645,12 @@ function getMaxMci(conn, handleResult){
 function getMaxTrustMeMci(conn, handleResult){
 	var conn = conn || db;
 	conn.query(
-		"SELECT MAX(main_chain_index) FROM units WHERE pow_type=? AND is_stable=1",
+		"SELECT MAX(main_chain_index) AS maxmci FROM units WHERE pow_type=? AND is_stable=1",
 		[constants.POW_TYPE_TRUSTME],
 		function(rows){
 			if(rows.length !== 1)
 				throw Error("getMaxTrustMeMci method can not got one mci  ")
-			handleResult(rows[0].main_chain_index);
+			handleResult(rows[0].maxmci);
 		}
 	);
 }
