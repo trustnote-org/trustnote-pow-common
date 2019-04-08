@@ -3850,7 +3850,7 @@ function logCatchupStatus() {
 		return;
 	console.log("catchup_balls_at_start :" + catchup_balls_at_start + "catchup_balls_left: " + catchup_balls_left);
 	let percent = Math.round((catchup_balls_at_start - catchup_balls_left) / catchup_balls_at_start * 100);
-	console.info("-----------------------Syncing Data-----------------------");
+	console.info("---------------Syncing Data: "+new Date().toLocaleString()+"---------------");
 	console.info("                Progress: " + percent + "%");
 	console.info("");
 }

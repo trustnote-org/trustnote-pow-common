@@ -327,7 +327,7 @@ function getSimilarMcis(mci){
 }
 
 function infoMiningSuccess(round_index, newDifficulty){
-	console.info("--------------------Difficulty Adjustment---------------------");
+	console.info("------------Difficulty Adjustment: "+new Date().toLocaleString()+"-------------");
 	console.info("       Round Index: " + round_index);
 	console.info("    Difficulty New: " + newDifficulty);
 	console.info("");
