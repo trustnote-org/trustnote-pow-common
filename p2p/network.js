@@ -1108,6 +1108,11 @@ function printConnectionStatus()
 	printDatabaseConnectionStatus();
 }
 
+function getConnections()
+{
+	return "incoming connections:" + JSON.stringify(wss.clients) + ", outgoing connections:" + JSON.stringify(arrOutboundPeers);
+}
+
 function printDatabaseConnectionStatus()
 {
 	console.log( `SQLite getCountUsedConnections : ${ db.getCountUsedConnections() }` );
@@ -3884,6 +3889,8 @@ exports.addLightWatchedAddress = addLightWatchedAddress;
 
 exports.closeAllWsConnections = closeAllWsConnections;
 exports.isConnected = isConnected;
+
+exports.getConnections 		= getConnections;
 
 /**
  * 	exports for gossiper
