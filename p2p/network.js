@@ -2851,12 +2851,14 @@ function handleJustsaying( oWs, sSubject, vBody )
 			if ( oWs.bOutbound )
 			{
 				//	ignore: if you are outbound, I already know your url
+				console.log("uuuuurl 21" + oWs.bOutbound);
 				break;
 			}
 			if ( oWs.bAdvertisedOwnUrl )
 			{
 				//	inbound only
 				//	allow it only once per connection
+				console.log("uuuuurl 22" + oWs.bAdvertisedOwnUrl);
 				break;
 			}
 
@@ -2865,6 +2867,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 			if ( 0 !== sMyUrl.indexOf( 'ws://' ) && 0 !== sMyUrl.indexOf( 'wss://' ) )
 			{
 				//	invalid url
+				console.log("uuuuurl 23" + sMyUrl);
 				break;
 			}
 
@@ -2884,6 +2887,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 					if ( oLatestChange && oLatestChange.url === sMyUrl )
 					{
 						//	advertises the same url
+						console.log("uuuuurl 24" + oLatestChange);
 						return;
 					}
 
