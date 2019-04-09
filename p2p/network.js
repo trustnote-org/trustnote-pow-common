@@ -674,7 +674,7 @@ function connectToPeer( sUrl, pfnOnOpen )
 				//	Client Side
 				//	I can listen too, this is my url to connect to
 				//
-				console.log("uuuuurl:client send myurl to " + oWsClient.peer + ":" + conf.myUrl);
+				console.log("uuuuurl 1:client send myurl to " + oWsClient.peer + ":" + conf.myUrl);
 				sendJustsaying( oWsClient, 'my_url', conf.myUrl );
 			}
 			if ( ! conf.bLight )
@@ -2843,7 +2843,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 			//	Server Side
 			//
 			let sMyUrl = vBody;
-			
+			console.log("uuuuurl 2:server send want_echo, oWs.claimed_url:"+oWs.claimed_url +",oWs.peer:"+oWs.peer+",oWs.bOutbound:"+oWs.bOutbound+",sMyUrl:"+sMyUrl);
 			if ( ! sMyUrl )
 			{
 				return;
@@ -2907,7 +2907,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 								//	send message 'want_echo' to challenger at client,
 								// 	and make the challenger send message 'your_echo' to reply me
 								//
-								console.log("uuuuurl:server send want_echo, oWs.claimed_url:"+oWs.claimed_url +",oWs.peer:"+oWs.peer+",oWsByMyUrl.peer:"+oWsByMyUrl.peer+":"+oWs.sent_echo_string);
+								console.log("uuuuurl 3:server send want_echo, oWs.claimed_url:"+oWs.claimed_url +",oWs.peer:"+oWs.peer+",oWsByMyUrl.peer:"+oWsByMyUrl.peer+":"+oWs.sent_echo_string);
 								sendJustsaying( oWsByMyUrl, 'want_echo', oWs.sent_echo_string );
 							}
 						}
@@ -2949,7 +2949,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 				//	no reverse outbound connection
 				break;
 			}
-			console.log("uuuuurl:client receive want_echo and sent your_echo, oWs.peer:"+oWs.peer+",oWs.claimed_url:"+oWs.claimed_url+",oReverseWs.peer:"+oReverseWs.peer);
+			console.log("uuuuurl 4:client receive want_echo and sent your_echo, oWs.peer:"+oWs.peer+",oWs.claimed_url:"+oWs.claimed_url+",oReverseWs.peer:"+oReverseWs.peer);
 			sendJustsaying( oReverseWs, 'your_echo', sEchoStringFromSerer );
 			break;
 
@@ -2958,7 +2958,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 			//	Server Side
 			//	comes on the same ws as my_url, claimed_url is already set
 			//
-			console.log("uuuuurl:server receive your_echo oWs.peer:"+oWs.peer+"oWs.claimed_url:"+oWs.claimed_url+":"+vBody);
+			console.log("uuuuurl 5:server receive your_echo oWs.peer:"+oWs.peer+"oWs.claimed_url:"+oWs.claimed_url+":"+vBody);
 			let sEchoStringFromClient = vBody;
 			if ( oWs.bOutbound || ! sEchoStringFromClient )
 			{
