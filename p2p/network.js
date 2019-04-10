@@ -1199,6 +1199,7 @@ function pushOutBoundPeersToExplorer(){
 	);
 }
 
+// Summary online peers
 function sumOnLinePeers() {
 	let nowTime = Date.now();
 	assocOnlinePeers = {};
@@ -1215,6 +1216,7 @@ function sumOnLinePeers() {
     }); 
 }
 
+// Gets the online node, sorted by count
 function getOnLinePeers()
 {
 	var arrOnlinePeers = [];
@@ -3917,13 +3919,13 @@ function logCatchupStatus() {
 	console.info("");
 }
 
-setInterval(logCatchupStatus, 1000 * 60);
+// setInterval(logCatchupStatus, 1000 * 60);
 
-function logOnLinePeers() {
-	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
-		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
-}
-setInterval(logOnLinePeers, 1000 * 10);
+// function logOnLinePeers() {
+// 	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
+// 		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
+// }
+// setInterval(logOnLinePeers, 1000 * 10);
 
 
 
