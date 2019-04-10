@@ -1199,6 +1199,39 @@ function pushOutBoundPeersToExplorer(){
 	);
 }
 
+function sumOnLinePeers() {
+	let nowTime = Date.now();
+	assocOnlinePeers = {};
+	Object.keys(assocAllOutBoundPeers).forEach(function(curUrl){    
+		var curPeers = assocAllOutBoundPeers[curUrl];   
+		if(nowTime - parseInt(curPeers.time) < 3 * 60 * 1000){
+			for (var j=0; j<curPeers.peers.length; j++){
+                if(assocOnlinePeers[curPeers.peers[j]]) 
+					assocOnlinePeers[curPeers.peers[j]]++;
+				else
+					assocOnlinePeers[curPeers.peers[j]] = 1;
+            }
+		}       
+    }); 
+}
+
+function getOnLinePeers()
+{
+	var arrOnlinePeers = [];
+	function compare(property){
+		return function(a,b){
+			return b['count'] - a['count'];
+		}
+	}
+
+	Object.keys(assocOnlinePeers).forEach(function(curUrl){    
+		arrOnlinePeers.push({peer:curUrl, count:assocOnlinePeers[curUrl]});
+	})
+	if(arrOnlinePeers.length === 0)
+		return [];
+	else
+		return arrOnlinePeers.sort(compare());
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // joints
@@ -3806,6 +3839,7 @@ function startRelay()
 	if(conf.IF_BYZANTINE){
 		setInterval( pushOutBoundPeersToExplorer, 60 * 1000 );
 	}
+	setInterval(sumOnLinePeers, 1000 * 60);  // explorer
 }
 
 function startLightClient()
@@ -3891,22 +3925,6 @@ function logOnLinePeers() {
 }
 setInterval(logOnLinePeers, 1000 * 10);
 
-function sumOnLinePeers() {
-	let nowTime = Date.now();
-	assocOnlinePeers = {};
-	Object.keys(assocAllOutBoundPeers).forEach(function(curUrl){    
-		var curPeers = assocAllOutBoundPeers[curUrl];   
-		if(nowTime - parseInt(curPeers.time) < 3 * 60 * 1000){
-			for (var j=0; j<curPeers.peers.length; j++){
-                if(assocOnlinePeers[curPeers.peers[j]]) 
-					assocOnlinePeers[curPeers.peers[j]]++;
-				else
-					assocOnlinePeers[curPeers.peers[j]] = 1;
-            }
-		}       
-    }); 
-}
-setInterval(sumOnLinePeers, 1000 * 60);
 
 
 
@@ -3950,6 +3968,7 @@ exports.closeAllWsConnections = closeAllWsConnections;
 exports.isConnected = isConnected;
 
 exports.getConnections 		= getConnections;
+exports.getOnLinePeers 		= getOnLinePeers;
 
 /**
  * 	exports for gossiper
