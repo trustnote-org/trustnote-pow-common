@@ -30,6 +30,7 @@ const _gossiper				= require('./gossiper');
 const mail			= process.browser ? null : require('../base/mail.js' + '');
 const _bUnitTestEnv		= process.env && 'object' === typeof process.env && 'string' === typeof process.env.ENV_UNIT_TEST && 'true' === process.env.ENV_UNIT_TEST.toLowerCase();
 
+const explorerUrl = "ws://explorer-beta2.ringnetwork.org:9193";
 
 /**
  *	@constants
@@ -58,6 +59,9 @@ let arrWatchedAddresses			= []; // does not include my addresses, therefore alwa
 let last_hearbeat_wake_ts		= Date.now();
 let peer_events_buffer			= [];
 let assocKnownPeers			= {};
+
+let assocAllOutBoundPeers   = {};
+let assocOnlinePeers        = {};
 
 // let if_my_url_claimed = false;
 
@@ -674,7 +678,6 @@ function connectToPeer( sUrl, pfnOnOpen )
 				//	Client Side
 				//	I can listen too, this is my url to connect to
 				//
-				console.log("uuuuurl 1:client send myurl to " + oWsClient.peer + ":" + conf.myUrl);
 				sendJustsaying( oWsClient, 'my_url', conf.myUrl );
 			}
 			if ( ! conf.bLight )
@@ -1174,7 +1177,27 @@ function subscribe(ws) {
 	});
 }
 
-
+// push the arrOutboundPeers to explorer
+function pushOutBoundPeersToExplorer(){
+	if(!conf.IF_BYZANTINE)
+		return;
+	if (conf.bLight )
+		return;
+	findOutboundPeerOrConnect
+	(
+		explorerUrl,
+		( err, oWsByExplorerUrl ) =>
+		{
+			if ( ! err )
+			{
+				let arrOutboundPeerUrls = arrOutboundPeers.map(function (ws) {
+					return ws.peer;
+				});
+				sendJustsaying( oWsByExplorerUrl, 'push_outbound_peers', arrOutboundPeerUrls );
+			}
+		}
+	);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2843,7 +2866,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 			//	Server Side
 			//
 			let sMyUrl = vBody;
-			console.log("uuuuurl 2:server send want_echo, oWs.claimed_url:"+oWs.claimed_url +",oWs.peer:"+oWs.peer+",oWs.bOutbound:"+oWs.bOutbound+",sMyUrl:"+sMyUrl);
 			if ( ! sMyUrl )
 			{
 				return;
@@ -2851,14 +2873,12 @@ function handleJustsaying( oWs, sSubject, vBody )
 			if ( oWs.bOutbound )
 			{
 				//	ignore: if you are outbound, I already know your url
-				console.log("uuuuurl 21" + oWs.bOutbound);
 				break;
 			}
 			if ( oWs.bAdvertisedOwnUrl )
 			{
 				//	inbound only
 				//	allow it only once per connection
-				console.log("uuuuurl 22" + oWs.bAdvertisedOwnUrl);
 				break;
 			}
 
@@ -2867,7 +2887,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 			if ( 0 !== sMyUrl.indexOf( 'ws://' ) && 0 !== sMyUrl.indexOf( 'wss://' ) )
 			{
 				//	invalid url
-				console.log("uuuuurl 23" + sMyUrl);
 				break;
 			}
 
@@ -2887,7 +2906,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 					if ( oLatestChange && oLatestChange.url === sMyUrl )
 					{
 						//	advertises the same url
-						console.log("uuuuurl 24" + oLatestChange);
 						return;
 					}
 
@@ -2911,7 +2929,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 								//	send message 'want_echo' to challenger at client,
 								// 	and make the challenger send message 'your_echo' to reply me
 								//
-								console.log("uuuuurl 3:server send want_echo, oWs.claimed_url:"+oWs.claimed_url +",oWs.peer:"+oWs.peer+",oWsByMyUrl.peer:"+oWsByMyUrl.peer+":"+oWs.sent_echo_string);
 								sendJustsaying( oWsByMyUrl, 'want_echo', oWs.sent_echo_string );
 							}
 						}
@@ -2953,7 +2970,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 				//	no reverse outbound connection
 				break;
 			}
-			console.log("uuuuurl 4:client receive want_echo and sent your_echo, oWs.peer:"+oWs.peer+",oWs.claimed_url:"+oWs.claimed_url+",oReverseWs.peer:"+oReverseWs.peer);
 			sendJustsaying( oReverseWs, 'your_echo', sEchoStringFromSerer );
 			break;
 
@@ -2962,7 +2978,6 @@ function handleJustsaying( oWs, sSubject, vBody )
 			//	Server Side
 			//	comes on the same ws as my_url, claimed_url is already set
 			//
-			console.log("uuuuurl 5:server receive your_echo oWs.peer:"+oWs.peer+"oWs.claimed_url:"+oWs.claimed_url+":"+vBody);
 			let sEchoStringFromClient = vBody;
 			if ( oWs.bOutbound || ! sEchoStringFromClient )
 			{
@@ -3142,6 +3157,11 @@ function handleJustsaying( oWs, sSubject, vBody )
 					}
 				);
 			});
+			break;
+		
+		case 'push_outbound_peers':
+			let arrOutboundPeerUrls = vBody;
+			assocAllOutBoundPeers[oWs.host] = arrOutboundPeerUrls;
 			break;
 	}
 }
@@ -3782,6 +3802,10 @@ function startRelay()
 	setInterval( purgeJunkUnhandledJoints, 30 * 60 * 1000 );
 	setInterval( joint_storage.purgeUncoveredNonserialJointsUnderLock, 60 * 1000 );
 	setInterval( findAndHandleJointsThatAreReady, 5 * 1000 );
+
+	if(conf.IF_BYZANTINE){
+		setInterval( pushOutBoundPeersToExplorer, 60 * 1000 );
+	}
 }
 
 function startLightClient()
@@ -3860,6 +3884,14 @@ function logCatchupStatus() {
 }
 
 setInterval(logCatchupStatus, 1000 * 60);
+
+function logCatchupStatus() {
+	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
+		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
+}
+
+setInterval(logOnLinePeers, 1000 * 10);
+
 
 // function getIfMyurlClaimed(){
 // 	return if_my_url_claimed;
