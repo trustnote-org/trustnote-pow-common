@@ -3161,7 +3161,7 @@ function handleJustsaying( oWs, sSubject, vBody )
 		
 		case 'push_outbound_peers':
 			let arrOutboundPeerUrls = vBody;
-			assocAllOutBoundPeers[oWs.host] = arrOutboundPeerUrls;
+			assocAllOutBoundPeers[oWs.host] = {time: Date.now(), peers: arrOutboundPeerUrls};
 			break;
 	}
 }
@@ -3891,6 +3891,14 @@ function logOnLinePeers() {
 }
 
 setInterval(logOnLinePeers, 1000 * 10);
+
+function logOnLinePeers() {
+	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
+		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
+}
+
+setInterval(logOnLinePeers, 1000 * 10);
+
 
 
 // function getIfMyurlClaimed(){
