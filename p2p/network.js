@@ -3889,15 +3889,24 @@ function logOnLinePeers() {
 	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
 		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
 }
-
 setInterval(logOnLinePeers, 1000 * 10);
 
-function logOnLinePeers() {
-	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
-		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
+function sumOnLinePeers() {
+	let nowTime = Date.now();
+	assocOnlinePeers = {};
+	Object.keys(assocAllOutBoundPeers).forEach(function(curUrl){    
+		var curPeers = assocAllOutBoundPeers[curUrl];   
+		if(nowTime - parseInt(curPeers.time) > 3 * 60 * 1000){
+			for (var j=0; j<curPeers.peers.length; j++){
+                if(assocOnlinePeers[curPeers.peers[j]]) 
+					assocOnlinePeers[curPeers.peers[j]]++;
+				else
+					assocOnlinePeers[curPeers.peers[j]] = 1;
+            }
+		}       
+    }); 
 }
-
-setInterval(logOnLinePeers, 1000 * 10);
+setInterval(sumOnLinePeers, 1000 * 60);
 
 
 
