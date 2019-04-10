@@ -3890,7 +3890,7 @@ function logCatchupStatus() {
 		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
 }
 
-setInterval(logOnLinePeers, 1000 * 10);
+setInterval(logCatchupStatus, 1000 * 10);
 
 
 // function getIfMyurlClaimed(){
