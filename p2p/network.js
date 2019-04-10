@@ -3896,7 +3896,7 @@ function sumOnLinePeers() {
 	assocOnlinePeers = {};
 	Object.keys(assocAllOutBoundPeers).forEach(function(curUrl){    
 		var curPeers = assocAllOutBoundPeers[curUrl];   
-		if(nowTime - parseInt(curPeers.time) > 3 * 60 * 1000){
+		if(nowTime - parseInt(curPeers.time) < 3 * 60 * 1000){
 			for (var j=0; j<curPeers.peers.length; j++){
                 if(assocOnlinePeers[curPeers.peers[j]]) 
 					assocOnlinePeers[curPeers.peers[j]]++;
