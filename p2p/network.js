@@ -3885,12 +3885,12 @@ function logCatchupStatus() {
 
 setInterval(logCatchupStatus, 1000 * 60);
 
-function logCatchupStatus() {
+function logOnLinePeers() {
 	console.log("assocAllOutBoundPeers :" + JSON.stringify(assocAllOutBoundPeers) + 
 		", assocOnlinePeers: " + JSON.stringify(assocOnlinePeers) );
 }
 
-setInterval(logCatchupStatus, 1000 * 10);
+setInterval(logOnLinePeers, 1000 * 10);
 
 
 // function getIfMyurlClaimed(){
