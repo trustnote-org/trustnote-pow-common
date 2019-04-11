@@ -1220,7 +1220,7 @@ function sumOnLinePeers() {
 function getOnLinePeers()
 {
 	var arrOnlinePeers = [];
-	function compare(property){
+	function compare(){
 		return function(a,b){
 			return b['count'] - a['count'];
 		}

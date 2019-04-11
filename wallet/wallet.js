@@ -717,14 +717,14 @@ function readTransactionHistory(opts, handleHistory){
 		cross = "CROSS";
 	}
 	db.query(
-		"SELECT unit, level, is_stable, sequence, address, \n\
+		"SELECT unit, level, is_stable, sequence, address, round_index, pow_type, \n\
 			"+db.getUnixTimestamp("units.creation_date")+" AS ts, headers_commission+payload_commission AS fee, \n\
 			SUM(amount) AS amount, address AS to_address, NULL AS from_address, main_chain_index AS mci \n\
 		FROM units "+cross+" JOIN outputs USING(unit) "+join_my_addresses+" \n\
 		WHERE "+where_condition+" AND "+asset_condition+" \n\
 		GROUP BY unit, address \n\
 		UNION \n\
-		SELECT unit, level, is_stable, sequence, address, \n\
+		SELECT unit, level, is_stable, sequence, address, round_index, pow_type, \n\
 			"+db.getUnixTimestamp("units.creation_date")+" AS ts, headers_commission+payload_commission AS fee, \n\
 			NULL AS amount, NULL AS to_address, address AS from_address, main_chain_index AS mci \n\
 		FROM units "+cross+" JOIN inputs USING(unit) "+join_my_addresses+" \n\
@@ -750,6 +750,10 @@ function readTransactionHistory(opts, handleHistory){
 				}
 				if (row.from_address)
 					assocMovements[row.unit].has_minus = true;
+				if (row.round_index){
+					assocMovements[row.unit].round_index = row.round_index;
+					assocMovements[row.unit].pow_type = row.pow_type;
+				}	
 			}
 		//	console.log(require('util').inspect(assocMovements));
 			var arrTransactions = [];
@@ -764,7 +768,9 @@ function readTransactionHistory(opts, handleHistory){
 							fee: movement.fee,
 							time: movement.ts,
 							level: movement.level,
-                            mci: movement.mci
+							mci: movement.mci,
+							round_index: movement.round_index? movement.round_index:"",
+							pow_type: movement.pow_type? movement.pow_type:""
 						};
 						arrTransactions.push(transaction);
 						cb();
@@ -787,7 +793,9 @@ function readTransactionHistory(opts, handleHistory){
 										fee: movement.fee,
 										time: movement.ts,
 										level: movement.level,
-										mci: movement.mci
+										mci: movement.mci,
+										round_index: movement.round_index? movement.round_index:"",
+										pow_type: movement.pow_type? movement.pow_type:""
 									};
 									arrTransactions.push(transaction);
 								});
@@ -828,7 +836,9 @@ function readTransactionHistory(opts, handleHistory){
 										fee: movement.fee,
 										time: movement.ts,
 										level: movement.level,
-                                        mci: movement.mci
+                                        mci: movement.mci,
+										round_index: movement.round_index? movement.round_index:"",
+										pow_type: movement.pow_type? movement.pow_type:""
 									};
 									if (action === 'moved')
 										transaction.my_address = payee.address;
