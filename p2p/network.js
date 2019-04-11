@@ -1119,7 +1119,7 @@ function getConnections()
 	let arrOutboundPeerUrls = arrOutboundPeers.map(function (ws) {
 		return ws.peer;
 	});
-	return "incoming connections:" + JSON.stringify(arrIncomePeerUrls) + ", outgoing connections:" + JSON.stringify(arrOutboundPeerUrls);
+	return {"incoming connections":JSON.stringify(arrIncomePeerUrls),"outgoing connections":JSON.stringify(arrOutboundPeerUrls)};
 }
 
 function printDatabaseConnectionStatus()
