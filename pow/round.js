@@ -202,6 +202,42 @@ function getDurationByCycleId(conn, cycleId, callback){
     );
 }
 
+
+function getDurationByRoundIndex(conn, roundIndex, callback){
+    if(!validationUtils.isPositiveInteger(roundIndex))
+        return callback(0);
+    if(roundIndex > constants.ROUND_TOTAL_ALL) 
+        return callback(0);
+    
+    conn.query(
+        "SELECT int_value AS min_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+        WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+            AND sequence='good' AND is_stable=1 AND round_index=? ORDER BY main_chain_index DESC LIMIT 1",
+        [constants.POW_TYPE_TRUSTME, roundIndex-1],
+        function(rowsMin){
+            if (rowsMin.length !== 1)
+                return callback(0);
+            if (rowsMin[0].min_timestamp === null || isNaN(rowsMin[0].min_timestamp))
+                return callback(0);
+            conn.query(
+                "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+                WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+                    AND sequence='good' AND is_stable=1 AND round_index=? ORDER BY main_chain_index DESC LIMIT 1",
+                [constants.POW_TYPE_TRUSTME, roundIndex],
+                function(rowsMax){
+                    if (rowsMax.length !== 1)
+                        return callback(0);
+                    if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
+                        return callback(0);
+
+                    callback(Math.floor((rowsMax[0].max_timestamp - rowsMin[0].min_timestamp)/1000));
+                }
+            );            
+        }
+    );
+}
+
+
 function getStandardDuration(){
     return constants.DURATION_PER_ROUND*(constants.COUNT_CYCLES_FOR_DIFFICULTY_DURATION*constants.COUNT_ROUNDS_FOR_DIFFICULTY_SWITCH-1);
 }
@@ -234,8 +270,6 @@ function getMinWlByRoundIndex(conn, roundIndex, callback){
 		}
 	);
 }
-
-
 
 
 function getWitnessesByRoundIndex(conn, roundIndex, callback){
@@ -790,6 +824,8 @@ exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
 exports.getDurationByCycleId = getDurationByCycleId;
+exports.getDurationByRoundIndex = getDurationByRoundIndex;
+
 exports.getDifficultydByRoundIndex = getDifficultydByRoundIndex;
 exports.getDifficultydByCycleID = getDifficultydByCycleID;
 exports.getStandardDuration = getStandardDuration;
