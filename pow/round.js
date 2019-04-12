@@ -202,7 +202,6 @@ function getDurationByCycleId(conn, cycleId, callback){
     );
 }
 
-
 function getDurationByRoundIndex(conn, roundIndex, callback){
     if(!validationUtils.isPositiveInteger(roundIndex))
         return callback(0);
@@ -235,6 +234,28 @@ function getDurationByRoundIndex(conn, roundIndex, callback){
             );            
         }
     );
+}
+
+
+function getLastTimestampByRoundIndex(conn, roundIndex, callback){
+    if(!validationUtils.isPositiveInteger(roundIndex))
+        return callback(-1);
+    if(roundIndex > constants.ROUND_TOTAL_ALL) 
+        return callback(-1);
+    conn.query(
+        "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
+        WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
+            AND sequence='good' AND is_stable=1 AND round_index=? ORDER BY main_chain_index DESC LIMIT 1",
+        [constants.POW_TYPE_TRUSTME, roundIndex],
+        function(rowsMax){
+            if (rowsMax.length !== 1)
+                return callback(-1);
+            if (rowsMax[0].max_timestamp === null || isNaN(rowsMax[0].max_timestamp))
+                return callback(-1);
+
+            callback(rowsMax[0].max_timestamp);
+        }
+    );            
 }
 
 
@@ -825,6 +846,7 @@ exports.getCoinbaseByRoundIndex = getCoinbaseByRoundIndex;
 exports.getCycleIdByRoundIndex = getCycleIdByRoundIndex;
 exports.getDurationByCycleId = getDurationByCycleId;
 exports.getDurationByRoundIndex = getDurationByRoundIndex;
+exports.getLastTimestampByRoundIndex = getLastTimestampByRoundIndex;
 
 exports.getDifficultydByRoundIndex = getDifficultydByRoundIndex;
 exports.getDifficultydByCycleID = getDifficultydByCycleID;
