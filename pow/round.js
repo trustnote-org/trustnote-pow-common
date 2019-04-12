@@ -237,12 +237,12 @@ function getDurationByRoundIndex(conn, roundIndex, callback){
 }
 
 
-function getLastTimestampByRoundIndex(conn, roundIndex, callback){
+function getLastTimestampByRoundIndex(roundIndex, callback){
     if(!validationUtils.isPositiveInteger(roundIndex))
         return callback(-1);
     if(roundIndex > constants.ROUND_TOTAL_ALL) 
         return callback(-1);
-    conn.query(
+    db.query(
         "SELECT int_value AS max_timestamp FROM data_feeds CROSS JOIN units USING(unit) CROSS JOIN unit_authors USING(unit) \n\
         WHERE feed_name='timestamp' AND pow_type=? AND is_on_main_chain=1 \n\
             AND sequence='good' AND is_stable=1 AND round_index=? ORDER BY main_chain_index DESC LIMIT 1",
